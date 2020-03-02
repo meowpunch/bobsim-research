@@ -43,7 +43,12 @@ def handler():
                 logger.info(row)
                 # print(row)
         """
-        cur.execute("drop table Employee")
+        result = cur.execute("select * from item ")
+        print(cur)
+        for row in cur:
+            print(row)
+        print(result)
+        # cur.execute("drop table Employee")
     conn.commit()
 
     # print("Added %d items from RDS MySQL table" % item_count)
