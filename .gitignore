@@ -1,4 +1,4 @@
 .idea
 __pycache__
 
-simulator/rds/config.py
+src/simulator/rds/config.py
