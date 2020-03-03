@@ -1,4 +1,8 @@
 .idea
 __pycache__
 
-src/simulator/rds/config.py
+src/constant/*
+src/constant/rds_config.py
+rds_config.py
+
+*.txt

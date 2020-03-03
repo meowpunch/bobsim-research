@@ -1,11 +1,19 @@
+"""
+    first, just consider not the number but the existence of items.
+
+
+    1. load item(food)
+    2. make distribution of each item
+"""
 import sys
 import logging
 from src.constant.rds_config import *
 import pymysql
+import numpy as np
+import matplotlib.pyplot as plt
 
 
-def handler():
-    # rds settings
+def db_load():
     rds_host = "production-bobsim-aurora.cluster-cm9kakdihdlv.ap-northeast-2.rds.amazonaws.com"
     name = db_username
     password = db_password
@@ -16,7 +24,8 @@ def handler():
     logger.setLevel(logging.INFO)
 
     try:
-        conn = pymysql.connect(rds_host, user=name, passwd=password, db=database_name, connect_timeout=5, charset='utf8')
+        conn = pymysql.connect(rds_host, user=name, passwd=password, db=database_name, connect_timeout=5,
+                               charset='utf8')
     except pymysql.MySQLError as e:
         logger.error("ERROR: Unexpected error: Could not connect to MySQL instance.")
         logger.error(e)
@@ -24,11 +33,33 @@ def handler():
 
     logger.info("SUCCESS: Connection to RDS MySQL instance succeeded")
 
-    """
-    This function fetches content from MySQL RDS instance
-    """
+    return conn
 
-    item_count = 0
+
+def func(tup):
+    name, avg = tup
+    print(name, avg)
+
+    mean, sigma = int(avg), 1
+    # a = sigma * np.random.randn(10000) + mean
+    a = np.random.normal(mean, sigma, 10000)
+
+    count, bins, ignored = plt.hist(a, 30, density=True)
+    plt.plot(bins, 1 / (sigma * np.sqrt(2 * np.pi)) *
+             np.exp(- (bins - mean) ** 2 / (2 * sigma ** 2)), linewidth=2, color='r')
+    # plt.hist(a, bins=100, density=True, alpha=1, histtype='step', label='(mean, stddev)=('+str(mean)+', '+str(sigma*sigma)+')')
+    
+    plt.show()
+
+
+
+def handler():
+
+    conn = db_load()
+
+    """
+        This function fetches content from MySQL RDS instance
+    """
 
     with conn.cursor() as cur:
         """
@@ -43,12 +74,25 @@ def handler():
                 logger.info(row)
                 # print(row)
         """
-        result = cur.execute("select item.name, item_frequency from item right outer join item_frequency on item.id = item_frequency.item_id")
+
+        query = "select item.name, item_frequency from item right outer join item_frequency on item.id = item_frequency.item_id"
+
+        result = cur.execute(query)
         print(cur)
+
+        count = 0
         for row in cur:
-            print(row)
+            if count is 0:
+                func(row)
+            count += 1
+
+
+
+        print("뭐지")
         print(result)
+
         # cur.execute("drop table Employee")
     conn.commit()
 
     # print("Added %d items from RDS MySQL table" % item_count)
+
