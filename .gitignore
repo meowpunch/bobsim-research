@@ -1,5 +1,6 @@
 .idea
 __pycache__
 
+src/constant/*
 src/constant/rds_config.py
 rds_config.py
