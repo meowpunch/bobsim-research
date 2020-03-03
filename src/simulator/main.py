@@ -1,5 +1,5 @@
 import boto3
-from rds.handler import handler
+from rds.quantity import handler
 
 if __name__ == '__main__':
 
@@ -12,5 +12,7 @@ if __name__ == '__main__':
 
     table_name = "Employee"
     handler();
+
+    print(__name__)
 
 
