@@ -1,6 +1,6 @@
 import sys
 import logging
-from .config import *
+from src.constant.rds_config import *
 import pymysql
 
 
