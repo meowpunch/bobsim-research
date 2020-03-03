@@ -43,7 +43,7 @@ def handler():
                 logger.info(row)
                 # print(row)
         """
-        result = cur.execute("select * from item ")
+        result = cur.execute("select item.name, item_frequency from item right outer join item_frequency on item.id = item_frequency.item_id")
         print(cur)
         for row in cur:
             print(row)
