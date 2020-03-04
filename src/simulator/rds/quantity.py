@@ -44,6 +44,11 @@ def get_truncated_normal(mean=0, sd=1, low=0, upp=10):
         (low - mean) / sd, (upp - mean) / sd, loc=mean, scale=sd)
 
 
+def binarize(input_arr: np.ndarray,  threshold: float):
+    output_arr = np.array([(1 if e > threshold else 0) for e in input_arr])
+    return output_arr
+
+
 def func(tup):
     name, avg = tup
     print(name, avg)
@@ -61,14 +66,20 @@ def func(tup):
 
     X = get_truncated_normal(mean=mean, sd=sigma**2, low=0, upp=1)
 
-    x = X.rvs(10000)
-
+    x = X.rvs(100)
+    print(type(x))
 
     print(x)
-    plt.hist(x, normed=True)
+    fig, ax = plt.subplots(2, sharex=True)
+    ax[0].hist(x, density=True)
 
+    x = binarize(input_arr=x, threshold=0.5)
 
+    print(x)
+    ax[1].hist(x, density=True)
     plt.show()
+
+
 
 
 def handler():
