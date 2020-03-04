@@ -7,17 +7,20 @@
 """
 import sys
 import logging
-from src.constant.rds_config import *
+from rds import rds_config
+# from rds_config import *
+# from src/constant import rds_config
 import pymysql
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.stats import truncnorm
 
 
 def db_load():
-    rds_host = "production-bobsim-aurora.cluster-cm9kakdihdlv.ap-northeast-2.rds.amazonaws.com"
-    name = db_username
-    password = db_password
-    database_name = db_name
+    rds_host = rds_config.access_url
+    name = rds_config.db_username
+    password = rds_config.db_password
+    database_name = rds_config.db_name
 
     logging.basicConfig()
     logger = logging.getLogger()
@@ -36,21 +39,36 @@ def db_load():
     return conn
 
 
+def get_truncated_normal(mean=0, sd=1, low=0, upp=10):
+    return truncnorm(
+        (low - mean) / sd, (upp - mean) / sd, loc=mean, scale=sd)
+
+
 def func(tup):
     name, avg = tup
     print(name, avg)
 
-    mean, sigma = int(avg), 1
+    mean, sigma = float(avg), 0.5
+    print(mean, sigma)
     # a = sigma * np.random.randn(10000) + mean
-    a = np.random.normal(mean, sigma, 10000)
+    a = np.random.normal(mean, sigma, 10)
+    print(a)
+    # count, bins, ignored = plt.hist(a, 30, density=True)
+    #plt.plot(bins, 1 / (sigma * np.sqrt(2 * np.pi)) *
+    #         np.exp(- (bins - mean) ** 2 / (2 * sigma ** 2)), linewidth=2, color='r')
 
-    count, bins, ignored = plt.hist(a, 30, density=True)
-    plt.plot(bins, 1 / (sigma * np.sqrt(2 * np.pi)) *
-             np.exp(- (bins - mean) ** 2 / (2 * sigma ** 2)), linewidth=2, color='r')
     # plt.hist(a, bins=100, density=True, alpha=1, histtype='step', label='(mean, stddev)=('+str(mean)+', '+str(sigma*sigma)+')')
-    
-    plt.show()
 
+    X = get_truncated_normal(mean=mean, sd=sigma**2, low=0, upp=1)
+
+    x = X.rvs(10000)
+
+
+    print(x)
+    plt.hist(x, normed=True)
+
+
+    plt.show()
 
 
 def handler():
