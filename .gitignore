@@ -1,9 +1,12 @@
 .idea
 __pycache__
 
-src/constant/*
-src/constant/rds_config.py
-src/query-builder/rds_config.py
+constants
+src/main/python/simulator/constants/*
+src/main/python/simulator/constants/rds_config.py
 rds_config.py
 
 *.txt
+
+src/config
+config
