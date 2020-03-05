@@ -2,8 +2,11 @@
 __pycache__
 
 constants
-src/simulator/constants/*
-src/simulator/constants/rds_config.py
+src/main/python/simulator/constants/*
+src/main/python/simulator/constants/rds_config.py
 rds_config.py
 
 *.txt
+
+src/config
+config
