@@ -3,6 +3,7 @@ __pycache__
 
 src/constant/*
 src/constant/rds_config.py
+src/query-builder/rds_config.py
 rds_config.py
 
 *.txt
