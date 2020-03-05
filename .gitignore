@@ -6,7 +6,7 @@ src/main/python/simulator/constants/*
 src/main/python/simulator/constants/rds_config.py
 rds_config.py
 
-*.txt
+command_install.txt
 
 src/config
 config
