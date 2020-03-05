@@ -1,0 +1,9 @@
+boto3
+awscli
+pymysql
+numpy
+scipy
+matplotlib
+pyyaml
+pathlib
+pandas
