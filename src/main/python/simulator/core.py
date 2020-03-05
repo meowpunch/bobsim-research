@@ -19,4 +19,8 @@ class Simulator:
         """
         print(raw_data)
 
+    @staticmethod
+    def a(self):
+        b = 1
+        return b
 
