@@ -1,4 +1,5 @@
 # create.py
+# Create table using UI for non-programmer
 import sys
 import logging
 #from src.config.rds_config import *

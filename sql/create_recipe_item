@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS recipe_item( id INT NOT NULL AUTO_INCREMENT PRIMARY KEY ,
+        recipe_id INT NOT NULL,
+        item_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE recipe_item (recipe_id , item_id),
+        FOREIGN KEY (recipe_id) REFERENCES recipe(id) ON UPDATE CASCADE ON DELETE CASCADE,
+        FOREIGN KEY (item_id) REFERENCES item(id) ON UPDATE CASCADE ON DELETE CASCADE)
