@@ -1,6 +1,6 @@
 import logging
 import sys
-
+import pymysql.err
 import pandas as pd
 import pymysql
 import yaml
@@ -35,9 +35,27 @@ def get_connection():
         sys.exit()
 
 
-def load_query(filename):
+def load_return_query(filename):
     destination_path = 'sql/' + filename
     with open(get_destination(destination_path)) as file:
         query = file.read()
         return pd.read_sql_query(query, get_connection())
+
+
+def load_void_query(filename):
+    destination_path = 'sql/' + filename
+
+    with open(get_destination(destination_path)) as file:
+        query = file.read()
+        conn = get_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(query)
+            conn.commit()
+
+        finally:
+            conn.close()
+
+
+
 
