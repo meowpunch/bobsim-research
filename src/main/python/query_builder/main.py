@@ -6,6 +6,5 @@ def main():
     create_query_builder = CreateTable('item')
     create_query_builder.execute()
 
-
 if __name__ == '__main__':
     main()
