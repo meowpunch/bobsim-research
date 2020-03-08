@@ -1,6 +1,6 @@
 
 
-from util.db import load_query
+from util.db import load_void_query, load_return_query
 from util.s3 import list_bucket_contents
 
 
@@ -10,7 +10,9 @@ TODO : for using load_query function
         predicted result : destination_path = 'sql/creat_'
         
 """
-class CreateTable():
+
+
+class CreateTable:
 
     """
             TODO: logic comes here
@@ -40,19 +42,17 @@ class CreateTable():
         print(raw_data)
 
     def load_data(self):
-        return load_query(self.sql_filename)
+        return load_return_query(self.sql_filename)
 
     # TODO : creating table and check
     def process(self):
         try:
-            load_query(self.create_sql_filename)
+            load_void_query(self.create_sql_filename)
 
         except Exception as ex:
             print('error occur : ', ex)
 
-
     # TODO : VOID QUERY HANDLING ( because : result of create query is NonType )
-
         return self.check_data()
 
 

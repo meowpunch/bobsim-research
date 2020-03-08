@@ -35,42 +35,27 @@ def get_connection():
         sys.exit()
 
 
-def load_query(filename):
+def load_return_query(filename):
     destination_path = 'sql/' + filename
     with open(get_destination(destination_path)) as file:
-        # 변경 필요
         query = file.read()
-        # for debugging
-        print(query)
-        # if pd.read_sql_query get void query , return NonType(cause error)
-        # so, we have to check query is void query or not
+        return pd.read_sql_query(query, get_connection())
 
-        check_create = "CREATE TABLE"
-        if query.find(check_create) == -1:
-            return pd.read_sql_query(query, get_connection())
 
-        else:
-            try:
-                print('here2')
-                ## ERROR HERE!!!
-                cur = get_connection().cursor()
-                    # debugging
-                if cur.execute(query) == 0 :
-                    print("Table already exists")
+def load_void_query(filename):
+    destination_path = 'sql/' + filename
 
-                else:
-                    return cur.execute(query)
+    with open(get_destination(destination_path)) as file:
+        query = file.read()
+        conn = get_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(query)
+            conn.commit()
 
-            except Exception as err:
-                      print(err)
-                      print("Error Code:", err.errno)
-                      print("SQLSTATE", err.sqlstate)
-                      print("Message", err.msg)
+        finally:
+            conn.close()
 
-           # else:
-           #           print("Success create table!!")
 
-            finally:
-                # resources closing
-                    get_connection().commit()
-                    get_connection().close()
+
+
