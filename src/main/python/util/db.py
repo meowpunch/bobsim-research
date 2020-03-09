@@ -37,7 +37,8 @@ def get_connection():
 
 def load_query(filename):
     destination_path = 'sql/' + filename
-    with open(get_destination(destination_path)) as file:
+    # For read KOR , add encoding='utf-8'
+    with open(get_destination(destination_path), encoding='utf-8') as file:
         query = file.read()
         return query
 
