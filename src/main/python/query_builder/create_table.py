@@ -4,12 +4,6 @@ from util.db import load_void_query, load_return_query
 from util.s3 import list_bucket_contents
 
 
-"""
-TODO : for using load_query function 
-        add path :(create_) at destination_path
-        predicted result : destination_path = 'sql/creat_'
-        
-"""
 
 
 class CreateTable:
