@@ -9,6 +9,8 @@
 import numpy as np
 from scipy.stats import truncnorm
 
+from util.visualize import plot
+
 
 def get_truncated_normal(mean=0, sd=1, low=0, upp=10):
     return truncnorm(
@@ -21,21 +23,26 @@ def binarize(input_arr: np.ndarray,  threshold: float):
 
 
 def quantify(num, freq, d_type=0):
-    avg, delta = freq, 0.5
-    print(avg)
+    """
+        TODO:
+            decide d_type and delta
+            not just normal distribution.
 
-    mean, sigma = float(avg), delta*0.5
-    print(mean, sigma)
-    # a = sigma * np.random.randn(10000) + mean
-    # a = np.random.normal(mean, sigma, 10)
-    # print(a)
+        sigma = delta*x
+        x may be changed
+    """
+    avg, delta = freq, 0.5
+    mean, sigma = float(avg), delta*1
 
     x = get_truncated_normal(mean=mean, sd=sigma, low=0, upp=1)
+
+    # for visualize
+    plot([x.rvs(100000)])
+
     x = x.rvs(num)
     x_binarized = binarize(input_arr=x, threshold=0.5)
+    print(x, x_binarized)
 
-    # print(type([x, x_binarized]))
-    # visualize.plot(data=[x, x_binarized])
     return x_binarized
 
 
