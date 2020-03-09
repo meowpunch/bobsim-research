@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 
 
 def plot(data: list):
-    print(data)
-    print(len(data))
+
+    print("in plot, the number of data set ", len(data))
     data_len = len(data)
     if data_len is 1:
         plt.hist(data[0], density=True)
