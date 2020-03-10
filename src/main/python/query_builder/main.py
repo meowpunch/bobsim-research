@@ -7,7 +7,7 @@ def main():
     # select_query_builder = SelectBuilder('*', 'item', 'WHERE id!=1', 'GROUP BY sensitivity', 'LIMIT 5')
     # print(select_query_builder.execute())
     #
-    insert_query_builder = InsertBuilder('user_item', (1, 3))
+    insert_query_builder = InsertBuilder('user_item', [(1, 4), (1, 5)])
     insert_query_builder.execute()
 
 

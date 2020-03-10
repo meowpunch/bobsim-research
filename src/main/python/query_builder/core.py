@@ -80,19 +80,24 @@ class InsertBuilder(VoidQueryBuilder):
         #  1. Store sql 2. manipulate sql 3. exec sql 4. check
         self.store_query(self.insert_table_name)  # 1
 
-        mani_query = self.query.format(self.input_data)  # 2
+        self.str_data = ', '.join(map(str, self.input_data))
 
+        #mani_query = self.query.format(self.input_data)  # 2
+        mani_query = self.query.format(self.str_data)  # 2
         self.exec_query(mani_query)  # 3
 
-        return self.check_insert()  # 4
-
-    def check_insert(self):
-        # Load sql  SELECT {att_name} FROM {table_name} WHERE { ~ }
-        check_query = load_query('check_insert_{}.sql'.format(self.table_name))
-
-        # TODO: ADD input_data to WHERE clause ( need to modify )
-        mani_query = check_query % self.input_data
-        return exec_return_query(mani_query)
+    #     return self.check_insert()  # 4
+    #
+    # def check_insert(self):
+    #     # Load sql  SELECT {att_name} FROM {table_name} WHERE { ~ }
+    #     check_query = load_query('check_insert_{}.sql'.format(self.table_name))
+    #
+    #     # TODO: ADD input_data to WHERE clause ( need to modify )
+    #     self.str_data = ', '.join(map(str, self.input_data))
+    #
+    #     # mani_query = self.query.format(self.input_data)  # 2
+    #     mani_query = check_query % self.str_data  # 2
+    #     return exec_return_query(mani_query)
 
 # QueryBuilder-VoidQueryBuilder-InsertBuilder
 class DeleteBuilder(VoidQueryBuilder):
