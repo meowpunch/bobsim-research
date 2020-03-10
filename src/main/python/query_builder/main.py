@@ -4,14 +4,15 @@ from util.db import exec_return_query
 
 
 def main():
-    select_query_builder = SelectBuilder('*', 'item', 'WHERE id!=1', 'GROUP BY sensitivity', 'LIMIT 5')
-    print(select_query_builder.execute())
+    # select_query_builder = SelectBuilder('*', 'item', 'WHERE id!=1', 'GROUP BY sensitivity', 'LIMIT 5')
+    # print(select_query_builder.execute())
+    #
+    insert_query_builder = InsertBuilder('user_item', (1, 3))
+    insert_query_builder.execute()
 
 
 if __name__ == '__main__':
-
     main()
-
 
 """
 
@@ -31,4 +32,3 @@ if __name__ == '__main__':
                           "LIMIT": None,
                           "UPDATE_VALUE": None,
                           "OFFSET": None}"""
-
