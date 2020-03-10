@@ -191,18 +191,17 @@ class SelectBuilder(ReturnQueryBuilder):
     # TODO : add difficulty att in recipe table
 
         # extract from where_clause to offset
-        def func(x):
-            b = x[1]
-            return b
-        iterator = list(self.init_dict.items())[2:]
 
-        rest_data = list(map(lambda x: func(x), iterator))
+        #iterator = list(self.init_dict.values())[2:]
+        #rest_data = list(map(lambda x: x, iterator))
+
+        rest_data= alter_type_dict_to_list(self.init_dict, 2, len(self.init_dict))
 
         first_mani_query= self.query % (self.init_dict["ATT_NAME"], self.init_dict["TABLE_NAME"])
-        clean_data = list(filter(None.__ne__, rest_data)) # remove None
+        clean_data = remove_none(rest_data)  # remove None & dict->list
         print(first_mani_query)
         print(clean_data)
-        str_rest_data= '  '.join(map(str, clean_data)) # list -> str
+        str_rest_data= '  '.join(map(str, clean_data))  # list -> str
 
         print(str_rest_data)
 
@@ -212,9 +211,21 @@ class SelectBuilder(ReturnQueryBuilder):
         return exec_return_query(second_mani_query)
 
     """
-        TODO: 1. make func (Romove None, list-> str )
+        TODO: 1. make func (dict->list, Romove None, list-> str )
               2. make func (list merge ) 
               3. modify classes ( create , insert , delete )
     
     """
 
+
+def alter_type_dict_to_list(data=dict, start_interval=int, end_interval=int):
+    # dict.value() -> list
+    iterator = list(data.values())[start_interval:end_interval]
+    list_data = list(map(lambda x: x, iterator))
+    return list_data
+
+
+# def remove_none(data=list):
+#     clean_data = list(filter(partial(is_not, None), data))
+#     # list(filter(None.__ne__, data))
+#     return clean_data
