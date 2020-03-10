@@ -1,6 +1,6 @@
 
 
-from util.db import load_void_query, load_return_query
+from util.db import load_query,exec_void_query,exec_return_query
 from util.s3 import list_bucket_contents
 
 
@@ -36,12 +36,12 @@ class CreateTable:
         print(raw_data)
 
     def load_data(self):
-        return load_return_query(self.sql_filename)
+        return load_query(self.sql_filename)
 
     # TODO : creating table and check
     def process(self):
         try:
-            load_void_query(self.create_sql_filename)
+            load_query(self.create_sql_filename)
 
         except Exception as ex:
             print('error occur : ', ex)
