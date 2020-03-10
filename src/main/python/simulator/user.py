@@ -1,24 +1,26 @@
 class User:
-
-    # TODO: define user behavior
     """
-        1. sign in
+        TODO: define user behavior
 
-        2. login (landing)
+        0. sign in
 
-        3. renew food materials in fridge
+        1. login (landing)
+
+        2. renew food materials in fridge
         (capture their fridge or receipt)
 
-        4. search menus
+        3. search menus
         (we give recommended menu and get user's feedback)
 
-        5. buy materials
+        4. buy materials
         (we give recommended food materials and get user's feedback)
+
     """
 
     def __init__(self):
         # TODO: user's features for recommender system
         self.id = -1
+        self.b_type = 0  # driven from user's behavior
 
     # def process(self):
     #     # TODO: user's behavior process not like below sequentially.
