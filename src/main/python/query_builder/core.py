@@ -4,19 +4,31 @@ from util.s3 import list_bucket_contents
 from abc import *
 
 
-class QueryBuilder(metaclass = ABCMeta):
+class QueryBuilder(metaclass=ABCMeta):
 
     def __init__(self, table_name):
         self.table_name = table_name
         self.query = None
-        # '{}'.format(table_name)
+        self.init_dict = {"TABLE_NAME": None,
+                          "ATT_NAME": None,
+                          "INPUT_VALUE": None,
+                          "WHERE": None,
+                          "GROUP_BY": None,
+                          "ORDER_BY": None,
+                          "HAVING": None,
+                          "LIMIT": None,
+                          "UPDATE_VALUE": None,
+                          "OFFSET": None}
 
     def store_query(self, sql_filename):
         self.query = load_query(sql_filename)
 
+
+
     @abstractmethod
     def exec_query(self, query):
         pass
+
 
 class VoidQueryBuilder(QueryBuilder):
 
@@ -41,7 +53,7 @@ class CreateBuilder(VoidQueryBuilder):
         self.process()
 
     def process(self):
-        # TODO: 1. Store sql 2. Exec stored sql 3. check
+        #  1. Store sql 2. Exec stored sql 3. check
 
         self.store_query(self.create_table_name)
         self.exec_query(self.query)
@@ -55,7 +67,7 @@ class CreateBuilder(VoidQueryBuilder):
 
 # QueryBuilder-VoidQueryBuilder-InsertBuilder
 class InsertBuilder(VoidQueryBuilder):
-
+    # InsertBuilder('table_name', 'input_data')
     def __init__(self, table_name, input_data):
         super().__init__(table_name)
         self.insert_table_name = 'insert_{}.sql'.format(table_name)
@@ -65,81 +77,144 @@ class InsertBuilder(VoidQueryBuilder):
         self.process()
 
     def process(self):
-        # TODO: 1. Store sql 2. manipulate sql 3. exec sql 4. check
+        #  1. Store sql 2. manipulate sql 3. exec sql 4. check
         self.store_query(self.insert_table_name)  # 1
 
         mani_query = self.query.format(self.input_data)  # 2
 
-        self.exec_query(mani_query)
+        self.exec_query(mani_query)  # 3
 
-        return self.check_insert()
+        return self.check_insert()  # 4
 
     def check_insert(self):
-        check_query_novalue = load_query('select_{}.sql'.format(self.table_name))
-        # TODO : unpacking tuple & packing tuple // ((1,2,3)) -> (1,2,3)
+        # Load sql  SELECT {att_name} FROM {table_name} WHERE { ~ }
+        check_query = load_query('check_insert_{}.sql'.format(self.table_name))
 
-        mani_data= check_query_novalue % self.input_data
-        return exec_return_query(mani_data)
+        # TODO: ADD input_data to WHERE clause ( need to modify )
+        mani_query = check_query % self.input_data
+        return exec_return_query(mani_query)
 
-
-
-
-"""
-
-    def load_create_query(self):
-        return
-
-
-    def load_return_data(self, sql_name):
-        query = load_query(sql_name)
-
-        return exec_return_query(query)
-
-    def load_void_data(self, name):
-        try:
-            query = load_query(name)
-            exec_void_query(name)
-
-        except Exception as ex:
-            print('error occur : ', ex)
-
-    def check_data(self, sql_name):
-        raw_data = self.load_return_data(sql_name)
-        print(raw_data)
-
-
-class CreateTable(QueryBuilder):
-    # get Table name & switch to 'create_' form
-    def __init__(self, table_name):
-        self.create_table_name = 'create_{}.sql'.format(table_name)
-
+# QueryBuilder-VoidQueryBuilder-InsertBuilder
+class DeleteBuilder(VoidQueryBuilder):
+    # DeleteBuilder('table_name', 'input_data'or None)
+    def __init__(self, table_name, input_data):
         super().__init__(table_name)
-
-
-
+        self.delete_table_name = 'delete_{}.sql'.format(table_name)
+        self.input_data = input_data
 
     def execute(self):
-        # void data executing
-        QueryBuilder.load_void_data(self.create_table_name)
-        # check void data frame
-        return QueryBuilder.check_data(self.check_sql_filename)
+        self.process()
+
+    def process(self):
+        # TODO: 1. Store sql 2. manipulate sql 3. exec sql 4. check
+        self.store_query(self.delete_table_name)  # 1
+
+        mani_query = self.query.format(self.input_data)  # 2
+
+        self.exec_query(mani_query)  # 3
+
+        return self.check_delete()  # 4
+
+    def check_delete(self):
+        check_query = load_query('check_delete_{}.sql'.format(self.table_name))
+
+        # Load sql  SELECT {} FROM {self.table_name} {} {} {}
+
+        mani_query = check_query % ('*', '')
+        print(mani_query)
+        return exec_return_query(mani_query)
+
+    # TODO : After make a SeleckBuilder , modify all of chekck func
+
+# QueryBuilder-VoidQueryBuilder-UpdatetBuilder
+class UpdateBuilder(VoidQueryBuilder):
+    #  UpdateBuilder('table_name', 'assignment_list', 'where_condition' '
+    def __init__(self, table_name, assignment_list, where_condition, order_con):
+        super().__init__(table_name)
+        self.update_table_name= 'update_{}.sql'.format(table_name)
+        self.assignment_list = assignment_list
+        self.where_condition = where_condition
+
+    def execute(self):
+        self.process()
+
+    def process(self):
+        """
+        TODO :  1. Store sql
+                2. check whether where_condition is null
+                    ( input : ' ' shape ) so, do not have to check!
+                3. Manipulate sql
+                4. exec sql
+                5. check data in db
+        """
+
+        self.store_query(self.update_table_name)  # 1
+
+        mani_query = self.query.format(self.assignment_list, self.where_condition)  # 3
+
+        self.exec_query(mani_query)
+
+        return self.check_update()
+
+    def check_update(self):
+        # Whether data in table
+        pass
 
 
+class SelectBuilder(ReturnQueryBuilder):
 
- # TODO: make new Insert table class
-class InsertTable(QueryBuilder):
-    # get Table name & switch to 'insert_' form
-    def __init__(self, table_name, input_data ):
+    def __init__(self, att_name, table_name, where_clause=None,
+                     group_by=None, having=None, order_by=None,
+                     limit=None, offset=None):
+        super().__init__(table_name)
 
-        self.insert_table_name = 'insert_{}.sql'.format(table_name)
-        # input_data_shape : tuple type , tuple of tuple type
-        self.input_data = input_data # tuple
-        super.__init__(table_name)
+        self.init_dict.update({"TABLE_NAME": table_name,
+                               "ATT_NAME": att_name,
+                               "WHERE": where_clause,
+                               "GROUP_BY": group_by,
+                               "HAVING": having,
+                               "ORDER_BY": order_by,
+                               "LIMIT": limit,
+                               "OFFSET": offset})
 
-"""
+    def execute(self):
+        return self.process()
 
+    def process(self):
+        """
+        # TODO : 1. Store select sql
+                 2. manipulate sql
+                 3. exec sql
+        :return: select query data
+        """
+        self.store_query('select.sql')  # 1
+    # TODO : add difficulty att in recipe table
 
+        # extract from where_clause to offset
+        def func(x):
+            b = x[1]
+            return b
+        iterator = list(self.init_dict.items())[2:]
 
+        rest_data = list(map(lambda x: func(x), iterator))
 
+        first_mani_query= self.query % (self.init_dict["ATT_NAME"], self.init_dict["TABLE_NAME"])
+        clean_data = list(filter(None.__ne__, rest_data)) # remove None
+        print(first_mani_query)
+        print(clean_data)
+        str_rest_data= '  '.join(map(str, clean_data)) # list -> str
 
+        print(str_rest_data)
+
+        second_mani_query = first_mani_query + ' ' + str_rest_data
+
+        print(second_mani_query)
+        return exec_return_query(second_mani_query)
+
+    """
+        TODO: 1. make func (Romove None, list-> str )
+              2. make func (list merge ) 
+              3. modify classes ( create , insert , delete )
+    
+    """
 
