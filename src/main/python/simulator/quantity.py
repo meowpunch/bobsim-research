@@ -31,21 +31,16 @@ def quantify(num, freq, d_type=0):
         sigma = delta*x
         x may be changed
     """
-    print("let's quantify")
-
     avg, delta = freq, 0.5
     mean, sigma = float(avg), delta*0.8
 
     x = get_truncated_normal(mean=mean, sd=sigma, low=0, upp=1)
 
-    # for visualize
-    # plot([x.rvs(100000)])
-
     x = x.rvs(num)
     x_binarized = binarize(input_arr=x, threshold=0.5)
 
-    # for checking
-    # print(x, x_binarized)
+    # for visualize
+    # plot([x.rvs(100000)])
 
     return x_binarized
 

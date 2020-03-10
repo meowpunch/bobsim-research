@@ -1,3 +1,6 @@
+from query_builder.core import InsertBuilder
+
+
 class User:
     """
         TODO: define user behavior
@@ -40,8 +43,11 @@ class User:
         # TODO: select data in user table
         return print("ID: %d login" % self.id)
 
-    def renew_fridge(self):
+    @staticmethod
+    def renew_fridge(data):
         # TODO: update or insert data in user_item table
+        i_query = InsertBuilder('user_table', (,),(,))
+
         return print("ID: %d renew fridge" % self.id)
 
     def search_menu(self):

@@ -1,3 +1,8 @@
+"""
+    TODO: may be structure Visualizer class in order to visualize only one time.
+"""
+
+
 import matplotlib.pyplot as plt
 
 
