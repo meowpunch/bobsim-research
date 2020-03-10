@@ -3,26 +3,36 @@ from query_builder.core import InsertBuilder
 
 class User:
     """
-        TODO: define user behavior
+        Q)
+            Is it right to make user class?
+            If we make virtual user instants for simulation, it can be expensive (mem & time)
+            What are the advantages of creating an instant.
+            Is it worth it?
 
+        TODO:
+            define user behavior.
+            Moreover, we can define behavior patterns. (schedule)
+
+        - behavior type
         0. sign in
-
         1. login (landing)
+        2. renew food materials in fridge (capture their fridge or receipt)
+        3. search menus (we give recommended menu and get user's feedback)
+        4. buy materials (we give recommended food materials and get user's feedback)
 
-        2. renew food materials in fridge
-        (capture their fridge or receipt)
-
-        3. search menus
-        (we give recommended menu and get user's feedback)
-
-        4. buy materials
-        (we give recommended food materials and get user's feedback)
+        - behavior pattern
+        0. 0 -> 2 (sign in -> renew fridge)
 
     """
 
-    def __init__(self):
-        # TODO: user's features for recommender system
-        self.id = -1
+    def __init__(self, user_id=0):
+        """
+            TODO:
+                if user_id is 0, new user. (create user)
+                else, existing user. (select user)
+                user's features for recommender system
+        """
+        self.id = user_id
         self.b_type = 0  # driven from user's behavior
 
     # def process(self):
@@ -43,11 +53,10 @@ class User:
         # TODO: select data in user table
         return print("ID: %d login" % self.id)
 
-    @staticmethod
-    def renew_fridge(data):
+    def renew_fridge(self, data: list):
         # TODO: update or insert data in user_item table
-        i_query = InsertBuilder('user_table', (,),(,))
-
+        iqb = InsertBuilder('user_table', data)
+        iqb.execute()
         return print("ID: %d renew fridge" % self.id)
 
     def search_menu(self):

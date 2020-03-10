@@ -50,16 +50,16 @@ class Simulator:
             1. create or select virtual user.
                 if there is already id, retrieve user.
             2. set user's behavior type and play (check comments in User class)
-            3. extract data ( feature? )
+            3. generate data ( feature? )
             4. save raw_data(json) to S3
 
         :return:
         """
         self.play_user()
-        self.extract_data()
+        self.generate_data()
         # self.save_raw_data(self.dict_data)
 
-    def extract_data(self):
+    def generate_data(self):
         """
         TODO:
             by user's behavior
