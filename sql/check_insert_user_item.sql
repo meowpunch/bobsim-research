@@ -1,1 +1,1 @@
-SELECT * FROM user_item WHERE user_id=%d AND item_id=%d
+SELECT * FROM user_item WHERE user_id=%s AND item_id=%s
