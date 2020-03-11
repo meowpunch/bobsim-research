@@ -1,3 +1,4 @@
+from util.alter import *
 from util.db import exec_return_query, exec_void_query, load_query
 from util.s3 import list_bucket_contents
 
@@ -6,12 +7,15 @@ from abc import *
 
 class QueryBuilder(metaclass=ABCMeta):
 
-    def __init__(self, table_name):
-        self.table_name = table_name
-        self.query = None
+    # def __init__(self, table_name):
+    def __init__(self, table_name, att_name: str = None,
+                 insert_value: str = None, update_value: str = None,
+                 where_clause: str = None, group_by=None,
+                 having=None, order_by: str = None,
+                 limit: int = None, offset: int = None):
         self.init_dict = {"TABLE_NAME": None,
                           "ATT_NAME": None,
-                          "INPUT_VALUE": None,
+                          "INSERT_VALUE": None,
                           "WHERE": None,
                           "GROUP_BY": None,
                           "ORDER_BY": None,
@@ -20,10 +24,21 @@ class QueryBuilder(metaclass=ABCMeta):
                           "UPDATE_VALUE": None,
                           "OFFSET": None}
 
+        self.init_dict.update({"TABLE_NAME": table_name,
+                               "ATT_NAME": att_name,
+                               "WHERE": where_clause,
+                               "GROUP_BY": group_by,
+                               "HAVING": having,
+                               "ORDER_BY": order_by,
+                               "LIMIT": limit,
+                               "OFFSET": offset,
+                               "UPDATE_VALUE": update_value,
+                               "INSERT_VALUE": insert_value})
+        # self.table_name = table_name
+        self.query = None
+
     def store_query(self, sql_filename):
         self.query = load_query(sql_filename)
-
-
 
     @abstractmethod
     def exec_query(self, query):
@@ -82,7 +97,7 @@ class InsertBuilder(VoidQueryBuilder):
 
         self.str_data = ', '.join(map(str, self.input_data))
 
-        #mani_query = self.query.format(self.input_data)  # 2
+        # mani_query = self.query.format(self.input_data)  # 2
         mani_query = self.query.format(self.str_data)  # 2
         self.exec_query(mani_query)  # 3
 
@@ -98,6 +113,7 @@ class InsertBuilder(VoidQueryBuilder):
     #     # mani_query = self.query.format(self.input_data)  # 2
     #     mani_query = check_query % self.str_data  # 2
     #     return exec_return_query(mani_query)
+
 
 # QueryBuilder-VoidQueryBuilder-InsertBuilder
 class DeleteBuilder(VoidQueryBuilder):
@@ -131,21 +147,22 @@ class DeleteBuilder(VoidQueryBuilder):
 
     # TODO : After make a SeleckBuilder , modify all of chekck func
 
+
 # QueryBuilder-VoidQueryBuilder-UpdatetBuilder
 class UpdateBuilder(VoidQueryBuilder):
-    #  UpdateBuilder('table_name', 'assignment_list', 'where_condition' '
-    def __init__(self, table_name, assignment_list, where_condition, order_con):
-        super().__init__(table_name)
-        self.update_table_name= 'update_{}.sql'.format(table_name)
-        self.assignment_list = assignment_list
-        self.where_condition = where_condition
+
+    # def __init__(self, table_name, assignment_list, where_condition, order_con):
+    #     super().__init__(table_name)
+    #     self.update_table_name = 'update_{}.sql'.format(table_name)
+    #     self.assignment_list = assignment_list
+    #     self.where_condition = where_condition
 
     def execute(self):
         self.process()
 
     def process(self):
         """
-        TODO :  1. Store sql
+                1. Store sql
                 2. check whether where_condition is null
                     ( input : ' ' shape ) so, do not have to check!
                 3. Manipulate sql
@@ -153,84 +170,80 @@ class UpdateBuilder(VoidQueryBuilder):
                 5. check data in db
         """
 
-        self.store_query(self.update_table_name)  # 1
+        # self.store_query(self.update_table_name)  # 1
 
-        mani_query = self.query.format(self.assignment_list, self.where_condition)  # 3
+        self.store_query('update.sql')  # 1
 
-        self.exec_query(mani_query)
+        completed_query = self.manipulate(self.query)
+
+        self.exec_query(completed_query)
 
         return self.check_update()
 
+    def manipulate(self, query):
+        if bool(self.init_dict.get("WHERE")) == 1:
+            rest_data = self.init_dict["WHERE"]
+        else:
+            rest_data = str()
+
+        first_mani_query = query % (self.init_dict["TABLE_NAME"], self.init_dict["UPDATE_VALUE"])
+
+        second_mani_query = combine_sentence(first_mani_query, rest_data)
+
+        return second_mani_query
+
+    def exec_query(self, query):
+        exec_void_query(query)
+
     def check_update(self):
-        # Whether data in table
-        pass
+        if bool(self.init_dict.get("WHERE")) == 1:
+            check_update_query = SelectBuilder(self.init_dict["TABLE_NAME"], att_name='*',
+                                               insert_value=self.init_dict["INSERT_VALUE"],
+                                               where_clause=self.init_dict["WHERE"] + " AND " + self.init_dict["UPDATE_VALUE"],
+                                               )
+        else:
+            check_update_query = SelectBuilder(self.init_dict["TABLE_NAME"], att_name='*',
+                                               insert_value=self.init_dict["INSERT_VALUE"],
+                                               where_clause="WHERE", update_value=self.init_dict["UPDATE_VALUE"])
+        print(check_update_query.execute())
 
 
 class SelectBuilder(ReturnQueryBuilder):
-
-    def __init__(self, att_name, table_name, where_clause=None,
-                     group_by=None, having=None, order_by=None,
-                     limit=None, offset=None):
-        super().__init__(table_name)
-
-        self.init_dict.update({"TABLE_NAME": table_name,
-                               "ATT_NAME": att_name,
-                               "WHERE": where_clause,
-                               "GROUP_BY": group_by,
-                               "HAVING": having,
-                               "ORDER_BY": order_by,
-                               "LIMIT": limit,
-                               "OFFSET": offset})
 
     def execute(self):
         return self.process()
 
     def process(self):
         """
-        # TODO : 1. Store select sql
+                 1. Store select sql
                  2. manipulate sql
                  3. exec sql
-        :return: select query data
         """
         self.store_query('select.sql')  # 1
-    # TODO : add difficulty att in recipe table
+        # TODO : add difficulty att in recipe table
+        query = self.manipulate(self.query)  # 2
 
-        # extract from where_clause to offset
+        return self.exec_query(query)
 
-        #iterator = list(self.init_dict.values())[2:]
-        #rest_data = list(map(lambda x: x, iterator))
+    def manipulate(self, query):  # extract from where_clause to offset
+        """
+            1.dict -> list
+            2.add att,table name to 'SELECT {} FROM {}' sql file
+            3.remove None & list -> str
+            4.combine
+        """
 
-        rest_data= alter_type_dict_to_list(self.init_dict, 2, len(self.init_dict))
+        rest_data = alter_type_dict_to_list(self.init_dict, 2, len(self.init_dict))
 
-        first_mani_query= self.query % (self.init_dict["ATT_NAME"], self.init_dict["TABLE_NAME"])
-        clean_data = remove_none(rest_data)  # remove None & dict->list
-        print(first_mani_query)
-        print(clean_data)
-        str_rest_data= '  '.join(map(str, clean_data))  # list -> str
+        first_mani_query = query % (self.init_dict["ATT_NAME"], self.init_dict["TABLE_NAME"])
 
-        print(str_rest_data)
+        clean_data = remove_none(rest_data)
+
+        str_rest_data = alter_type_list_to_str(clean_data)
 
         second_mani_query = first_mani_query + ' ' + str_rest_data
 
-        print(second_mani_query)
-        return exec_return_query(second_mani_query)
+        return second_mani_query
 
-    """
-        TODO: 1. make func (dict->list, Romove None, list-> str )
-              2. make func (list merge ) 
-              3. modify classes ( create , insert , delete )
-    
-    """
-
-
-def alter_type_dict_to_list(data=dict, start_interval=int, end_interval=int):
-    # dict.value() -> list
-    iterator = list(data.values())[start_interval:end_interval]
-    list_data = list(map(lambda x: x, iterator))
-    return list_data
-
-
-# def remove_none(data=list):
-#     clean_data = list(filter(partial(is_not, None), data))
-#     # list(filter(None.__ne__, data))
-#     return clean_data
+    def exec_query(self, query):
+        return exec_return_query(query)
