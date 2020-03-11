@@ -11,7 +11,10 @@ def list_bucket_contents():
 
 def save_json(directory, filename, data):
     s3 = boto3.resource('s3')
-    serialized_data = json.dumps(data)
+    serialized_data = json.dumps(data, ensure_ascii=False)
 
     key = directory + "/" + filename
     s3.Object(bucket_name='production-bobsim', key=key).put(Body=serialized_data)
+
+    return s3.Object(bucket_name='production-bobsim', key=key).get()['Body'].read().decode('utf-8')
+

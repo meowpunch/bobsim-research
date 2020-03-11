@@ -19,13 +19,13 @@ def mask_by_quantity(data, q_data):
     """
     sub_dp = data.drop(["item_frequency"], axis=1)
     tmp_dp = pd.concat([sub_dp, q_data], axis=1)
-    print(tmp_dp)
 
     # TODO: Which is better choice?
     # mask = (tmp_dp.quantity == True)
     # tmp_dp_1 = tmp_dp[mask]
-    mask = tmp_dp.apply(lambda x: x.quantity is True, axis=1)
+    mask = tmp_dp.apply(lambda x: x.quantity > 0, axis=1)
     return tmp_dp[mask]
+
 
 def get_truncated_normal(mean=0, sd=1, low=0, upp=10):
     return truncnorm(
@@ -57,7 +57,7 @@ def analyze(num, freq, d_type=0):
     # for visualize
     # plot([x.rvs(100000)])
 
-    return bool(x_binarized)
+    return int(x_binarized)
 
 
 # core function
@@ -67,8 +67,6 @@ def quantify(data):
             1. generate data from statistic (analyze)
             2. filter by quantity (True)
     """
-    print(data)
-
     q_data = data.apply(lambda x: pd.Series({'quantity': analyze(
         num=1,
         freq=x.item_frequency,

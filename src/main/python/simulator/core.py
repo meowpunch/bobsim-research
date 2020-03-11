@@ -31,7 +31,8 @@ class Simulator:
         # raw data form
         self.json_filename = 'form.json'
         self.dict_data = self.load_data_form()
-        self.type = 0
+        # TODO: for multi user, this should be changed
+        self.user = None
 
         # self.user_num = 1
 
@@ -58,15 +59,11 @@ class Simulator:
 
         :return:
         """
-        vu = User(1)
+        self.user = User(1)
+        self.user.capture_fridge(self.fridge_image)
 
-        v_fridge = vu.capture_fridge(self.fridge_image)
-
-        self.generate_extra(fridge_image=v_fridge)
-        # self.play_user()
-        # self.generate_data()
-
-        # self.save_raw_data(self.dict_data)
+        raw_data = self.raw_data_dic()
+        self.save_raw_data(raw_data)
 
     def fridge_image(self):
         """
@@ -89,37 +86,47 @@ class Simulator:
 
         return fridge
 
-    @staticmethod
-    def generate_extra(fridge_image):
-        """
-        TODO:
-            ...
-            type 2:
-            find menu and cal cost
-            ...
+    # @staticmethod
+    # def generate_extra(fridge_image):
+    #     """
+    #     TODO:
+    #         ...
+    #         type 2:
+    #         find menu and cal cost
+    #         ...
+    #
+    #     :return: raw data
+    #     """
+    #     menu_cost = cost_menu(fridge=fridge_image)
+    #     print(menu_cost)
+    #     return menu_cost
 
-        :return: raw data
+    def raw_data_dic(self):
         """
-        menu_cost = cost_menu(fridge=fridge_image)
-        print(menu_cost)
-        return menu_cost
+            TODO: If feature is more complex, structure maybe changed.
+        """
+        raw_data = dict()
+        f_fridge = self.user.fridge.drop(['id'], axis=1)
+        f_menu = self.user.menu.drop(['id'], axis=1)
+        raw_data["id"] = self.user.id
+        raw_data["gender"] = self.user.gender
+        raw_data["ingredients"] = f_fridge.to_dict('records')
+        raw_data["menu"] = f_menu.to_dict('records')
+        return raw_data
 
     @staticmethod
     def play_user():
         """
-        TODO: user's behavior process not like below sequentially.
+        TODO: by user behavior pattern, execute various routines
         :return:
         """
-
-        print("-----playing user-----")
-        vu = User()  # virtual user
-        vu.login()
-        vu.search_menu()
+        pass
 
     @staticmethod
     def save_raw_data(dict_data):
         """
-            TODO: save raw_data
+            1. stamp time
+            2. save raw_data
         :return: false or true
         """
         now = datetime.datetime.now()

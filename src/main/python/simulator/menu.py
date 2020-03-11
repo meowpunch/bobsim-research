@@ -11,6 +11,8 @@ def mask_by_count(item_count, recipe_cost, threshold=5):
             the number of ingredients that user doesn't have
             for recipe's diversity,
             proportion of ingredients that user doesn't have
+
+            Q) which will affect users more.
     """
     rcc = pd.merge(item_count, recipe_cost)
     mask = rcc.apply(lambda x: x.item_count < threshold, axis=1)
@@ -32,15 +34,24 @@ def join_query(recipe_item, user_item):
     )
 
 
+def load_recipe_item():
+    sqb = SelectBuilder(table_name="recipe_item", att_name="recipe_id, item_id", where_clause="")
+    return sqb.execute()
+
+
 def load_recipe():
-    sqb = SelectBuilder(table_name="recipe_item", att_name="recipe_id, item_id")
+    """
+        if we only need recipe_id, abandon this func
+    """
+    sqb = SelectBuilder(table_name="recipe", att_name="id, name, season_id")
     return sqb.execute()
 
 
 # core function
 def cost_menu(fridge: pd.core.frame.DataFrame):
     """
-        TODO:
+        TODO: After we implement queryBuilder, code will be more cleaned
+
             1. load recipe_item table
             2. select possible menu from recipe_item table.
             3. calculate menu's cost
@@ -48,12 +59,17 @@ def cost_menu(fridge: pd.core.frame.DataFrame):
 
         regard 'recipe' as 'menu'
     """
-    recipe_corpus = load_recipe()
+    recipe_corpus = load_recipe_item()
 
     recipe_group = join_query(recipe_corpus, fridge).groupby("recipe_id")
 
     # TODO: mask after cost vs cost after mask(current)
     item_count = recipe_group.apply(lambda x: x.price.isnull().sum()).reset_index(name="item_count")
     recipe_cost = recipe_group.apply(lambda x: x.price.sum()).reset_index(name="cost")
-    return mask_by_count(item_count, recipe_cost)
 
+    # TODO: Using queryBuilder, make code more clean.
+    return pd.merge(load_recipe(),
+                    mask_by_count(item_count, recipe_cost),
+                    how="inner", left_on="id", right_on="recipe_id"
+                    ) \
+        .drop(['recipe_id'], axis=1)

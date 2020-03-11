@@ -1,4 +1,5 @@
 from query_builder.core import InsertBuilder
+from simulator.menu import cost_menu
 
 
 class User:
@@ -33,7 +34,10 @@ class User:
                 user's features for recommender system
         """
         self.id = user_id
+        self.gender = 3
         self.b_type = 0  # driven from user's behavior
+        self.fridge = None
+        self.menu = None
 
     # def process(self):
     #     # TODO: user's behavior process not like below sequentially.
@@ -55,16 +59,21 @@ class User:
 
     def capture_fridge(self, fridge_image):
         """
-        TODO: update or insert virtual in user_item table
+        TODO:
+            update or insert virtual in user_item table
+            change location of cost_menu function.
         """
-        fridge = fridge_image()
+        self.fridge = fridge_image()
+        self.menu = cost_menu(self.fridge)
         # iqb = InsertBuilder('user_table', fridge)
         # iqb.execute()
 
         print("\n\n------user's behavior------\n")
         print("ID: %d capture fridge" % self.id)
-        print(fridge)
-        return fridge
+        print(self.fridge)
+        print("\nprobable menu & cost")
+        print(self.menu)
+        return self.fridge
 
     def search_menu(self):
         # TODO: join btw user_item table & recipe_item table
