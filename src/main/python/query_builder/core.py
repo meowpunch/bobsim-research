@@ -9,31 +9,32 @@ class QueryBuilder(metaclass=ABCMeta):
 
     # def __init__(self, table_name):
     def __init__(self, table_name, att_name: str = None,
-                 insert_value: str = None, update_value: str = None,
-                 where_clause: str = None, group_by=None,
+                 value: str = None, where_clause: str = None, and_test=None,
+                 group_by=None,
                  having=None, order_by: str = None,
                  limit: int = None, offset: int = None):
         self.init_dict = {"TABLE_NAME": None,
                           "ATT_NAME": None,
-                          "INSERT_VALUE": None,
+                          "VALUE": None,
                           "WHERE": None,
+                          "AND": None,
                           "GROUP_BY": None,
                           "ORDER_BY": None,
                           "HAVING": None,
                           "LIMIT": None,
-                          "UPDATE_VALUE": None,
                           "OFFSET": None}
 
         self.init_dict.update({"TABLE_NAME": table_name,
                                "ATT_NAME": att_name,
+                               "VALUE": value,
                                "WHERE": where_clause,
+                               "AND": and_test,
                                "GROUP_BY": group_by,
                                "HAVING": having,
                                "ORDER_BY": order_by,
                                "LIMIT": limit,
                                "OFFSET": offset,
-                               "UPDATE_VALUE": update_value,
-                               "INSERT_VALUE": insert_value})
+                               })
         # self.table_name = table_name
         self.query = None
 
@@ -83,79 +84,75 @@ class CreateBuilder(VoidQueryBuilder):
 # QueryBuilder-VoidQueryBuilder-InsertBuilder
 class InsertBuilder(VoidQueryBuilder):
     # InsertBuilder('table_name', 'input_data')
-    def __init__(self, table_name, input_data):
-        super().__init__(table_name)
-        self.insert_table_name = 'insert_{}.sql'.format(table_name)
-        self.input_data = input_data
 
     def execute(self):
         self.process()
 
     def process(self):
         #  1. Store sql 2. manipulate sql 3. exec sql 4. check
-        self.store_query(self.insert_table_name)  # 1
+        self.store_query('insert.sql')  # 1
 
-        self.str_data = ', '.join(map(str, self.input_data))
+        query = self.manipulate(self.query)
 
-        # mani_query = self.query.format(self.input_data)  # 2
-        mani_query = self.query.format(self.str_data)  # 2
-        self.exec_query(mani_query)  # 3
+        self.exec_query(query)
 
-    #     return self.check_insert()  # 4
+    #     return check_insert()
     #
     # def check_insert(self):
-    #     # Load sql  SELECT {att_name} FROM {table_name} WHERE { ~ }
-    #     check_query = load_query('check_insert_{}.sql'.format(self.table_name))
-    #
-    #     # TODO: ADD input_data to WHERE clause ( need to modify )
-    #     self.str_data = ', '.join(map(str, self.input_data))
-    #
-    #     # mani_query = self.query.format(self.input_data)  # 2
-    #     mani_query = check_query % self.str_data  # 2
-    #     return exec_return_query(mani_query)
+    #     self.init_dict["ATT"]
+    #     list(filter())
+    #     pass
+    def manipulate(self, query):
 
+        mani_query = query % self.init_dict["TABLE_NAME"], self.init_dict["ATT_NAME"],\
+                             self.init_dict["VALUE"]
+
+        return mani_query
+
+    def exec_query(self, query):
+        exec_void_query(query)
 
 # QueryBuilder-VoidQueryBuilder-InsertBuilder
 class DeleteBuilder(VoidQueryBuilder):
-    # DeleteBuilder('table_name', 'input_data'or None)
-    def __init__(self, table_name, input_data):
-        super().__init__(table_name)
-        self.delete_table_name = 'delete_{}.sql'.format(table_name)
-        self.input_data = input_data
 
     def execute(self):
         self.process()
 
     def process(self):
         # TODO: 1. Store sql 2. manipulate sql 3. exec sql 4. check
-        self.store_query(self.delete_table_name)  # 1
+        self.store_query('delete.sql')  # 1
 
-        mani_query = self.query.format(self.input_data)  # 2
+        query = self.manipulate(self.query)  # 2
 
-        self.exec_query(mani_query)  # 3
+        self.exec_query(query)  # 3
 
         return self.check_delete()  # 4
 
+    def manipulate(self, query):
+
+        first_mani_query = query % self.init_dict["TABLE_NAME"]
+
+        list_rest_data = alter_type_dict_to_list(self.init_dict, 3, len(self.init_dict))
+
+        clean_rest_data = remove_none(list_rest_data)
+
+        str_rest_data = alter_type_list_to_str(clean_rest_data)
+
+        second_mani_query = combine_sentence(first_mani_query, str_rest_data)
+
+        return second_mani_query
+
+    def exec_query(self, query):
+        exec_void_query(query)
+
     def check_delete(self):
-        check_query = load_query('check_delete_{}.sql'.format(self.table_name))
+        check_delete_query = SelectBuilder(self.init_dict["TABLE_NAME"], ' * ')
 
-        # Load sql  SELECT {} FROM {self.table_name} {} {} {}
-
-        mani_query = check_query % ('*', '')
-        print(mani_query)
-        return exec_return_query(mani_query)
-
-    # TODO : After make a SeleckBuilder , modify all of chekck func
+        print(check_delete_query.execute())
 
 
 # QueryBuilder-VoidQueryBuilder-UpdatetBuilder
 class UpdateBuilder(VoidQueryBuilder):
-
-    # def __init__(self, table_name, assignment_list, where_condition, order_con):
-    #     super().__init__(table_name)
-    #     self.update_table_name = 'update_{}.sql'.format(table_name)
-    #     self.assignment_list = assignment_list
-    #     self.where_condition = where_condition
 
     def execute(self):
         self.process()
@@ -163,32 +160,34 @@ class UpdateBuilder(VoidQueryBuilder):
     def process(self):
         """
                 1. Store sql
-                2. check whether where_condition is null
-                    ( input : ' ' shape ) so, do not have to check!
-                3. Manipulate sql
-                4. exec sql
-                5. check data in db
+                2. Manipulate sql
+                3. exec sql
+                4. check data in db
         """
-
-        # self.store_query(self.update_table_name)  # 1
 
         self.store_query('update.sql')  # 1
 
-        completed_query = self.manipulate(self.query)
+        completed_query = self.manipulate(self.query)  # 2
 
-        self.exec_query(completed_query)
+        self.exec_query(completed_query)  # 3
 
-        return self.check_update()
+        return self.check_update()  # 4
 
     def manipulate(self, query):
-        if bool(self.init_dict.get("WHERE")) == 1:
-            rest_data = self.init_dict["WHERE"]
-        else:
-            rest_data = str()
+        """
+            TODO: 1. update {table_name} set {update_value} % merge
+                  2. clean
 
-        first_mani_query = query % (self.init_dict["TABLE_NAME"], self.init_dict["UPDATE_VALUE"])
+        """
+        first_mani_query = query % (self.init_dict["TABLE_NAME"], self.init_dict["VALUE"])
 
-        second_mani_query = combine_sentence(first_mani_query, rest_data)
+        list_rest_data = alter_type_dict_to_list(self.init_dict, 3, len(self.init_dict))
+
+        clean_rest_data = remove_none(list_rest_data)
+
+        str_rest_data = alter_type_list_to_str(clean_rest_data)
+
+        second_mani_query = combine_sentence(first_mani_query, str_rest_data)
 
         return second_mani_query
 
@@ -197,14 +196,11 @@ class UpdateBuilder(VoidQueryBuilder):
 
     def check_update(self):
         if bool(self.init_dict.get("WHERE")) == 1:
-            check_update_query = SelectBuilder(self.init_dict["TABLE_NAME"], att_name='*',
-                                               insert_value=self.init_dict["INSERT_VALUE"],
-                                               where_clause=self.init_dict["WHERE"] + " AND " + self.init_dict["UPDATE_VALUE"],
-                                               )
+            check_update_query = SelectBuilder(self.init_dict["TABLE_NAME"], '*',
+                                               where_clause=self.init_dict["WHERE"]+" AND "+self.init_dict["VALUE"])
         else:
-            check_update_query = SelectBuilder(self.init_dict["TABLE_NAME"], att_name='*',
-                                               insert_value=self.init_dict["INSERT_VALUE"],
-                                               where_clause="WHERE", update_value=self.init_dict["UPDATE_VALUE"])
+            check_update_query = SelectBuilder(self.init_dict["TABLE_NAME"], '*',
+                                               where_clause="WHERE " + self.init_dict["VALUE"])
         print(check_update_query.execute())
 
 
@@ -233,7 +229,7 @@ class SelectBuilder(ReturnQueryBuilder):
             4.combine
         """
 
-        rest_data = alter_type_dict_to_list(self.init_dict, 2, len(self.init_dict))
+        rest_data = alter_type_dict_to_list(self.init_dict, 3, len(self.init_dict))
 
         first_mani_query = query % (self.init_dict["ATT_NAME"], self.init_dict["TABLE_NAME"])
 
@@ -241,7 +237,7 @@ class SelectBuilder(ReturnQueryBuilder):
 
         str_rest_data = alter_type_list_to_str(clean_data)
 
-        second_mani_query = first_mani_query + ' ' + str_rest_data
+        second_mani_query = combine_sentence(first_mani_query, str_rest_data)
 
         return second_mani_query
 

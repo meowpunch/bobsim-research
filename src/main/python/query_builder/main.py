@@ -1,4 +1,4 @@
-from query_builder.core import QueryBuilder, CreateBuilder, InsertBuilder, DeleteBuilder, SelectBuilder, UpdateBuilder
+from query_builder.core import QueryBuilder, CreateBuilder, DeleteBuilder, SelectBuilder, UpdateBuilder, InsertBuilder
 from query_builder.create_table import CreateTable
 from util.db import exec_return_query
 
@@ -7,8 +7,8 @@ def main():
     # select_query_builder = SelectBuilder('*', 'item', 'WHERE id!=1', 'GROUP BY sensitivity', 'LIMIT 5')
     # print(select_query_builder.execute())
     #
-    update_query_builder = UpdateBuilder('temptemptemp', update_value="sensitivity=0", where_clause="WHERE name= '진훈'")
-    update_query_builder.execute()
+    update_query_builder = SelectBuilder('item', '*')
+    print(update_query_builder.execute())
 
 
 if __name__ == '__main__':
