@@ -4,7 +4,7 @@ import json
 import pandas as pd
 
 from query_builder.core import SelectBuilder
-from simulator.menu import find_menu
+from simulator.menu import cost_menu
 from simulator.price import price
 from simulator.quantity import quantify
 from simulator.user import User
@@ -27,7 +27,6 @@ class Simulator:
     """
 
     def __init__(self):
-
         self.sql_filename = 'item_distribution.sql'
         # raw data form
         self.json_filename = 'form.json'
@@ -54,81 +53,56 @@ class Simulator:
             1. create or select virtual user.
                 if there is already id, retrieve user.
             2. set user's behavior type and play (check comments in User class)
-            3. generate data ( feature? )
+            3. generate extra data ( feature? )
             4. save raw_data(json) to S3
 
         :return:
         """
-        self.play_user()
-        self.generate_data()
+        vu = User(1)
+
+        v_fridge = vu.capture_fridge(self.fridge_image)
+
+        self.generate_extra(fridge_image=v_fridge)
+        # self.play_user()
+        # self.generate_data()
+
         # self.save_raw_data(self.dict_data)
 
-    def generate_data(self):
+    def fridge_image(self):
+        """
+        GENERATE VIRTUAL IMAGE OF USER'S FRIDGE
+            TODO:
+                1. load data and filter dirty data.
+                2. quantify
+                3. price
+        :return: fridge image
+        """
+        td = self.load_data()
+        mask = td.apply(lambda x:
+                        x.average is not 0 and
+                        x.delta is not 0, axis=1)
+        fd = td[mask]
+
+        qd = quantify(fd)
+
+        fridge = price(qd)
+
+        return fridge
+
+    @staticmethod
+    def generate_extra(fridge_image):
         """
         TODO:
-            by user's behavior
-            type 0
-            1. just user profile
-            type 1
-            1. load data (join query)
-            2. quantify
-            3. price
-            4. find menu and cal cost
+            ...
+            type 2:
+            find menu and cal cost
+            ...
+
         :return: raw data
         """
-        total_data = self.load_data()
-        partial_data = total_data.head(10)
-        print("partial data (2) \n", partial_data)
-
-        """
-        quantify
-        """
-        q_data = partial_data.apply(lambda x: pd.Series({'quantity': quantify(
-                num=1,
-                freq=x.item_frequency,
-                d_type=0,
-            )}), axis=1)
-        # for checking
-        print(q_data)
-
-        # replace
-        tmp_dp = partial_data.assign(item_frequency=q_data['quantity'])
-        tmp_dp = tmp_dp.rename(columns={"item_frequency": "quantity"})
-
-        # TODO: Which is better choice?
-        mask = (tmp_dp.quantity == True)
-        tmp_dp_1 = tmp_dp[mask]
-        mask = tmp_dp.apply(lambda x: x.quantity is True, axis=1)
-        tmp_dp_2 = tmp_dp[mask]
-        # print(tmp_dp_1, tmp_dp_2)
-
-        """
-            price
-        """
-        p_data = tmp_dp_1.apply(lambda x: pd.Series({'price': price(
-            num=1,
-            avg=x.average,
-            delta=x.delta,
-            d_type=x.distr_type
-        )}), axis=1)
-        # for checking
-
-        y = pd.concat([tmp_dp_1[['id', 'name', 'quantity']], p_data], axis=1)
-        print(y)
-
-        """
-            menu
-            
-            1. select possible menu from recipe_item table.
-        """
-        # TODO: find menu and calculate cost
-
-        sqb = SelectBuilder(table_name="recipe_item", att_name="*")
-        print(sqb.execute())
-        find_menu()
-
-        # tmp_check_data
-        pass
+        menu_cost = cost_menu(fridge=fridge_image)
+        print(menu_cost)
+        return menu_cost
 
     @staticmethod
     def play_user():

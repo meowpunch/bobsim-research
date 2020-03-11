@@ -53,11 +53,18 @@ class User:
         # TODO: select data in user table
         return print("ID: %d login" % self.id)
 
-    def renew_fridge(self, data: list):
-        # TODO: update or insert data in user_item table
-        iqb = InsertBuilder('user_table', data)
-        iqb.execute()
-        return print("ID: %d renew fridge" % self.id)
+    def capture_fridge(self, fridge_image):
+        """
+        TODO: update or insert virtual in user_item table
+        """
+        fridge = fridge_image()
+        # iqb = InsertBuilder('user_table', fridge)
+        # iqb.execute()
+
+        print("\n\n------user's behavior------\n")
+        print("ID: %d capture fridge" % self.id)
+        print(fridge)
+        return fridge
 
     def search_menu(self):
         # TODO: join btw user_item table & recipe_item table

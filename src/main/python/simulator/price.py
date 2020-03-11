@@ -1,7 +1,4 @@
-""""
-
-    1.
-"""
+import pandas as pd
 from scipy.stats import truncnorm
 import numpy as np
 
@@ -13,7 +10,7 @@ def get_truncated_normal(mean=0, sd=1, low=0, upp=10):
         (low - mean) / sd, (upp - mean) / sd, loc=mean, scale=sd)
 
 
-def price(num, avg, delta, d_type=None):
+def anaylze(num, avg, delta, d_type=None):
     mean, sigma = float(avg), delta*0.5
     # x_price = np.array([(0 if q is 0 else ) for q in x_quantity])
 
@@ -30,3 +27,24 @@ def price(num, avg, delta, d_type=None):
     # plot(data=[x])gi
 
     return int(x_rounded)
+
+
+# core function
+def price(data):
+    """
+        TODO:
+            1. generate data from statistic (analyze)
+            2. filter
+    """
+    p_data = data.apply(lambda x: pd.Series({'price': anaylze(
+        num=1,
+        avg=x.average,
+        delta=x.delta,
+        d_type=x.distr_type
+    )}), axis=1)
+    # for checking
+
+    # attr: id, name, quantity, price
+    return pd.concat([data[['id', 'name']], p_data], axis=1)
+
+
