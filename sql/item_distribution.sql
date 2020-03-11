@@ -1,4 +1,5 @@
 SELECT
+    item.id,
     item.name,
     item_frequency,
     average,
