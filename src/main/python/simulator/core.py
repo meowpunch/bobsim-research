@@ -1,6 +1,10 @@
 import datetime
 import json
 
+import pandas as pd
+
+from query_builder.core import SelectBuilder
+from simulator.menu import find_menu
 from simulator.price import price
 from simulator.quantity import quantify
 from simulator.user import User
@@ -69,29 +73,59 @@ class Simulator:
             1. load data (join query)
             2. quantify
             3. price
+            4. find menu and cal cost
         :return: raw data
         """
         total_data = self.load_data()
         partial_data = total_data.head(10)
         print("partial data (2) \n", partial_data)
 
-        q_data = partial_data.item_frequency\
-            .map(lambda x: quantify(
+        """
+        quantify
+        """
+        q_data = partial_data.apply(lambda x: pd.Series({'quantity': quantify(
                 num=1,
-                freq=x,
-                d_type=0
-            ))
+                freq=x.item_frequency,
+                d_type=0,
+            )}), axis=1)
         # for checking
         print(q_data)
 
-        p_data = partial_data.apply(lambda x: price(
+        # replace
+        tmp_dp = partial_data.assign(item_frequency=q_data['quantity'])
+        tmp_dp = tmp_dp.rename(columns={"item_frequency": "quantity"})
+
+        # TODO: Which is better choice?
+        mask = (tmp_dp.quantity == True)
+        tmp_dp_1 = tmp_dp[mask]
+        mask = tmp_dp.apply(lambda x: x.quantity is True, axis=1)
+        tmp_dp_2 = tmp_dp[mask]
+        # print(tmp_dp_1, tmp_dp_2)
+
+        """
+            price
+        """
+        p_data = tmp_dp_1.apply(lambda x: pd.Series({'price': price(
             num=1,
             avg=x.average,
             delta=x.delta,
             d_type=x.distr_type
-        ), axis=1)
+        )}), axis=1)
         # for checking
-        print(p_data)
+
+        y = pd.concat([tmp_dp_1[['id', 'name', 'quantity']], p_data], axis=1)
+        print(y)
+
+        """
+            menu
+            
+            1. select possible menu from recipe_item table.
+        """
+        # TODO: find menu and calculate cost
+
+        sqb = SelectBuilder(table_name="recipe_item", att_name="*")
+        print(sqb.execute())
+        find_menu()
 
         # tmp_check_data
         pass

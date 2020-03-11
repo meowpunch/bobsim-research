@@ -42,6 +42,6 @@ def quantify(num, freq, d_type=0):
     # for visualize
     # plot([x.rvs(100000)])
 
-    return x_binarized
+    return bool(x_binarized)
 
 

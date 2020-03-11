@@ -29,4 +29,4 @@ def price(num, avg, delta, d_type=None):
     # for visualize
     # plot(data=[x])gi
 
-    return x_rounded
+    return int(x_rounded)
