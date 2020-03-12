@@ -8,34 +8,27 @@ from abc import *
 class QueryBuilder(metaclass=ABCMeta):
 
     # def __init__(self, table_name):
-    def __init__(self, table_name, att_name: str = None,
-                 value: str = None, where_clause: str = None, and_test=None,
+    def __init__(self, table_name, att_name=None,
+                 value=None, where_clause: str = None,
                  group_by=None,
                  having=None, order_by: str = None,
-                 limit: int = None, offset: int = None):
-        self.init_dict = {"TABLE_NAME": None,
-                          "ATT_NAME": None,
-                          "VALUE": None,
-                          "WHERE": None,
-                          "AND": None,
-                          "GROUP_BY": None,
-                          "ORDER_BY": None,
-                          "HAVING": None,
-                          "LIMIT": None,
-                          "OFFSET": None}
-
-        self.init_dict.update({"TABLE_NAME": table_name,
-                               "ATT_NAME": att_name,
-                               "VALUE": value,
-                               "WHERE": where_clause,
-                               "AND": and_test,
-                               "GROUP_BY": group_by,
-                               "HAVING": having,
-                               "ORDER_BY": order_by,
-                               "LIMIT": limit,
-                               "OFFSET": offset,
-                               })
-        # self.table_name = table_name
+                 limit: str = None, offset: int = None):
+        self.init_dict = {"TABLE_NAME": table_name,
+                          "ATT_NAME": att_name,
+                          "VALUE": value,
+                          "WHERE": where_clause,
+                          "GROUP_BY": group_by,
+                          "HAVING": having,
+                          "ORDER_BY": order_by,
+                          "LIMIT": limit,
+                          "OFFSET": offset,
+                          }
+        """
+        TODO :  divide init_dict into 2~4 part 
+                and have to more functional programming
+                ( init_dict , where_condition, dict, join etc..)
+        
+        """
         self.query = None
 
     def store_query(self, sql_filename):
@@ -51,6 +44,9 @@ class VoidQueryBuilder(QueryBuilder):
     def exec_query(self, query):
         exec_void_query(query)
 
+    def check_query(self):
+        pass
+
 
 class ReturnQueryBuilder(QueryBuilder):
 
@@ -61,24 +57,24 @@ class ReturnQueryBuilder(QueryBuilder):
 # QueryBuilder-VoidQueryBuilder-CreateBuilder
 class CreateBuilder(VoidQueryBuilder):
 
-    def __init__(self, table_name):
-        super().__init__(table_name)
-        self.create_table_name = 'create_{}.sql'.format(self.table_name)
-
     def execute(self):
         self.process()
 
     def process(self):
         #  1. Store sql 2. Exec stored sql 3. check
 
-        self.store_query(self.create_table_name)
+        self.store_query('create_{}.sql'.format(self.init_dict["TABLE_NAME"]))
         self.exec_query(self.query)
-        return self.check_create()
+
+        self.check_create()
 
     def check_create(self):
-        check_name = 'desc_{}.sql'.format(self.table_name)
-        check_query = load_query(check_name)
-        return exec_return_query(check_query)
+
+        # sql = "SHOW FULL COLUMNS FROM %s " % self.init_dict["TABLE_NAME"]
+
+        check_select_builder = SelectBuilder(self.init_dict["TABLE_NAME"], ' * ')
+
+        print(check_select_builder.execute())
 
 
 # QueryBuilder-VoidQueryBuilder-InsertBuilder
@@ -90,31 +86,32 @@ class InsertBuilder(VoidQueryBuilder):
 
     def process(self):
         #  1. Store sql 2. manipulate sql 3. exec sql 4. check
-        self.store_query('insert.sql')  # 1
 
-        query = self.manipulate(self.query)
+        self.store_query('insert_{}.sql'.format(self.init_dict["TABLE_NAME"]))  # 1
+
+        query = self.manipulate(self.query)  # 2
 
         self.exec_query(query)
 
-    #     return check_insert()
-    #
-    # def check_insert(self):
-    #     self.init_dict["ATT"]
-    #     list(filter())
-    #     pass
-    def manipulate(self, query):
+        self.check_insert()
 
-        mani_query = query % self.init_dict["TABLE_NAME"], self.init_dict["ATT_NAME"],\
-                             self.init_dict["VALUE"]
+    def check_insert(self):
+        a = SelectBuilder(self.init_dict["TABLE_NAME"], ' * ', order_by='ORDER BY id DESC', limit='LIMIT 1')
+        print(a.execute())
+
+    def manipulate(self, query):
+        # let's think about lots of input_values
+        mani_query = query.format(self.init_dict["VALUE"])
 
         return mani_query
 
     def exec_query(self, query):
         exec_void_query(query)
 
+
 # QueryBuilder-VoidQueryBuilder-InsertBuilder
 class DeleteBuilder(VoidQueryBuilder):
-
+    # value = (v1,v2,....,vn) tuple type
     def execute(self):
         self.process()
 
@@ -129,7 +126,6 @@ class DeleteBuilder(VoidQueryBuilder):
         return self.check_delete()  # 4
 
     def manipulate(self, query):
-
         first_mani_query = query % self.init_dict["TABLE_NAME"]
 
         list_rest_data = alter_type_dict_to_list(self.init_dict, 3, len(self.init_dict))
@@ -197,7 +193,7 @@ class UpdateBuilder(VoidQueryBuilder):
     def check_update(self):
         if bool(self.init_dict.get("WHERE")) == 1:
             check_update_query = SelectBuilder(self.init_dict["TABLE_NAME"], '*',
-                                               where_clause=self.init_dict["WHERE"]+" AND "+self.init_dict["VALUE"])
+                                               where_clause=self.init_dict["WHERE"] + " AND " + self.init_dict["VALUE"])
         else:
             check_update_query = SelectBuilder(self.init_dict["TABLE_NAME"], '*',
                                                where_clause="WHERE " + self.init_dict["VALUE"])
@@ -243,3 +239,16 @@ class SelectBuilder(ReturnQueryBuilder):
 
     def exec_query(self, query):
         return exec_return_query(query)
+
+
+class DropBuilder(VoidQueryBuilder):
+
+    def execute(self):
+        self.process()
+
+    def process(self):
+        self.store_query('drop.sql')  # 1
+
+        mani_query= self.query % self.init_dict["TABLE_NAME"]
+
+        exec_void_query(mani_query)

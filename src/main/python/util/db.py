@@ -4,6 +4,7 @@ import pymysql.err
 import pandas as pd
 import pymysql
 import yaml
+import csv
 
 from util.executable import get_destination
 
@@ -56,3 +57,45 @@ def exec_void_query(query):
 
     finally:
         conn.close()
+
+
+def show_columns(query):  # get list(column_name) without id
+
+    column = []
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(query)
+            rows = cur.fetchall()
+
+        for i in range(1, len(rows)):
+            column.append(rows[i][0])
+
+        conn.commit()
+
+    finally:
+        conn.close()
+        return column
+
+
+def show_data(query):
+    column = []
+    column1 = []
+
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(query)
+            rows = cur.fetchall()
+
+            def append_to_column(li):
+                column1.append(rows[rows.index(li)])
+                return column1
+
+        column2 = list(map(append_to_column, rows[1:]))
+
+        conn.commit()
+
+    finally:
+        conn.close()
+        return column2

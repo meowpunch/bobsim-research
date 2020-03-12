@@ -1,2 +1,1 @@
-INSERT INTO temptemptemp (name , sensitivity) VALUES
-            {}
+INSERT INTO item (name , sensitivity) VALUES {}

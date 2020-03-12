@@ -4,6 +4,7 @@ __pycache__
 constants
 src/main/python/simulator/constants/*
 src/main/python/simulator/constants/rds_config.py
+src/main/python/query_builder/test.py
 rds_config.py
 
 command_install.txt
