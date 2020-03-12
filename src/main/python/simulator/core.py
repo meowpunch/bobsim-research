@@ -20,39 +20,27 @@ class Simulator:
         Considering the cost & efficiency,
         we need to decide one user per one call or multi user per one call
 
-        multi
+        multi (necessary)
             user_num -> How many active user is simulated from one call
 
-        solo (Assumed)
+        solo (temporary)
     """
 
     def __init__(self):
         self.sql_filename = 'item_distribution.sql'
-        # raw data form
-        self.json_filename = 'form.json'
-        self.dict_data = self.load_data_form()
         # TODO: for multi user, this should be changed
-        self.user = None
-
         # self.user_num = 1
+        self.user = User(1)
+        self.timestamp = datetime.datetime.now()
 
     def execute(self):
         return self.process()
-
-    def load_data_form(self):
-        with open(self.json_filename, "r") as raw_data:
-            return json.load(raw_data)
-
-    def load_data(self):
-        query = load_query(self.sql_filename)
-        return exec_return_query(query)
 
     def process(self):
         """
         TODO:
             Process logic
-            1. create or select virtual user.
-                if there is already id, retrieve user.
+            1. create or select virtual user. (if there is already id, retrieve user.)
             2. set user's behavior type and play (check comments in User class)
             3. generate extra data ( feature? )
             4. save raw_data(json) to S3
@@ -65,6 +53,14 @@ class Simulator:
         raw_data = self.raw_data_dic()
         self.save_raw_data(raw_data)
 
+    def load_data(self):
+        query = load_query(self.sql_filename)
+        return exec_return_query(query)
+
+    def get_timestamp(self):
+        self.timestamp = datetime.datetime.now()
+        return self.timestamp
+
     def fridge_image(self):
         """
         GENERATE VIRTUAL IMAGE OF USER'S FRIDGE
@@ -72,6 +68,7 @@ class Simulator:
                 1. load data and filter dirty data.
                 2. quantify
                 3. price
+                4. timestamp
         :return: fridge image
         """
         td = self.load_data()
@@ -81,37 +78,28 @@ class Simulator:
         fd = td[mask]
 
         qd = quantify(fd)
-
         fridge = price(qd)
 
+        self.get_timestamp()
         return fridge
-
-    # @staticmethod
-    # def generate_extra(fridge_image):
-    #     """
-    #     TODO:
-    #         ...
-    #         type 2:
-    #         find menu and cal cost
-    #         ...
-    #
-    #     :return: raw data
-    #     """
-    #     menu_cost = cost_menu(fridge=fridge_image)
-    #     print(menu_cost)
-    #     return menu_cost
 
     def raw_data_dic(self):
         """
             TODO: If feature is more complex, structure maybe changed.
+
+            raw_data and record maybe point same space.
         """
-        raw_data = dict()
+        raw_data = self.user.record
         f_fridge = self.user.fridge.drop(['id'], axis=1)
         f_menu = self.user.menu.drop(['id'], axis=1)
-        raw_data["id"] = self.user.id
-        raw_data["gender"] = self.user.gender
+        raw_data["TIMESTAMP"] = str(self.timestamp)
+        raw_data["driven"] = self.user.b_type
         raw_data["ingredients"] = f_fridge.to_dict('records')
         raw_data["menu"] = f_menu.to_dict('records')
+
+        # for checking
+        print("\n-----raw data------")
+        print(raw_data)
         return raw_data
 
     @staticmethod

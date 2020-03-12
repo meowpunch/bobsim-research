@@ -45,6 +45,6 @@ def price(data):
     # for checking
 
     # attr: id, name, quantity, price
-    return pd.concat([data[['id', 'name', 'quantity']], p_data], axis=1)
+    return pd.concat([data[['id', 'name', 'sensitivity', 'quantity']], p_data], axis=1)
 
 

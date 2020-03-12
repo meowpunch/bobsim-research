@@ -35,27 +35,29 @@ class User:
         """
         self.id = user_id
         self.gender = 3
-        self.b_type = 0  # driven from user's behavior
+        self.b_type = 2  # type of behavior
         self.fridge = None
         self.menu = None
+        # TODO: diversify static features.
+        # static is declared before dynamic
+        self.record = dict({
+            "id": self.id,
+            "gender": self.gender,
+            "driven": self.b_type,
+        })
 
-    # def process(self):
-    #     # TODO: user's behavior process not like below sequentially.
-    #     self.sign_in()
-    #     self.login()
-    #
-    #     self.renew_fridge()
-    #     self.search_menu()
-    #     self.buy_materials()
-    #     return
-
+    """
+        By type of behavior
+    """
     def sign_in(self):
         # TODO: insert data in user table(RDS)
-        return print("ID: %d sign in" % self.id)
+        print("ID: %d sign in" % self.id)
+        pass
 
     def login(self):
         # TODO: select data in user table
-        return print("ID: %d login" % self.id)
+        print("ID: %d login" % self.id)
+        pass
 
     def capture_fridge(self, fridge_image):
         """
@@ -77,8 +79,10 @@ class User:
 
     def search_menu(self):
         # TODO: join btw user_item table & recipe_item table
-        return print("ID: %d search menu" % self.id)
+        print("ID: %d search menu" % self.id)
+        pass
 
     def buy_materials(self):
         # TODO: i don't know
-        return print("ID: %d buy materials" % self.id)
+        print("ID: %d buy materials" % self.id)
+        pass

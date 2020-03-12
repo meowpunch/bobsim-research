@@ -10,6 +10,13 @@ def list_bucket_contents():
 
 
 def save_json(directory, filename, data):
+    """
+
+    :param directory:
+    :param filename:
+    :param data:
+    :return: load json saved in S3 (for check)
+    """
     s3 = boto3.resource('s3')
     serialized_data = json.dumps(data, ensure_ascii=False)
 

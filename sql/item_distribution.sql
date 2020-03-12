@@ -1,6 +1,7 @@
 SELECT
     item.id,
     item.name,
+    item.sensitivity,
     item_frequency,
     average,
     delta,
