@@ -7,6 +7,10 @@ def alter_type_dict_to_list(data: dict, start_interval: int, end_interval: int):
     return list_data
 
 
+def alter_type_dict_item():
+    pass
+
+
 def alter_type_list_to_str(data: list, split=' '):
     str_data = split.join(map(str, data))
     return str_data
@@ -17,6 +21,6 @@ def remove_none(data: list):
     return clean_data
 
 
-def combine_sentence(sentence1 , sentence2):
+def combine_sentence(sentence1, sentence2):
     combined = sentence1 + ' ' + sentence2
     return combined
