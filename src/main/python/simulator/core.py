@@ -112,8 +112,7 @@ class Simulator:
         """
         pass
 
-    @staticmethod
-    def save_raw_data(dict_data):
+    def save_raw_data(self, dict_data):
         """
             1. stamp time
             2. save raw_data
@@ -121,4 +120,4 @@ class Simulator:
         """
         now = datetime.datetime.now()
         filename = str(now.day) + str(now.month) + str(now.year)
-        save_json(directory="recommender/raw-data", filename=filename, data=dict_data)
+        save_json(directory="recommender/raw-data/" + str(self.user.b_type), filename=filename, data=dict_data)

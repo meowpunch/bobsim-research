@@ -34,6 +34,8 @@ def save_to_s3(key, body):
 
 def save_json(directory, filename, data):
     """
+        overwrite a file if it's existed
+
     :param directory:
     :param filename:
     :param data:
