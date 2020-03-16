@@ -23,8 +23,9 @@ def mask_by_quantity(data, q_data):
     # TODO: Which is better choice?
     # mask = (tmp_dp.quantity == True)
     # tmp_dp_1 = tmp_dp[mask]
-    mask = tmp_dp.apply(lambda x: x.quantity > 0, axis=1)
-    return tmp_dp[mask]
+
+    # mask = tmp_dp.apply(lambda x: x.quantity > 0, axis=1)
+    return tmp_dp
 
 
 def get_truncated_normal(mean=0, sd=1, low=0, upp=10):
@@ -57,18 +58,18 @@ def analyze(num, freq, d_type=0):
     # for visualize
     # plot([x.rvs(100000)])
 
-    return int(x_binarized)
+    return x_binarized
 
 
 # core function
-def quantify(data):
+def quantify(data, num=1):
     """
         TODO:
             1. generate data from statistic (analyze)
             2. filter by quantity (True)
     """
     q_data = data.apply(lambda x: pd.Series({'quantity': analyze(
-        num=1,
+        num=num,
         freq=x.item_frequency,
         d_type=0,
     )}), axis=1)

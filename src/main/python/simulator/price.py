@@ -10,11 +10,21 @@ def get_truncated_normal(mean=0, sd=1, low=0, upp=10):
         (low - mean) / sd, (upp - mean) / sd, loc=mean, scale=sd)
 
 
-def analyze(num, avg, delta, d_type=None):
+def analyze(num, exist, avg, delta, d_type=None):
+    """
+        TODO: upgrade 'exist' -> 'quantity'
+
+    :param num:
+    :param exist:
+    :param avg:
+    :param delta:
+    :param d_type:
+    :return:
+    """
     mean, sigma = float(avg), delta*0.5
     # x_price = np.array([(0 if q is 0 else ) for q in x_quantity])
 
-    x = get_truncated_normal(mean=mean, sd=sigma, low=mean - delta, upp=mean + delta)
+    x = get_truncated_normal(mean=int(mean), sd=sigma, low=mean - delta, upp=mean + delta)
     x = x.rvs(num)
 
     """
@@ -26,18 +36,19 @@ def analyze(num, avg, delta, d_type=None):
     # for visualize
     # plot(data=[x])gi
 
-    return int(x_rounded)
+    return x_rounded*exist
 
 
 # core function
-def price(data):
+def price(data, num=1):
     """
         TODO:
             1. generate data from statistic (analyze)
             2. filter
     """
     p_data = data.apply(lambda x: pd.Series({'price': analyze(
-        num=1,
+        num=num,
+        exist=x.quantity,
         avg=x.average,
         delta=x.delta,
         d_type=x.distr_type

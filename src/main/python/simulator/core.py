@@ -29,8 +29,8 @@ class Simulator:
     def __init__(self):
         self.sql_filename = 'item_distribution.sql'
         # TODO: for multi user, this should be changed
-        # self.user_num = 1
-        self.user = User(1)
+        self.user_num = 3
+        self.user = User(self.user_num)
         self.timestamp = datetime.datetime.now()
 
     def execute(self):
@@ -51,7 +51,7 @@ class Simulator:
         self.user.capture_fridge(self.fridge_image)
 
         raw_data = self.raw_data_dic()
-        self.save_raw_data(raw_data)
+        # self.save_raw_data(raw_data)
 
     def load_data(self):
         query = load_query(self.sql_filename)
@@ -77,8 +77,10 @@ class Simulator:
                         x.delta is not 0, axis=1)
         fd = td[mask]
 
-        qd = quantify(fd)
-        fridge = price(qd)
+        qd = quantify(fd, self.user_num)
+        print(qd)
+        fridge = price(qd, self.user_num)
+        print(fridge)
 
         self.get_timestamp()
         return fridge

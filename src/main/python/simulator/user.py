@@ -26,14 +26,16 @@ class User:
 
     """
 
-    def __init__(self, user_id=0):
+    def __init__(self, user_num=0):
         """
+            분신함
             TODO:
                 if user_id is 0, new user. (create user)
                 else, existing user. (select user)
                 user's features for recommender system
         """
-        self.id = user_id
+        self.num = user_num
+        self.id = 1
         self.gender = 3
         self.b_type = 2  # type of behavior
         self.fridge = None
