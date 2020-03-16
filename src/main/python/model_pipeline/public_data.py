@@ -1,13 +1,5 @@
-import functools
-
-from util.executable import get_destination, load_file_list
-import os
-
+from util.general import load_csv, load_file_list
 from util.s3 import save_to_s3
-
-
-def load_csv(filename):
-    return get_destination('csv/' + filename)
 
 
 def save_csv(filename):
@@ -26,7 +18,7 @@ def save_csv(filename):
     return new
 
 
-def make_origin_bucket():
+def origin_bucket_csv():
     """
     :return: list of changed file names.
     """
@@ -34,6 +26,9 @@ def make_origin_bucket():
     new_list = list(map(save_csv, file_list))
     return print("success save all ", new_list)
 
+
+if __name__ == '__main__':
+    origin_bucket_csv()
 
 
 
