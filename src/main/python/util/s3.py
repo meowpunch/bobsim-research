@@ -1,12 +1,29 @@
 import boto3
 import json
 
+import yaml
+
+from util.executable import get_destination
+
+
+def get_url_s3():
+    credentials_path = 'config/credentials.yaml'
+    with open(get_destination(credentials_path)) as file:
+        credentials = yaml.load(file, Loader=yaml.FullLoader)
+    return credentials['s3']['url']
+
 
 def list_bucket_contents():
     s3 = boto3.resource('s3')
 
     for bucket in s3.buckets.all():
         print(bucket.name)
+
+
+def list_objects(prefix):
+    s3 = boto3.resource('s3')
+    bucket = s3.Bucket('production-bobsim')
+    return bucket.objects.filter(Prefix=prefix)
 
 
 def save_to_s3(key, body):
@@ -24,5 +41,3 @@ def save_json(directory, filename, data):
     """
     serialized_data = json.dumps(data, ensure_ascii=False)
     return save_to_s3(key=directory + "/" + filename, body=serialized_data)
-
-
