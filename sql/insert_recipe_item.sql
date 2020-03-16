@@ -1,0 +1,1 @@
+INSERT INTO recipe_item (recipe_id, item_id) VALUES {}

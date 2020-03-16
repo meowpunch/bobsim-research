@@ -1,0 +1,1 @@
+INSERT INTO season (season_name) VALUES ("봄"),("여름"),("가을"),("겨울")
