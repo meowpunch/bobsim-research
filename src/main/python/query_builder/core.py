@@ -212,7 +212,7 @@ class SelectBuilder(ReturnQueryBuilder):
                  3. exec sql
         """
         self.store_query('select.sql')  # 1
-        # TODO : add difficulty att in recipe table
+
         query = self.manipulate(self.query)  # 2
 
         return self.exec_query(query)
