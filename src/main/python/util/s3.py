@@ -11,6 +11,7 @@ def list_bucket_contents():
 
 def save_json(directory, filename, data):
     """
+        overwrite a file if it's existed
 
     :param directory:
     :param filename:
