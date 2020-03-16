@@ -1,5 +1,3 @@
-from model_pipeline.public_data import make_origin_bucket
-
 
 class ModelPipeline:
 
@@ -14,6 +12,4 @@ class ModelPipeline:
             TODO: logic comes here
         :return:
         """
-
-        make_origin_bucket()
         pass

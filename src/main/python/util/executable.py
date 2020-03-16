@@ -11,12 +11,6 @@ def get_destination(destination):
     return source_root / destination
 
 
-def load_file_list(directory):
-    destination_path = directory + '/'
-    path = get_destination(destination_path)
-    return os.listdir(path)
-
-
 def main():
     print(get_source_root())
 
