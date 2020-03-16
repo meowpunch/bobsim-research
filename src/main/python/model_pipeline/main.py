@@ -1,4 +1,4 @@
-
+from model_pipeline.core import ModelPipeline
 
 
 def main():

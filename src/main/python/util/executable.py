@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 
@@ -10,8 +11,10 @@ def get_destination(destination):
     return source_root / destination
 
 
-def change_filename():
-
+def load_file_list(directory):
+    destination_path = directory + '/'
+    path = get_destination(destination_path)
+    return os.listdir(path)
 
 
 def main():
