@@ -2,6 +2,7 @@ from query_builder.core import InsertBuilder
 from simulator.menu import cost_menu
 
 
+# TODO: class name will be group not one user.
 class User:
     """
         Q)
@@ -34,7 +35,7 @@ class User:
                 else, existing user. (select user)
                 user's features for recommender system
         """
-        self.num = user_num
+        self.user_num = user_num
         self.id = 1
         self.gender = 3
         self.b_type = 2  # type of behavior
@@ -61,14 +62,16 @@ class User:
         print("ID: %d login" % self.id)
         pass
 
-    def capture_fridge(self, fridge_image):
+    def capture_fridge(self, fridge_image, probable_menus):
         """
         TODO:
             update or insert virtual in user_item table
             change location of cost_menu function.
         """
         self.fridge = fridge_image()
-        self.menu = cost_menu(self.fridge)
+        self.menu = probable_menus(self.fridge)
+
+        # self.menu = cost_menu(self.fridge, self.user_num)
         # iqb = InsertBuilder('user_table', fridge)
         # iqb.execute()
 
@@ -88,3 +91,7 @@ class User:
         # TODO: i don't know
         print("ID: %d buy materials" % self.id)
         pass
+
+
+
+
