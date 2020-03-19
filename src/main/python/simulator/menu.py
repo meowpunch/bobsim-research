@@ -52,10 +52,10 @@ def load_recipe():
 
 
 # core function
-def cost_menu(fridge: pd.core.frame.DataFrame):
+def cost_menu(fridge: pd.core.frame.DataFrame, user):
     """
         TODO: After we implement queryBuilder, code will be more cleaned
-
+            0. split user fridge
             1. load recipe_item table
             2. select possible menu from recipe_item table.
             3. calculate menu's cost

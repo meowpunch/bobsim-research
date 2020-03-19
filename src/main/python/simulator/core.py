@@ -29,7 +29,7 @@ class Simulator:
     def __init__(self):
         self.sql_filename = 'item_distribution.sql'
         # TODO: for multi user, this should be changed
-        self.user_num = 3
+        self.user_num = 4
         self.user = User(self.user_num)
         self.timestamp = datetime.datetime.now()
 
@@ -47,8 +47,8 @@ class Simulator:
 
         :return:
         """
-        self.user = User(1)
-        self.user.capture_fridge(self.fridge_image)
+        self.user = User(self.user_num)
+        self.user.capture_fridge(self.fridge_image, self.probable_menus)
 
         raw_data = self.raw_data_dic()
         # self.save_raw_data(raw_data)
@@ -84,6 +84,25 @@ class Simulator:
 
         self.get_timestamp()
         return fridge
+
+    def probable_menus(self, fridge):
+        """
+            TODO: find probables menu for each user.
+        :param fridge: group's total fridge
+        :return: list of probable menu(DataFrame) for each user.
+        """
+        # user_list = list(range(self.user_num))
+        #
+        # def func(user_id):
+        #     cost_menu()
+        #     pass
+        #
+        # m = list(map(func, user_list))
+        # print(m[0])
+
+        menu = cost_menu(fridge, self.user_num)
+        print(menu)
+        pass
 
     def raw_data_dic(self):
         """
