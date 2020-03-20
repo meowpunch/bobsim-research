@@ -24,6 +24,7 @@ class Processor:
             String:
 
             Number:
+            # SAVE RDS -> Auto type checking??
         :return: validity (bool)
         """
         origin_df = self.load()
@@ -33,7 +34,7 @@ class Processor:
 
     def save(self):
         """
-            save validated data to process bucket
+            save validated data to RDS
         :return: success or fail (bool)
         """
         return False
