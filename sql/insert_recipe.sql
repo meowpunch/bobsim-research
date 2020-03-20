@@ -1,0 +1,1 @@
+INSERT INTO recipe (name, season_id, maker) VALUES {}
