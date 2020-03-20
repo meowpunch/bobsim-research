@@ -4,6 +4,10 @@ import pandas as pd
 from util.executable import get_destination
 
 
+def load_file(filename):
+    return open(get_destination(filename), 'rb')
+
+
 def load_csv(filename):
     return open(get_destination('csv/' + filename), 'rb')
 

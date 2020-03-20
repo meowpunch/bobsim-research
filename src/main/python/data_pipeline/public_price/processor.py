@@ -3,35 +3,45 @@ import sys
 from data_pipeline.public_price.loader import Loader
 import logging
 
+from util.logging import init_logger
+from util.s3_manager.manager import S3Manager
+
 
 class Processor:
     """
-
+        origin bucket (s3) -> process bucket (rds_public_data, staging schema)
     """
 
     def __init__(self):
-        self.x = ''
         self.df = None
+        self.logger = init_logger()
 
-    def load(self):
-        loader = Loader()
-        return loader.execute()
+    @staticmethod
+    def load():
+        """
+
+        :return: pandas DataFrame (origin)
+        """
+        manager = S3Manager(bucket_name='production-bobsim',
+                           key='public_price/origin/csv')
+        df = manager.fetch_objects()
+        # manager.fetch_objects_list()
+        return df
 
     def validate(self):
         """
             validate data in origin bucket
+            1. how to handling null_value
 
-            String:
 
-            Number:
             # SAVE RDS -> Auto type checking??
         :return: validity (bool)
         """
         origin_df = self.load()
 
-        ...
-        return True
+        return False
 
+    @staticmethod
     def save(self):
         """
             save validated data to RDS
@@ -41,17 +51,16 @@ class Processor:
 
     def execute(self):
 
-        p_logger = logging.getLogger("Processor")
         b = self.validate()
 
         if b:
             s = self.save()
         else:
-            p_logger.warning("Validate fail")
+            self.logger.critical("validate fail")
             sys.exit()
 
         if s:
             return self.df
         else:
-            p_logger.warning("Save fail")
+            self.logger.critical("save fail")
             sys.exit()

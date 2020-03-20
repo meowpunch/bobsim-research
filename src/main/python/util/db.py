@@ -9,16 +9,16 @@ import csv
 from util.executable import get_destination
 
 
-def get_connection():
+def get_connection(schema_name: str = "bobsim_schema"):
     credentials_path = 'config/credentials.yaml'
     with open(get_destination(credentials_path)) as file:
         credentials = yaml.load(file, Loader=yaml.FullLoader)
 
     db_config = {
-        'host': credentials['rds']['url'],
-        'user': credentials['rds']['username'],
-        'passwd': credentials['rds']['password'],
-        'db': credentials['rds']['name'],
+        'host': credentials['rds'][schema_name]['url'],
+        'user': credentials['rds'][schema_name]['username'],
+        'passwd': credentials['rds'][schema_name]['password'],
+        'db': schema_name,
         'connect_timeout': 5,
         'charset': 'utf8'
     }
@@ -36,8 +36,8 @@ def get_connection():
         sys.exit()
 
 
-def load_query(filename):
-    destination_path = 'sql/' + filename
+def load_query(filename, prefix=''):
+    destination_path = 'sql/' + prefix + filename
     # For read KOR , add encoding='utf-8'
     with open(get_destination(destination_path), encoding='utf-8') as file:
         query = file.read()
