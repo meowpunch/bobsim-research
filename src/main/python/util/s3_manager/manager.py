@@ -24,25 +24,39 @@ class S3Manager:
     # def fetch_objs_list(self, prefix):
 
     def fetch_objects(self):
-        # df = pd.DataFrame()
-        # df = None
-        filtered = list(self.s3_bucket.objects.filter(Prefix=self.key))
-        filtered_size = list(filter(lambda x: x.size > 0, filtered))
+        df = pd.DataFrame()
+        temp = list(self.s3_bucket.objects.filter(Prefix=self.key))
+        filtered = list(filter(lambda x: x.size > 0, temp))
+        temp_column_list = list()
 
-        def func(x):
+
+        def read(x):
             """
                 TODO: error handling
+                      1. read
+                      2. check column
+                      3. concat
             :param x: s3.ObjectSummery
-            :return: pandas DataFrame
+            :return: bool
             """
+            # 1
             ls = StringIO(x.get()['Body'].read().decode('euc-kr'))
-            df = pd.read_csv(ls, header=0) #, dtype=public_price)
-            return df
+            df_temp = pd.read_csv(ls, header=0, dtype=public_price)
 
-        if len(filtered_size) > 0:
-            df_list = list(map(func, filtered_size))
-        print(df_list[0].dtypes)
+            # 2
+
+            # 3
+
+
+            return True
+
+        if len(filtered) > 0:
+            df_list = list(map(read, filtered))
+
+
+        #  print(df_list[0].dtypes)
         # return
+
 
     def execute(self):
         """

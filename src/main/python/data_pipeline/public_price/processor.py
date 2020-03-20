@@ -23,7 +23,7 @@ class Processor:
         :return: pandas DataFrame (origin)
         """
         manager = S3Manager(bucket_name='production-bobsim',
-                           key='public_price/origin/csv')
+                            key='public_price/origin/csv')
         df = manager.fetch_objects()
         # manager.fetch_objects_list()
         return df
@@ -32,7 +32,6 @@ class Processor:
         """
             validate data in origin bucket
             1. how to handling null_value
-
 
             # SAVE RDS -> Auto type checking??
         :return: validity (bool)
