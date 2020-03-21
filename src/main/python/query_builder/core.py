@@ -70,7 +70,6 @@ class CreateBuilder(VoidQueryBuilder):
         self.check_create()
 
     def check_create(self):
-
         # sql = "SHOW FULL COLUMNS FROM %s " % self.init_dict["TABLE_NAME"]
 
         check_select_builder = SelectBuilder(self.init_dict["TABLE_NAME"], ' * ')
@@ -94,20 +93,23 @@ class InsertBuilder(VoidQueryBuilder):
 
         self.exec_query(query)
 
-        self.check_insert()
+        # self.check_insert()
 
     def check_insert(self):
-        a = SelectBuilder(self.init_dict["TABLE_NAME"], ' * ', order_by='ORDER BY id DESC', limit='LIMIT 1')
+        # TODO: error for table that has no id(PK)
+        a = SelectBuilder(
+            schema_name=self.schema_name,
+            table_name=self.init_dict["TABLE_NAME"],
+            att_name=' * '
+            # order_by='ORDER BY id DESC',
+            # limit='LIMIT 1'
+        )
         print(a.execute())
 
     def manipulate(self, query):
         # let's think about lots of input_values
         mani_query = query.format(self.init_dict["VALUE"])
-
         return mani_query
-
-    # def exec_query(self, query):
-    #     exec_void_query(query=query, schema_name=self.schema_name)
 
 
 # QueryBuilder-VoidQueryBuilder-InsertBuilder
@@ -238,9 +240,6 @@ class SelectBuilder(ReturnQueryBuilder):
 
         return second_mani_query
 
-    def exec_query(self, query):
-        return exec_return_query(query)
-
 
 class DropBuilder(VoidQueryBuilder):
 
@@ -250,6 +249,6 @@ class DropBuilder(VoidQueryBuilder):
     def process(self):
         self.store_query('drop.sql')  # 1
 
-        mani_query= self.query % self.init_dict["TABLE_NAME"]
+        mani_query = self.query % self.init_dict["TABLE_NAME"]
 
         exec_void_query(mani_query)

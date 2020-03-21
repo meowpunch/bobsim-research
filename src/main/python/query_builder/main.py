@@ -2,7 +2,7 @@ import pandas as pd
 
 from query_builder.core import QueryBuilder, CreateBuilder, DeleteBuilder, SelectBuilder, UpdateBuilder, InsertBuilder, \
     DropBuilder
-from query_builder.create_table import CreateTable
+
 from util.alter import alter_type_list_to_str
 from util.db import exec_return_query, show_columns, show_data, load_query, exec_void_query
 import json
@@ -34,13 +34,11 @@ def main():
         TODO : a few moment later, this sentences convert to func
 
     """
+    qb = InsertBuilder(schema_name='bobsim_schema',
+                       table_name='temp',
+                       value='(1, 2.0), (2.0, 2)')
+    qb.execute()
 
-    InsertBuilder(table_name='temp', )
-    InsertBuilder(
-        schema_name='public_data',
-        table_name='item_price_info',
-        value=input_df
-    )
     # migrate()
 
 
