@@ -41,24 +41,19 @@ class Processor:
         return df_list
 
     def validate(self):
-        """
-            validate data in origin bucket
-            1. how to handling null_value
-
-            # SAVE RDS -> Auto type checking??
-        """
-        # load df list and check types
+        # load the list of DataFrames
         df_list = self.load()
-
         self.logger.debug(df_list[0].columns.tolist())
         self.logger.debug(self.columns)
 
+        # combine the list and check DataFrame type.
         def combine(accum, ele):
+            """
+            :return: pd DataFrame combined with df_list
+            """
             tmp = ele[self.columns].astype(dtype=self.dtypes, copy=True)
             return accum[self.columns].astype(dtype=self.dtypes).append(tmp)
-
         self.df = reduce(combine, df_list)
-
         self.logger.debug(self.df)
         self.logger.debug(self.df.dtypes)
 
