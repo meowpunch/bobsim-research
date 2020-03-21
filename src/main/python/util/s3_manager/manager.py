@@ -40,11 +40,9 @@ class S3Manager:
 
         def read(x):
             """
-                TODO: error handling
+                read csv file
 
-                      1. read
-                      2. check column
-                      3. concat
+                TODO: error handling
             :param x: s3.ObjectSummery
             :return: bool
             """
@@ -57,6 +55,11 @@ class S3Manager:
             df_list = list(map(read, filtered[0:2]))
 
         return df_list
+
+
+
+
+
 
     # def execute(self):
     #     """

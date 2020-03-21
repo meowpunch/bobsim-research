@@ -4,11 +4,11 @@ from util.logging import init_logger
 
 def main():
     """
-        TODO:
-
+        init Processor instance and execute process
     :return: pandas DataFrame (public price)
     """
     logger = init_logger()
+
     logger.info("start processing public_price")
     processor = Processor()
     df = processor.execute()

@@ -24,13 +24,11 @@ class Processor:
 
         self.df = None
 
-    # @staticmethod
     def load(self):
         """
-
+            init S3Manager instances and fetch objects
         :return: list of pd DataFrame (origin)
         """
-        # init S3Manager instances and fetch objects
         manager = S3Manager(bucket_name='production-bobsim')
         df_list = manager.fetch_objects(
             key='public_price/origin/csv'
@@ -41,24 +39,18 @@ class Processor:
         return df_list
 
     def validate(self):
-        """
-            validate data in origin bucket
-            1. how to handling null_value
-
-            # SAVE RDS -> Auto type checking??
-        """
-        # load df list and check types
+        # load the list of DataFrames
         df_list = self.load()
 
-        self.logger.debug(df_list[0].columns.tolist())
-        self.logger.debug(self.columns)
-
+        # combine the list and check DataFrame type.
         def combine(accum, ele):
+            """
+            :return: pd DataFrame combined with df_list
+            """
             tmp = ele[self.columns].astype(dtype=self.dtypes, copy=True)
             return accum[self.columns].astype(dtype=self.dtypes).append(tmp)
-
-        self.df = reduce(combine, df_list)
-
+        tmp_df = reduce(combine, df_list)
+        self.df = tmp_df.where(pd.notnull(tmp_df), None)
         self.logger.debug(self.df)
         self.logger.debug(self.df.dtypes)
 
@@ -67,18 +59,16 @@ class Processor:
             save validated data to RDS
         :return: success or fail (bool)
         """
-        tmp = self.df.apply(lambda x: tuple(x.values), axis=1)
-        input_df = ', '.join(map(str, tmp))
+        tmp = self.df.head(2).apply(lambda x: tuple(x.values), axis=1)
+        input_value = ', '.join(map(str, tmp))
+        print(input_value)
+
         qb = InsertBuilder(
             schema_name='public_data',
             table_name='item_price_info',
-            value=input_df
+            value=input_value
         )
-        # qb.execute()
-#         tmp_qb = InsertBuilder(schema_name='public_data',
-#                                table_name='item_price_info'
-#                                , value=('2017-01-02',7,'소비자가격'	101	벼	111	쌀	10101	일반계	1	일반계	1	상(1등급)			20KG	36300	36300	1102	서울서부	4002513	경동시장	12	경동시장
-# ))
+        qb.execute()
         return True
 
     def execute(self):
