@@ -1,5 +1,9 @@
 import sys
+from functools import reduce
 
+import pandas as pd
+
+from data_pipeline.dtype import public_price
 from data_pipeline.public_price.loader import Loader
 import logging
 
@@ -13,20 +17,27 @@ class Processor:
     """
 
     def __init__(self):
-        self.df = None
         self.logger = init_logger()
+        self.dtypes = public_price
+        self.columns = list(self.dtypes.keys())
 
-    @staticmethod
-    def load():
+        self.df = None
+
+    # @staticmethod
+    def load(self):
         """
 
-        :return: pandas DataFrame (origin)
+        :return: list of pd DataFrame (origin)
         """
-        manager = S3Manager(bucket_name='production-bobsim',
-                            key='public_price/origin/csv')
-        df = manager.fetch_objects()
-        # manager.fetch_objects_list()
-        return df
+        # init S3Manager instances and fetch objects
+        manager = S3Manager(bucket_name='production-bobsim')
+        df_list = manager.fetch_objects(
+            key='public_price/origin/csv'
+        )
+
+        self.logger.debug("%d files is loaded" % len(df_list))
+        self.logger.info("success to load df from origin bucket")
+        return df_list
 
     def validate(self):
         """
@@ -36,9 +47,38 @@ class Processor:
             # SAVE RDS -> Auto type checking??
         :return: validity (bool)
         """
-        origin_df = self.load()
+        # load df list and check types
+        df_list = self.load()
 
+        def func(x):
+
+            tmp_df = x.astype(dtype=self.dtypes)
+
+            tmp2_df = tmp_df[self.columns]
+
+            self.df.append(tmp2_df)
+
+            return True
+
+        self.logger.debug(df_list[0].columns.tolist())
+        self.logger.debug(self.columns)
+        # invalid = list(filter(
+        #     lambda x: x.columns.values.tolist() != self.columns,
+        #     df_list
+        # ))
+        # if len(invalid) == 0:
+        #     raise Exception("column is not matched")
+
+        def combine(accum, ele):
+            tmp = ele[self.columns].astype(dtype=self.dtypes, copy=True)
+            return accum[self.columns].astype(dtype=self.dtypes).append(tmp)
+
+        self.df = reduce(combine, df_list)
+
+        self.logger.debug(self.df)
+        self.logger.debug(self.df.dtypes)
         return False
+
 
     @staticmethod
     def save(self):
@@ -49,8 +89,11 @@ class Processor:
         return False
 
     def execute(self):
-
-        b = self.validate()
+        try:
+            b = self.validate()
+        except KeyError:
+            self.logger.critical("columns are not matched", exc_info=True)
+            sys.exit()
 
         if b:
             s = self.save()
