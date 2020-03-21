@@ -8,12 +8,7 @@ from util.db import exec_return_query, show_columns, show_data, load_query, exec
 import json
 
 
-def main():
-    """
-        migrate
-        TODO : a few moment later, this sentences convert to func
-
-    """
+def migrate():
     table_list = ['item', 'price', 'season', 'recipe', 'recipe_item',
                   'item_frequency', 'user', 'user_item']
     reverse_list = list(reversed(table_list))
@@ -31,6 +26,22 @@ def main():
     for i in range(0, len(table_list) - 1):
         x = SelectBuilder(table_list[i], '*')
         print(x.execute())
+
+
+def main():
+    """
+        migrate
+        TODO : a few moment later, this sentences convert to func
+
+    """
+
+    InsertBuilder(table_name='temp', )
+    InsertBuilder(
+        schema_name='public_data',
+        table_name='item_price_info',
+        value=input_df
+    )
+    # migrate()
 
 
 if __name__ == '__main__':
