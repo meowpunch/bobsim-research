@@ -1,3 +1,4 @@
+from functools import reduce
 from io import StringIO
 
 import boto3
@@ -21,14 +22,17 @@ class S3Manager:
         self.s3 = boto3.resource('s3')
         self.s3_bucket = self.s3.Bucket(bucket_name)
 
-    # def fetch_objs_list(self, prefix):
+    def fetch_objs_list(self, prefix):
+        return list(self.s3_bucket.objects.filter(Prefix=self.key))
+
 
     def fetch_objects(self):
+        """
+
+        """
         df = pd.DataFrame()
         temp = list(self.s3_bucket.objects.filter(Prefix=self.key))
         filtered = list(filter(lambda x: x.size > 0, temp))
-        temp_column_list = list()
-
 
         def read(x):
             """
@@ -41,22 +45,34 @@ class S3Manager:
             """
             # 1
             ls = StringIO(x.get()['Body'].read().decode('euc-kr'))
-            df_temp = pd.read_csv(ls, header=0, dtype=public_price)
-
-            # 2
-
-            # 3
-
-
-            return True
+            tmp_df = pd.read_csv(ls, header=0, dtype=public_price)
+            return tmp_df
 
         if len(filtered) > 0:
             df_list = list(map(read, filtered))
 
+        # def merge(x, y):
+        #     if x.columns is y.columns:
+        #
+        #     return
+
+        def is_valid_columns(x):
+
+            return
+        list(filter(lambda x: x.columns is not df_list[0].columns, df_list))
+
+
+        def merge(x, y)
+            return x==y
+        reduce(merge, df_list)
+
+
+        # first of df_list is standard columns
+        #
+
 
         #  print(df_list[0].dtypes)
-        # return
-
+        return df
 
     def execute(self):
         """
