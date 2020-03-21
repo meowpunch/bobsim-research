@@ -55,6 +55,7 @@ class Processor:
     def save(self):
         """
             # TODO: catch error that query_builder raise
+                    ask how to handle pymysql.err.OperationalError by input_value size
             save validated data to RDS
         :return: success or fail (bool)
         """
