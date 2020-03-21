@@ -48,11 +48,14 @@ def exec_return_query(query, schema_name):
     return pd.read_sql_query(query, get_connection(schema_name))
 
 
-def exec_void_query(query, schema_name):
+def exec_void_query(args, query, schema_name):
     conn = get_connection(schema_name)
     try:
         with conn.cursor() as cur:
-            cur.execute(query)
+            if len(args) > 1:
+                cur.executemany(query=query, args=args)
+            else:
+                cur.execute(query=query, args=args)
         conn.commit()
 
     finally:

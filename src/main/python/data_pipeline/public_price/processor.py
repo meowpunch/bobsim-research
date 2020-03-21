@@ -34,7 +34,7 @@ class Processor:
             key='public_price/origin/csv'
         )
 
-        self.logger.debug("%d files is loaded" % len(df_list))
+        self.logger.info("%d files is loaded" % len(df_list))
         self.logger.info("success to load df from origin bucket")
         return df_list
 
@@ -50,25 +50,24 @@ class Processor:
             tmp = ele[self.columns].astype(dtype=self.dtypes, copy=True)
             return accum[self.columns].astype(dtype=self.dtypes).append(tmp)
         tmp_df = reduce(combine, df_list)
-        self.df = tmp_df.where(pd.notnull(tmp_df), None)
-        self.logger.debug(self.df)
-        self.logger.debug(self.df.dtypes)
+        self.df = tmp_df.replace({pd.NA: None})
 
     def save(self):
         """
+            # TODO: catch error that query_builder raise
             save validated data to RDS
         :return: success or fail (bool)
         """
-        tmp = self.df.head(2).apply(lambda x: tuple(x.values), axis=1)
-        input_value = ', '.join(map(str, tmp))
-        print(input_value)
+        input_value = self.df.head(2).apply(lambda x: tuple(x.values), axis=1)
 
         qb = InsertBuilder(
             schema_name='public_data',
             table_name='item_price_info',
-            value=input_value
+            value=tuple(input_value)
         )
         qb.execute()
+
+        # temporary true
         return True
 
     def execute(self):

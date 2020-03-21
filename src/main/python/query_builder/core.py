@@ -42,8 +42,8 @@ class QueryBuilder(metaclass=ABCMeta):
 
 class VoidQueryBuilder(QueryBuilder):
 
-    def exec_query(self, query):
-        exec_void_query(query=query, schema_name=self.schema_name)
+    def exec_query(self, query, args):
+        exec_void_query(args=args, query=query, schema_name=self.schema_name)
 
     def check_query(self):
         pass
@@ -91,7 +91,7 @@ class InsertBuilder(VoidQueryBuilder):
 
         query = self.manipulate(self.query)  # 2
 
-        self.exec_query(query)
+        self.exec_query(args=self.init_dict["VALUE"], query=query)
 
         # self.check_insert()
 
