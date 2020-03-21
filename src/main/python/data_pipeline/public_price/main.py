@@ -8,10 +8,11 @@ def main():
 
     :return: pandas DataFrame (public price)
     """
-    init_logger().info("start processing")
-
+    logger = init_logger()
+    logger.info("start processing public_price")
     processor = Processor()
     df = processor.execute()
+    logger.info("success processing public_price!")
     return df
 
 

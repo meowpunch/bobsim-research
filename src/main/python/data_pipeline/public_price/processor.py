@@ -7,6 +7,7 @@ from data_pipeline.dtype import public_price
 from data_pipeline.public_price.loader import Loader
 import logging
 
+from query_builder.core import InsertBuilder
 from util.logging import init_logger
 from util.s3_manager.manager import S3Manager
 
@@ -45,29 +46,12 @@ class Processor:
             1. how to handling null_value
 
             # SAVE RDS -> Auto type checking??
-        :return: validity (bool)
         """
         # load df list and check types
         df_list = self.load()
 
-        def func(x):
-
-            tmp_df = x.astype(dtype=self.dtypes)
-
-            tmp2_df = tmp_df[self.columns]
-
-            self.df.append(tmp2_df)
-
-            return True
-
         self.logger.debug(df_list[0].columns.tolist())
         self.logger.debug(self.columns)
-        # invalid = list(filter(
-        #     lambda x: x.columns.values.tolist() != self.columns,
-        #     df_list
-        # ))
-        # if len(invalid) == 0:
-        #     raise Exception("column is not matched")
 
         def combine(accum, ele):
             tmp = ele[self.columns].astype(dtype=self.dtypes, copy=True)
@@ -77,31 +61,37 @@ class Processor:
 
         self.logger.debug(self.df)
         self.logger.debug(self.df.dtypes)
-        return False
 
-
-    @staticmethod
     def save(self):
         """
             save validated data to RDS
         :return: success or fail (bool)
         """
-        return False
+        tmp = self.df.apply(lambda x: tuple(x.values), axis=1)
+        input_df = ', '.join(map(str, tmp))
+        qb = InsertBuilder(
+            schema_name='public_data',
+            table_name='item_price_info',
+            value=input_df
+        )
+        # qb.execute()
+#         tmp_qb = InsertBuilder(schema_name='public_data',
+#                                table_name='item_price_info'
+#                                , value=('2017-01-02',7,'소비자가격'	101	벼	111	쌀	10101	일반계	1	일반계	1	상(1등급)			20KG	36300	36300	1102	서울서부	4002513	경동시장	12	경동시장
+# ))
+        return True
 
     def execute(self):
         try:
-            b = self.validate()
+            self.validate()
         except KeyError:
             self.logger.critical("columns are not matched", exc_info=True)
             sys.exit()
 
-        if b:
-            s = self.save()
-        else:
-            self.logger.critical("validate fail")
-            sys.exit()
+        s = self.save()
 
         if s:
+            self.logger.info("")
             return self.df
         else:
             self.logger.critical("save fail")

@@ -44,12 +44,12 @@ def load_query(filename, prefix=''):
         return query
 
 
-def exec_return_query(query):
-    return pd.read_sql_query(query, get_connection())
+def exec_return_query(query, schema_name):
+    return pd.read_sql_query(query, get_connection(schema_name))
 
 
-def exec_void_query(query):
-    conn = get_connection()
+def exec_void_query(query, schema_name):
+    conn = get_connection(schema_name)
     try:
         with conn.cursor() as cur:
             cur.execute(query)
@@ -78,11 +78,11 @@ def show_columns(query):  # get list(column_name) without id
         return column
 
 
-def show_data(query):
+def show_data(query, schema_name):
     column = []
     column1 = []
 
-    conn = get_connection()
+    conn = get_connection(schema_name)
     try:
         with conn.cursor() as cur:
             cur.execute(query)

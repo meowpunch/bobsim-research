@@ -1,6 +1,6 @@
 from util.alter import *
 from util.db import exec_return_query, exec_void_query, load_query
-from util.s3_manager import list_bucket_contents
+from util.s3 import list_bucket_contents
 
 from abc import *
 
@@ -8,7 +8,7 @@ from abc import *
 class QueryBuilder(metaclass=ABCMeta):
 
     # def __init__(self, table_name):
-    def __init__(self, table_name, att_name=None,
+    def __init__(self, schema_name='bobsim_schema', table_name=None, att_name=None,
                  value=None, where_clause: str = None,
                  group_by=None,
                  having=None, order_by: str = None,
@@ -29,6 +29,7 @@ class QueryBuilder(metaclass=ABCMeta):
                 ( init_dict , where_condition, dict, join etc..)
         
         """
+        self.schema_name = schema_name
         self.query = None
 
     def store_query(self, sql_filename):
@@ -42,7 +43,7 @@ class QueryBuilder(metaclass=ABCMeta):
 class VoidQueryBuilder(QueryBuilder):
 
     def exec_query(self, query):
-        exec_void_query(query)
+        exec_void_query(query=query, schema_name=self.schema_name)
 
     def check_query(self):
         pass
@@ -51,7 +52,7 @@ class VoidQueryBuilder(QueryBuilder):
 class ReturnQueryBuilder(QueryBuilder):
 
     def exec_query(self, query):
-        exec_return_query(query)
+        exec_return_query(query=query, schema_name=self.schema_name)
 
 
 # QueryBuilder-VoidQueryBuilder-CreateBuilder
@@ -105,8 +106,8 @@ class InsertBuilder(VoidQueryBuilder):
 
         return mani_query
 
-    def exec_query(self, query):
-        exec_void_query(query)
+    # def exec_query(self, query):
+    #     exec_void_query(query=query, schema_name=self.schema_name)
 
 
 # QueryBuilder-VoidQueryBuilder-InsertBuilder
