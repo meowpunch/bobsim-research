@@ -3,7 +3,7 @@ from functools import reduce
 
 import pandas as pd
 
-from data_pipeline.dtype import public_price
+from data_pipeline.dtype import dtype
 from query_builder.core import InsertBuilder
 from util.logging import init_logger
 from util.s3_manager.manager import S3Manager
@@ -19,10 +19,10 @@ class Processor:
 
         # s3
         self.bucket_name = "production-bobsim"
-        self.s3_key = "{dir}/origin/csv".format(dir=self.key)
+        self.s3_key = "public_data/{dir}/origin".format(dir=self.key)
 
         # valid check
-        self.dtypes = public_price
+        self.dtypes = dtype[key]
         self.columns = list(self.dtypes.keys())
 
         # rdb
@@ -40,7 +40,7 @@ class Processor:
         df_list = manager.fetch_objects(key=self.s3_key)
 
         self.logger.info("{num} files is loaded".format(num=len(df_list)))
-        self.logger.info("success to load df from origin bucket")
+        self.logger.info("load df from origin bucket")
         return df_list
 
     def validate(self):
@@ -65,7 +65,7 @@ class Processor:
         :return: success or fail (bool)
         """
         input_value = self.df.head(2).apply(lambda x: tuple(x.values), axis=1)
-
+        print(tuple(input_value))
         qb = InsertBuilder(
             schema_name=self.schema_name,
             table_name=self.table_name,
@@ -84,7 +84,7 @@ class Processor:
             sys.exit()
         except Exception as e:
             # TODO: change Exception.
-            self.logger.critical("fail to insert data into rds")
+            self.logger.critical(e, exc_info=True)
             sys.exit()
 
         self.logger.info("success processing {key}".format(key=self.key))

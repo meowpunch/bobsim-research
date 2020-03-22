@@ -89,9 +89,9 @@ class InsertBuilder(VoidQueryBuilder):
 
         self.store_query('insert_{}.sql'.format(self.init_dict["TABLE_NAME"]))  # 1
 
-        query = self.manipulate(self.query)  # 2
+        # query = self.manipulate(self.query)  # 2
 
-        self.exec_query(args=self.init_dict["VALUE"], query=query)
+        self.exec_query(args=self.init_dict["VALUE"], query=self.query)
 
         # self.check_insert()
 
