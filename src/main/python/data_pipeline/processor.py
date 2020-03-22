@@ -11,7 +11,8 @@ from util.s3_manager.manager import S3Manager
 
 class Processor:
     """
-        origin bucket (s3) -> process bucket (rds_public_data, staging schema)
+        load public data from s3 origin bucket and check valid
+        save to staging schema in rds and return pd DataFrame
     """
 
     def __init__(self, key):
@@ -30,6 +31,7 @@ class Processor:
         self.schema_name = "public_data"
         self.table_name = self.key
 
+        # return
         self.df = None
 
     def load(self):
@@ -80,6 +82,9 @@ class Processor:
         qb.execute()
 
     def execute(self):
+        """
+        :return: pandas DataFrame that load from s3 origin bucket
+        """
         self.logger.info("start processing {key}".format(key=self.key))
 
         try:
