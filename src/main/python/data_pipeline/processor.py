@@ -66,7 +66,8 @@ class Processor:
             save validated data to RDS
         :return: success or fail (bool)
         """
-        input_value = self.df.head(1).apply(lambda x: tuple(x.values), axis=1)
+        # temporary head(2)
+        input_value = self.df.head(2).apply(lambda x: tuple(x.values), axis=1)
 
         qb = InsertBuilder(
             schema_name=self.schema_name,
