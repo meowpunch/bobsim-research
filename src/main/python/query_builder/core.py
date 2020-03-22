@@ -8,7 +8,7 @@ from abc import *
 class QueryBuilder(metaclass=ABCMeta):
 
     # def __init__(self, table_name):
-    def __init__(self, table_name, att_name=None,
+    def __init__(self, schema_name='bobsim_schema', table_name=None, att_name=None,
                  value=None, where_clause: str = None,
                  group_by=None,
                  having=None, order_by: str = None,
@@ -29,6 +29,7 @@ class QueryBuilder(metaclass=ABCMeta):
                 ( init_dict , where_condition, dict, join etc..)
         
         """
+        self.schema_name = schema_name
         self.query = None
 
     def store_query(self, sql_filename):
@@ -41,8 +42,8 @@ class QueryBuilder(metaclass=ABCMeta):
 
 class VoidQueryBuilder(QueryBuilder):
 
-    def exec_query(self, query):
-        exec_void_query(query)
+    def exec_query(self, query, args):
+        exec_void_query(args=args, query=query, schema_name=self.schema_name)
 
     def check_query(self):
         pass
@@ -51,7 +52,7 @@ class VoidQueryBuilder(QueryBuilder):
 class ReturnQueryBuilder(QueryBuilder):
 
     def exec_query(self, query):
-        exec_return_query(query)
+        exec_return_query(query=query, schema_name=self.schema_name)
 
 
 # QueryBuilder-VoidQueryBuilder-CreateBuilder
@@ -69,7 +70,6 @@ class CreateBuilder(VoidQueryBuilder):
         self.check_create()
 
     def check_create(self):
-
         # sql = "SHOW FULL COLUMNS FROM %s " % self.init_dict["TABLE_NAME"]
 
         check_select_builder = SelectBuilder(self.init_dict["TABLE_NAME"], ' * ')
@@ -89,24 +89,27 @@ class InsertBuilder(VoidQueryBuilder):
 
         self.store_query('insert_{}.sql'.format(self.init_dict["TABLE_NAME"]))  # 1
 
-        query = self.manipulate(self.query)  # 2
+        # query = self.manipulate(self.query)  # 2
 
-        self.exec_query(query)
+        self.exec_query(args=self.init_dict["VALUE"], query=self.query)
 
-        self.check_insert()
+        # self.check_insert()
 
     def check_insert(self):
-        a = SelectBuilder(self.init_dict["TABLE_NAME"], ' * ', order_by='ORDER BY id DESC', limit='LIMIT 1')
+        # TODO: error for table that has no id(PK)
+        a = SelectBuilder(
+            schema_name=self.schema_name,
+            table_name=self.init_dict["TABLE_NAME"],
+            att_name=' * '
+            # order_by='ORDER BY id DESC',
+            # limit='LIMIT 1'
+        )
         print(a.execute())
 
     def manipulate(self, query):
         # let's think about lots of input_values
         mani_query = query.format(self.init_dict["VALUE"])
-
         return mani_query
-
-    def exec_query(self, query):
-        exec_void_query(query)
 
 
 # QueryBuilder-VoidQueryBuilder-InsertBuilder
@@ -237,9 +240,6 @@ class SelectBuilder(ReturnQueryBuilder):
 
         return second_mani_query
 
-    def exec_query(self, query):
-        return exec_return_query(query)
-
 
 class DropBuilder(VoidQueryBuilder):
 
@@ -249,6 +249,6 @@ class DropBuilder(VoidQueryBuilder):
     def process(self):
         self.store_query('drop.sql')  # 1
 
-        mani_query= self.query % self.init_dict["TABLE_NAME"]
+        mani_query = self.query % self.init_dict["TABLE_NAME"]
 
         exec_void_query(mani_query)

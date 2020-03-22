@@ -9,7 +9,7 @@ from simulator.price import price
 from simulator.quantity import quantify
 from simulator.user import User
 from util.db import load_query, exec_return_query
-from util.s3 import save_json
+from util.s3_manager import save_json
 
 
 class Simulator:

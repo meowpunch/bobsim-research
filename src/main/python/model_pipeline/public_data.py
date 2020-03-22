@@ -58,8 +58,7 @@ def origin_bucket_json():
     objs = list_objects(prefix=prefix)
     file_list = list(map(lambda x: x.key[len(prefix) + 1:], objs))[1:]
 
-    root_url = get_url_s3()
-    destination_url = root_url + "/" + prefix
+    destination_url = get_url_s3() + "/" + prefix
     list(map(functools.partial(func,
                                path=destination_url,
                                prefix=prefix), file_list))

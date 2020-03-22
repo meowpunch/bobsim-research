@@ -1,0 +1,1 @@
+INSERT INTO temp (num, str) VALUES {}
