@@ -14,4 +14,4 @@ def main(arg):
 
 
 if __name__ == '__main__':
-    main(arg="public_terrestrial_weather")
+    main(arg="public_marine_weather")

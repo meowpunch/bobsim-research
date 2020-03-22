@@ -28,28 +28,28 @@ dtype = {
 
     # TODO: Find reasons not applicable
     "public_terrestrial_weather": {
-        "지점": "UInt8",
+        "지점": "int8",
         "지점명": "object",
         "일시": "object",
-        "평균기온(°C)": "Uint32",
+        "평균기온(°C)": "float16",
         "최저기온(°C)": "float16",
         "최고기온(°C)": "float16",
         "강수 계속시간(hr)": "float16",
         "일강수량(mm)": "float16",
         "최대 풍속(m/s)": "float16",
         "평균 풍속(m/s)": "float16",
-        "최소 상대습도(%)": "float16",
-        "평균 상대습도(%)": "float16",
+        "최소 상대습도(pct)": "float16",
+        "평균 상대습도(pct)": "float16",
         "합계 일조시간(hr)": "float16",
         "합계 일사량(MJ/m2)": "float16"
     },
 
     "public_marine_weather": {
-        "지점": "Uint16",
+        "지점": "int16",
         "일시": "object",
         "평균 풍속(m/s)": "float16",
         "평균기압(hPa)": "float16",
-        "평균 상대습도(%)": "float16",
+        "평균 상대습도(pct)": "float16",
         "평균 기온(°C)": "float16",
         "평균 수온(°C)": "float16",
         "평균 최대 파고(m)": "float16",

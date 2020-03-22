@@ -53,11 +53,11 @@ class Processor:
             """
             :return: pd DataFrame combined with df_list
             """
-            tmp = ele[self.columns].astype(dtype=self.dtypes, copy=True)
-            return accum[self.columns].astype(dtype=self.dtypes).append(tmp)
+            tmp = ele[self.columns]
+            return accum[self.columns].append(tmp)
 
         tmp_df = reduce(combine, df_list)
-        self.df = tmp_df.replace({pd.NA: None})
+        self.df = tmp_df.astype(dtype=self.dtypes)
 
     def save(self):
         """
@@ -66,8 +66,11 @@ class Processor:
             save validated data to RDS
         :return: success or fail (bool)
         """
+        # replace pd.NA to None in order to save NULL to rds.
+        tmp_df = self.df.replace({pd.NA: None}, inplace=False)
+
         # temporary head(2)
-        input_value = self.df.head(2).apply(lambda x: tuple(x.values), axis=1)
+        input_value = tmp_df.head(2).apply(lambda x: tuple(x.values), axis=1)
 
         qb = InsertBuilder(
             schema_name=self.schema_name,
