@@ -26,37 +26,37 @@ dtype = {
         "조사가격시장명": "object"
     },
 
-    # TODO: find proper type for each attributes.
+    # TODO: Find reasons not applicable
     "public_terrestrial_weather": {
-        "지점": "object",
+        "지점": "UInt8",
         "지점명": "object",
         "일시": "object",
-        "평균기온(°C)": "object",
-        "최저기온(°C)": "object",
-        "최고기온(°C)": "object",
-        "강수 계속시간(hr)": "object",
-        "일강수량(mm)": "object",
-        "최대 풍속(m/s)": "object",
-        "평균 풍속(m/s)": "object",
-        "최소 상대습도(%)": "object",
-        "평균 상대습도(%)": "object",
-        "합계 일조시간(hr)": "object",
-        "합계 일사량(MJ/m2)": "object"
+        "평균기온(°C)": "Uint32",
+        "최저기온(°C)": "float16",
+        "최고기온(°C)": "float16",
+        "강수 계속시간(hr)": "float16",
+        "일강수량(mm)": "float16",
+        "최대 풍속(m/s)": "float16",
+        "평균 풍속(m/s)": "float16",
+        "최소 상대습도(%)": "float16",
+        "평균 상대습도(%)": "float16",
+        "합계 일조시간(hr)": "float16",
+        "합계 일사량(MJ/m2)": "float16"
     },
 
     "public_marine_weather": {
-        "지점": "",
+        "지점": "Uint16",
         "일시": "object",
-        "평균 풍속(m/s)": "",
-        "평균기압(hPa)": "",
-        "평균 상대습도(%)": "",
-        "평균 기온(°C)": "",
-        "평균 수온(°C)": "",
-        "평균 최대 파고(m)": "",
-        "평균 유의 파고(m)": "",
-        "최고 유의 파고(m)": "",
-        "최고 최대 파고(m)": "",
-        "평균 파주기(sec)": "",
-        "최고 파주기(sec)": "",
+        "평균 풍속(m/s)": "float16",
+        "평균기압(hPa)": "float16",
+        "평균 상대습도(%)": "float16",
+        "평균 기온(°C)": "float16",
+        "평균 수온(°C)": "float16",
+        "평균 최대 파고(m)": "float16",
+        "평균 유의 파고(m)": "float16",
+        "최고 유의 파고(m)": "float16",
+        "최고 최대 파고(m)": "float16",
+        "평균 파주기(sec)": "float16",
+        "최고 파주기(sec)": "float16",
     }
 }
