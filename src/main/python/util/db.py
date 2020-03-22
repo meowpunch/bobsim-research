@@ -52,7 +52,7 @@ def exec_void_query(args, query, schema_name):
     conn = get_connection(schema_name)
     try:
         with conn.cursor() as cur:
-            if len(args) > 1:
+            if type(args[0]) is tuple and len(args) > 1:
                 cur.executemany(query=query, args=args)
             else:
                 cur.execute(query=query, args=args)

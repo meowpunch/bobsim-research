@@ -13,6 +13,7 @@ class Processor:
     """
         origin bucket (s3) -> process bucket (rds_public_data, staging schema)
     """
+
     def __init__(self, key):
         self.key = key
         self.logger = init_logger()
@@ -54,6 +55,7 @@ class Processor:
             """
             tmp = ele[self.columns].astype(dtype=self.dtypes, copy=True)
             return accum[self.columns].astype(dtype=self.dtypes).append(tmp)
+
         tmp_df = reduce(combine, df_list)
         self.df = tmp_df.replace({pd.NA: None})
 
@@ -64,12 +66,12 @@ class Processor:
             save validated data to RDS
         :return: success or fail (bool)
         """
-        input_value = self.df.head(2).apply(lambda x: tuple(x.values), axis=1)
-        print(tuple(input_value))
+        input_value = self.df.head(1).apply(lambda x: tuple(x.values), axis=1)
+
         qb = InsertBuilder(
             schema_name=self.schema_name,
             table_name=self.table_name,
-            value=tuple(input_value)
+            value=tuple(input_value) if len(input_value) > 1 else input_value[0]
         )
         qb.execute()
 
@@ -89,4 +91,3 @@ class Processor:
 
         self.logger.info("success processing {key}".format(key=self.key))
         return self.df
-
