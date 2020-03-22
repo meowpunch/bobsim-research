@@ -7,12 +7,8 @@ def main():
         init Processor instance and execute process
     :return: pandas DataFrame (public price)
     """
-    logger = init_logger()
-
-    logger.info("start processing public_price")
-    processor = Processor()
+    processor = Processor(key="public_price")
     df = processor.execute()
-    logger.info("success processing public_price!")
     return df
 
 

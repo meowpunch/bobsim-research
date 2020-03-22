@@ -4,9 +4,6 @@ from functools import reduce
 import pandas as pd
 
 from data_pipeline.dtype import public_price
-from data_pipeline.public_price.loader import Loader
-import logging
-
 from query_builder.core import InsertBuilder
 from util.logging import init_logger
 from util.s3_manager.manager import S3Manager
@@ -16,11 +13,21 @@ class Processor:
     """
         origin bucket (s3) -> process bucket (rds_public_data, staging schema)
     """
-
-    def __init__(self):
+    def __init__(self, key):
+        self.key = key
         self.logger = init_logger()
+
+        # s3
+        self.bucket_name = "production-bobsim"
+        self.s3_key = "{dir}/origin/csv".format(dir=self.key)
+
+        # valid check
         self.dtypes = public_price
         self.columns = list(self.dtypes.keys())
+
+        # rdb
+        self.schema_name = "public_data"
+        self.table_name = self.key
 
         self.df = None
 
@@ -29,12 +36,10 @@ class Processor:
             init S3Manager instances and fetch objects
         :return: list of pd DataFrame (origin)
         """
-        manager = S3Manager(bucket_name='production-bobsim')
-        df_list = manager.fetch_objects(
-            key='public_price/origin/csv'
-        )
+        manager = S3Manager(bucket_name=self.bucket_name)
+        df_list = manager.fetch_objects(key=self.s3_key)
 
-        self.logger.info("%d files is loaded" % len(df_list))
+        self.logger.info("{num} files is loaded".format(num=len(df_list)))
         self.logger.info("success to load df from origin bucket")
         return df_list
 
@@ -62,27 +67,26 @@ class Processor:
         input_value = self.df.head(2).apply(lambda x: tuple(x.values), axis=1)
 
         qb = InsertBuilder(
-            schema_name='public_data',
-            table_name='item_price_info',
+            schema_name=self.schema_name,
+            table_name=self.table_name,
             value=tuple(input_value)
         )
         qb.execute()
 
-        # temporary true
-        return True
-
     def execute(self):
+        self.logger.info("start processing {key}".format(key=self.key))
+
         try:
             self.validate()
+            self.save()
         except KeyError:
             self.logger.critical("columns are not matched", exc_info=True)
             sys.exit()
-
-        s = self.save()
-
-        if s:
-            self.logger.info("")
-            return self.df
-        else:
-            self.logger.critical("save fail")
+        except Exception as e:
+            # TODO: change Exception.
+            self.logger.critical("fail to insert data into rds")
             sys.exit()
+
+        self.logger.info("success processing {key}".format(key=self.key))
+        return self.df
+

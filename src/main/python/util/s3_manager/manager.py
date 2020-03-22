@@ -12,7 +12,6 @@ class S3Manager:
             Add capability to process other formats (i.e. json, text, avro, parquet, etc.)
             Add a func that write file to AWS S3
         :param bucket_name: AWS S3 bucket name
-        :param key: AWS S3 key to locate the CSV file
         """
         self.bucket_name = bucket_name
 
@@ -55,17 +54,3 @@ class S3Manager:
             df_list = list(map(read, filtered[0:2]))
 
         return df_list
-
-
-
-
-
-
-    # def execute(self):
-    #     """
-    #         Now, this manager can only read CSV file from AWS S3
-    #         read & turn it into pandas data frame
-    #     :return: pd DataFrame
-    #     """
-    #     return self.fetch_objects()
-
