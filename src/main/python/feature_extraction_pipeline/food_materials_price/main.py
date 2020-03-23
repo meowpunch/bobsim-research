@@ -13,24 +13,23 @@ class FeatureExtractionPipeline:
         self.train_label = None
 
     @staticmethod
-    def load(self):
+    def load():
         """
         :return: one prepared pd DataFrame
         """
-        return PriceDataPipeline().execute()
+        return PriceDataPipeline().process()
 
     def process(self):
         """
         :return: vectorized form of data
         """
-        # load public data running data-pipeline
-        data = self.load()
+        # load a prepared data
+        prepared_data = self.load()
+        print(prepared_data)
 
         # extract feature
         feature_extractor = FeatureExtractor(
-            price=data["price"],
-            terrestrial_weather=data["terrestrial_weather"],
-            marine_weather=data["marine_weather"],
+            prepared_data=prepared_data
         )
         train, test = feature_extractor.transform()
 
