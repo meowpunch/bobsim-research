@@ -1,4 +1,4 @@
-INSERT INTO public_terrestrial_weather
+INSERT IGNORE INTO public_terrestrial_weather
 (
         `지점`, `지점명`,`일시`, `평균기온(°C)`,
         `최저기온(°C)`, `최고기온(°C)`, `강수 계속시간(hr)`,
