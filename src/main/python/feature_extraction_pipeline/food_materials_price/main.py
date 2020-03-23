@@ -31,8 +31,8 @@ class FeatureExtractionPipeline:
 
 
 def main():
-    # for test
-    pass
+    x = FeatureExtractionPipeline()
+    x.process()
 
 
 if __name__ == '__main__':
