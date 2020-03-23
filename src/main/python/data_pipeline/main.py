@@ -1,3 +1,5 @@
+import sys
+
 from data_pipeline.processor import Processor
 from util.logging import init_logger
 
@@ -8,23 +10,41 @@ class DataPipeline:
         2. process and save to rds & return pd DataFrames
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, args):
+        self.logger = init_logger()
 
-    def process(self):
-        """
-        :return: price, terrestrial_weather, marine_weather (pd DataFrame)
-        """
+        self.type_map = {
+            "price": "public_price",
+            "terrestrial_weather": "public_terrestrial_weather",
+            "marine_weather": "public_marine_weather"
+        }
+
+        self.args = args
+        self.types = None
+
+        self.df_list = None
+
+    def map_type(self, arg):
+        try:
+            return self.type_map[arg]
+        except KeyError:
+            raise KeyError("data pipeline does not support a type for {type}".format(type=arg))
+
+    def execute(self):
         # TODO: ingest data
 
-        # process data
-        p0 = Processor(key="public_price")
-        price = p0.execute()
-        p1 = Processor(key="public_terrestrial_weather")
-        t_weather = p1.execute()
-        p2 = Processor(key="public_marine_weather")
-        m_weather = p2.execute()
-        return price, t_weather, m_weather
+        try:
+            self.types = list(map(self.map_type, self.args))
+
+            self.df_list = list(map(
+                lambda x: Processor(key=x).execute(),
+                self.types))
+
+            return self.df_list
+
+        except KeyError as e:
+            self.logger.critical(e, exc_info=True)
+            sys.exit()
 
 
 def main(arg):

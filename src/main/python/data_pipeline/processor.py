@@ -2,6 +2,7 @@ import sys
 from functools import reduce
 
 import pandas as pd
+import pymysql
 
 from data_pipeline.dtype import dtype
 from query_builder.core import InsertBuilder
@@ -93,10 +94,10 @@ class Processor:
         except KeyError:
             self.logger.critical("columns are not matched", exc_info=True)
             sys.exit()
-        except Exception as e:
-            # TODO: change Exception.
+        except pymysql.err.IntegrityError as e:
+            # TODO: specify error
             self.logger.critical(e, exc_info=True)
-            sys.exit()
+            # sys.exit()
 
         self.logger.info("success processing {key}".format(key=self.key))
         return self.df
