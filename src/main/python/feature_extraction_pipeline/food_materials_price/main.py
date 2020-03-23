@@ -12,20 +12,12 @@ class FeatureExtractionPipeline:
     def __init__(self):
         self.train_label = None
 
-    @staticmethod
-    def load():
-        """
-        :return: one prepared pd DataFrame
-        """
-        return PriceDataPipeline().process()
-
     def process(self):
         """
         :return: vectorized form of data
         """
         # load a prepared data
-        prepared_data = self.load()
-        print(prepared_data)
+        prepared_data = PriceDataPipeline().process()
 
         # extract feature
         feature_extractor = FeatureExtractor(

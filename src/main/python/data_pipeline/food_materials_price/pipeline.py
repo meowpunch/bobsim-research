@@ -9,6 +9,7 @@ class PriceDataPipeline:
         prepare data from process data
         return prepared data for FeatureExtraction
     """
+
     def __init__(self):
         self.types = ['price', 'terrestrial_weather', 'marine_weather']
 
@@ -43,12 +44,14 @@ class PriceDataPipeline:
         :return: a prepared data (pd DataFrame)
         """
         # manipulate price
-        filtered_p = self.price[self.price.apply(lambda x: x.조사구분명 == "소비자가격", axis=1)]
-        print(filtered_p)
+        tmp_p = self.price[self.price.apply(lambda x: x.조사구분명 == "소비자가격",
+                                            axis=1)].drop("조사구분명", axis=1)
+        filtered_p = tmp_p.assign(
+            품목명=lambda x: x.표준품목명 + x.조사가격품목명 + x.표준품종명 + x.조사가격품종명
+        ).drop(columns=["표준품목명", "조사가격품목명", "표준품종명", "조사가격품종명"], axis=1)
+
         price = filtered_p.groupby([
-            "조사일자", "조사구분명",
-            "표준품목명", "조사가격품목명", "표준품종명", "조사가격품종명",
-            "조사지역명"
+            "조사일자", "품목명", "조사지역명"
         ]).mean().reset_index()
 
         # manipulate weather
