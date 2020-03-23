@@ -11,5 +11,11 @@ class FeatureExtractor:
 
         pass
 
+
+    def fit(self):
+        pass
+
     def transform(self):
         pass
+
+    # TODO: save

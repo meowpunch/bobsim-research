@@ -1,5 +1,4 @@
-from data_pipeline.main import DataPipeline
-from data_pipeline.processor import Processor
+from data_pipeline.food_materials_price.pipeline import PriceDataPipeline
 from feature_extraction_pipeline.food_materials_price.extractor import FeatureExtractor
 
 
@@ -9,30 +8,22 @@ class FeatureExtractionPipeline:
         2. extract feature using FeatureExtractor
         3. save and return vectorized form of data
     """
+
     def __init__(self):
-        self.types = ['price', 'terrestrial_weather', 'marine_weather']
-
-        # TODO: decide whether to put public data as instance variables.
-        self.price = None
-        self.terrestrial_weather = None
-        self.marine_weather = None
-
         self.train_label = None
 
+    @staticmethod
     def load(self):
         """
-        :return: dictionary {str(name): pd DataFrame}
+        :return: one prepared pd DataFrame
         """
-        df_list = DataPipeline(
-            args=self.types
-        ).execute()
-        return dict(zip(self.types, df_list))
+        return PriceDataPipeline().execute()
 
     def process(self):
         """
         :return: vectorized form of data
         """
-        # load public data processed
+        # load public data running data-pipeline
         data = self.load()
 
         # extract feature
@@ -49,9 +40,8 @@ class FeatureExtractionPipeline:
 
 
 def main():
-
-    price_df = ()
-    return
+    # for test
+    pass
 
 
 if __name__ == '__main__':
