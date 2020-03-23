@@ -16,7 +16,8 @@ dtype = {
         "표준단위코드": "UInt8",
         "표준단위명": "object",
         "조사단위명": "object",
-        "당일조사가격": "UInt32",
+        # TODO: type casting error btw UInt and float while aggregate mean
+        "당일조사가격": "int",
         "전일조사가격": "UInt32",
         "조사지역코드": "UInt16",
         "조사지역명": "object",

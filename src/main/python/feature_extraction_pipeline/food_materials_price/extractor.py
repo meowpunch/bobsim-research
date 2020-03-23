@@ -2,14 +2,18 @@ import pandas as pd
 
 
 class FeatureExtractor:
-    def __init__(
-            self,
-            price: pd.DataFrame,
-            terrestrial_weather: pd.DataFrame,
-            marine_weather: pd.DataFrame
-    ):
+    """
+        This class will provide a vectorized form
+    """
+    def __init__(self, prepared_data: pd.DataFrame):
 
+        numeric_features = ['']
+        pass
+
+    def fit(self):
         pass
 
     def transform(self):
         pass
+
+    # TODO: save

@@ -1,5 +1,4 @@
-from data_pipeline.main import DataPipeline
-from data_pipeline.processor import Processor
+from data_pipeline.food_materials_price.pipeline import PriceDataPipeline
 from feature_extraction_pipeline.food_materials_price.extractor import FeatureExtractor
 
 
@@ -9,27 +8,20 @@ class FeatureExtractionPipeline:
         2. extract feature using FeatureExtractor
         3. save and return vectorized form of data
     """
-    def __init__(self):
-        # TODO: decide whether to put public data as instance variables.
-        self.price = None
-        self.terrestrial_weather = None
-        self.marine_weather = None
 
+    def __init__(self):
         self.train_label = None
-        pass
 
     def process(self):
         """
         :return: vectorized form of data
         """
-        # load public data
-        price, t_weather, m_weather = DataPipeline()
+        # load a prepared data
+        prepared_data = PriceDataPipeline().process()
 
         # extract feature
         feature_extractor = FeatureExtractor(
-            price=price,
-            terrestrial_weather=t_weather,
-            marine_weather=m_weather,
+            prepared_data=prepared_data
         )
         train, test = feature_extractor.transform()
 
@@ -39,9 +31,8 @@ class FeatureExtractionPipeline:
 
 
 def main():
-
-    price_df = ()
-    return
+    # for test
+    pass
 
 
 if __name__ == '__main__':

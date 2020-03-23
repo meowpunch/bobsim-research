@@ -2,6 +2,7 @@ import sys
 from functools import reduce
 
 import pandas as pd
+import pymysql
 
 from data_pipeline.dtype import dtype
 from query_builder.core import InsertBuilder
@@ -72,7 +73,7 @@ class Processor:
         tmp_df = self.df.replace({pd.NA: None}, inplace=False)
 
         # temporary head(2)
-        input_value = tmp_df.head(2).apply(lambda x: tuple(x.values), axis=1)
+        input_value = tmp_df.head(500).apply(lambda x: tuple(x.values), axis=1)
 
         qb = InsertBuilder(
             schema_name=self.schema_name,
@@ -89,14 +90,14 @@ class Processor:
 
         try:
             self.validate()
-            self.save()
+            # self.save()
         except KeyError:
             self.logger.critical("columns are not matched", exc_info=True)
             sys.exit()
-        except Exception as e:
-            # TODO: change Exception.
+        except pymysql.err.IntegrityError as e:
+            # TODO: specify error
             self.logger.critical(e, exc_info=True)
-            sys.exit()
+            # sys.exit()
 
         self.logger.info("success processing {key}".format(key=self.key))
         return self.df

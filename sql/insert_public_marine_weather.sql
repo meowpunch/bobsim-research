@@ -1,4 +1,4 @@
-INSERT INTO public_marine_weather
+INSERT IGNORE INTO public_marine_weather
 (
                 `지점`,`일시`,`평균 풍속(m/s)` ,
                 `평균 기압(hPa)` ,`평균상대습도(pct)`,
