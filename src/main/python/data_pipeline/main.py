@@ -3,17 +3,28 @@ from util.logging import init_logger
 
 
 class DataPipeline:
+    """
+        1. ingest data from public data portal
+        2. process and save to rds & return pd DataFrames
+    """
 
     def __init__(self):
-        self.price =
-        self.t_
+        pass
 
     def process(self):
         """
         :return: price, terrestrial_weather, marine_weather (pd DataFrame)
         """
-        Processor(key="public_price")
-        return self.price, self.t_weather, self.m_weather
+        # TODO: ingest data
+
+        # process data
+        p0 = Processor(key="public_price")
+        price = p0.execute()
+        p1 = Processor(key="public_terrestrial_weather")
+        t_weather = p1.execute()
+        p2 = Processor(key="public_marine_weather")
+        m_weather = p2.execute()
+        return price, t_weather, m_weather
 
 
 def main(arg):
