@@ -5,6 +5,8 @@ import pandas as pd
 from util.general import load_csv, load_file_list
 from util.s3 import save_to_s3, list_objects, get_url_s3, save_json
 
+# TODO: All will be changed
+
 
 def save_csv(filename):
     """
@@ -58,8 +60,7 @@ def origin_bucket_json():
     objs = list_objects(prefix=prefix)
     file_list = list(map(lambda x: x.key[len(prefix) + 1:], objs))[1:]
 
-    root_url = get_url_s3()
-    destination_url = root_url + "/" + prefix
+    destination_url = get_url_s3() + "/" + prefix
     list(map(functools.partial(func,
                                path=destination_url,
                                prefix=prefix), file_list))

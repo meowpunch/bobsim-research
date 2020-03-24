@@ -9,16 +9,16 @@ import csv
 from util.executable import get_destination
 
 
-def get_connection():
+def get_connection(schema_name: str = "bobsim_schema"):
     credentials_path = 'config/credentials.yaml'
     with open(get_destination(credentials_path)) as file:
         credentials = yaml.load(file, Loader=yaml.FullLoader)
 
     db_config = {
-        'host': credentials['rds']['url'],
-        'user': credentials['rds']['username'],
-        'passwd': credentials['rds']['password'],
-        'db': credentials['rds']['name'],
+        'host': credentials['rds'][schema_name]['url'],
+        'user': credentials['rds'][schema_name]['username'],
+        'passwd': credentials['rds'][schema_name]['password'],
+        'db': schema_name,
         'connect_timeout': 5,
         'charset': 'utf8'
     }
@@ -36,23 +36,26 @@ def get_connection():
         sys.exit()
 
 
-def load_query(filename):
-    destination_path = 'sql/' + filename
+def load_query(filename, prefix=''):
+    destination_path = 'sql/' + prefix + filename
     # For read KOR , add encoding='utf-8'
     with open(get_destination(destination_path), encoding='utf-8') as file:
         query = file.read()
         return query
 
 
-def exec_return_query(query):
-    return pd.read_sql_query(query, get_connection())
+def exec_return_query(query, schema_name):
+    return pd.read_sql_query(query, get_connection(schema_name))
 
 
-def exec_void_query(query):
-    conn = get_connection()
+def exec_void_query(args, query, schema_name):
+    conn = get_connection(schema_name)
     try:
         with conn.cursor() as cur:
-            cur.execute(query)
+            if type(args[0]) is tuple and len(args) > 1:
+                cur.executemany(query=query, args=args)
+            else:
+                cur.execute(query=query, args=args)
         conn.commit()
 
     finally:
@@ -78,11 +81,11 @@ def show_columns(query):  # get list(column_name) without id
         return column
 
 
-def show_data(query):
+def show_data(query, schema_name):
     column = []
     column1 = []
 
-    conn = get_connection()
+    conn = get_connection(schema_name)
     try:
         with conn.cursor() as cur:
             cur.execute(query)

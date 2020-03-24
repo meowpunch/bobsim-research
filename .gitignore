@@ -8,5 +8,8 @@ rds_config.py
 
 command_install.txt
 
-config
 csv
+
+
+# credential
+credentials.yaml
