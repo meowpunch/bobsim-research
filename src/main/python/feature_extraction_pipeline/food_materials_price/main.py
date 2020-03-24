@@ -10,31 +10,30 @@ class FeatureExtractionPipeline:
         2. extract feature using FeatureExtractor
         3. save and return vectorized form of data
     """
-    def __init__(self):
-        pass
 
-    @staticmethod
-    def process():
+    def __init__(self):
+        # load a prepared data and split test & train
+        prepared_data = PriceDataPipeline().process()
+        X = prepared_data.drop("당일조사가격", axis=1, inplace=False)
+        y = prepared_data["당일조사가격"]
+
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
+            X, y, test_size=0.2
+        )
+
+    def process(self):
         """
         :return: vectorized form of data
         """
-        # load a prepared data
-        prepared_data = PriceDataPipeline().process()
-
         # extract feature
         feature_extractor = FeatureExtractor(
-            prepared_data=prepared_data.drop("당일조사가격", axis=1)
+            X_train=self.X_train, X_test=self.X_test
         )
-        X = feature_extractor.transform()
-        y = prepared_data["당일조사가격"]
-
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, stratify=y
-        )
+        X_train, X_test = feature_extractor.fit_transform()
 
         # TODO: save
 
-        return X_train, X_test, y_train, y_test
+        return X_train, X_test, self.y_train, self.y_test
 
 
 def main():

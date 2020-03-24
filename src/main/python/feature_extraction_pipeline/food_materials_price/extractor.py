@@ -28,13 +28,13 @@ class FeatureExtractor:
             )
         ).drop("조사일자", axis=1)
 
-    def __init__(self, prepared_data: pd.DataFrame):
-        self.x_data = self.extract_from_date(prepared_data)
-        print(self.x_data)
+    def __init__(self, X_train: pd.DataFrame, X_test: pd.DataFrame):
+        self.x_train = self.extract_from_date(X_train)
+        self.x_test = self.extract_from_date(X_test)
 
         # contain null value [강수 계속시간(hr), 일강수량(mm) -> 0
         numeric_features = [
-            '평균 기온(°C)', '최저기온(°C)', '최고기온(°C)', '강수 계속시간(hr)',
+            '평균기온(°C)', '최저기온(°C)', '최고기온(°C)', '강수 계속시간(hr)',
             '일강수량(mm)', '최대 풍속(m/s)', '평균 풍속(m/s)', '최소 상대습도(pct)',
             '평균 상대습도(pct)', '합계 일조시간(hr)', '합계 일사량(MJ/m2)',
             '평균 수온(°C)', '평균 최대 파고(m)']
@@ -52,15 +52,10 @@ class FeatureExtractor:
             ('cat', categorical_transformer, categorical_features)
         ])
 
+    def fit_transform(self):
+        # self.fit()
+        train = self.column_transformer.fit_transform(self.x_train)
+        test = self.column_transformer.transform(self.x_test)
+        return train, test
 
-    def fit(self):
-        """
-
-        :return: X that fitted
-        """
-
-
-    def transform(self):
-        pass
-
-    # TODO: save
+# TODO: save
