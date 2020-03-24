@@ -7,7 +7,9 @@ class RegressionModel:
         TODO: Ridge, Lasso, Elastic.
     """
     def __init__(self, x_train, y_train):
-        self.model = MLPRegressor()  # let's think about params
+        # TODO: think about params
+        self.model = ElasticNet()
+
         self.x_train = x_train
         self.y_train = y_train
 
