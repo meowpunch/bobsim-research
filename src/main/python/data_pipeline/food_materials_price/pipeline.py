@@ -7,7 +7,7 @@ from data_pipeline.main import DataPipeline
 class PriceDataPipeline:
     """
         prepare data from process data
-        return prepared data for FeatureExtraction
+        return prepared data(one pd DataFrame) for FeatureExtraction
     """
 
     def __init__(self):
