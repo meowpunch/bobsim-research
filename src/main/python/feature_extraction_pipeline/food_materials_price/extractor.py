@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
 
 
 class FeatureExtractor:
@@ -18,6 +18,15 @@ class FeatureExtractor:
         numeric_transform = Pipeline(steps=[
             ('imputer', SimpleImputer(strategy='constant', fill_value=0)),
             ('scaler', StandardScaler())])
+
+        categorical_features = ['품목명', '조사지역명']
+        categorical_transformer = Pipeline(steps=[
+            ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),
+            ('onehot', OneHotEncoder(handle_unknown='ignore'))])
+
+
+
+
 
         pass
 
