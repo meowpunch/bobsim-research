@@ -1,3 +1,5 @@
+from sklearn.linear_model import ElasticNet, LogisticRegression
+from sklearn.neural_network import MLPRegressor
 
 
 class RegressionModel:
@@ -5,12 +7,18 @@ class RegressionModel:
         TODO: Ridge, Lasso, Elastic.
     """
     def __init__(self, x_train, y_train):
+        # TODO: think about params
+        self.model = ElasticNet()
+
         self.x_train = x_train
         self.y_train = y_train
 
     def fit(self):
-        pass
+        self.model.fit(self.x_train, self.y_train)
 
     def predict(self, x_test):
-        pass
+        return self.model.predict(x_test)
+
+    def score(self):
+        return self.model.score(self.x_train, self.y_train)
 

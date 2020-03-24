@@ -51,6 +51,6 @@ class S3Manager:
 
         if len(filtered) > 0:
             # test partial filtered by index slicing
-            df_list = list(map(read, filtered[0:2]))
+            df_list = list(map(read, filtered[0:12]))
 
         return df_list

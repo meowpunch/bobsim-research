@@ -49,7 +49,7 @@ class DataPipeline:
 
 def main(arg):
     """
-        init Processor instance and execute process
+        for testing
     :return: pandas DataFrame (public price)
     """
     p = Processor(key=arg)

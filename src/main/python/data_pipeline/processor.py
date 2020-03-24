@@ -73,7 +73,7 @@ class Processor:
         tmp_df = self.df.replace({pd.NA: None}, inplace=False)
 
         # temporary head(2)
-        input_value = tmp_df.head(500).apply(lambda x: tuple(x.values), axis=1)
+        input_value = tmp_df.apply(lambda x: tuple(x.values), axis=1)
 
         qb = InsertBuilder(
             schema_name=self.schema_name,
