@@ -1,4 +1,5 @@
 import pandas as pd
+from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
@@ -29,6 +30,7 @@ class FeatureExtractor:
 
     def __init__(self, prepared_data: pd.DataFrame):
         self.x_data = self.extract_from_date(prepared_data)
+        print(self.x_data)
 
         # contain null value [강수 계속시간(hr), 일강수량(mm) -> 0
         numeric_features = [
@@ -36,17 +38,27 @@ class FeatureExtractor:
             '일강수량(mm)', '최대 풍속(m/s)', '평균 풍속(m/s)', '최소 상대습도(pct)',
             '평균 상대습도(pct)', '합계 일조시간(hr)', '합계 일사량(MJ/m2)',
             '평균 수온(°C)', '평균 최대 파고(m)']
-        numeric_transform = Pipeline(steps=[
+        numeric_transformer = Pipeline(steps=[
             ('imputer', SimpleImputer(strategy='constant', fill_value=0)),
             ('scaler', StandardScaler())])
 
-        categorical_features = ['품목명', '조사지역명']
+        categorical_features = ['품목명', '조사지역명', 'is_weekend', 'season']
         categorical_transformer = Pipeline(steps=[
             ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),
-            ('onehot', OneHotEncoder(handle_unknown='ignore'))])
+            ('onehot', OneHotEncoder(handle_unknown='error'))])
+
+        self.column_transformer = ColumnTransformer(transformers=[
+            ('num', numeric_transformer, numeric_features),
+            ('cat', categorical_transformer, categorical_features)
+        ])
+
 
     def fit(self):
-        pass
+        """
+
+        :return: X that fitted
+        """
+
 
     def transform(self):
         pass
