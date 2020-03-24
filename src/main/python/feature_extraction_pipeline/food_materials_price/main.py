@@ -1,3 +1,5 @@
+from sklearn.model_selection import train_test_split
+
 from data_pipeline.food_materials_price.pipeline import PriceDataPipeline
 from feature_extraction_pipeline.food_materials_price.extractor import FeatureExtractor
 
@@ -8,11 +10,11 @@ class FeatureExtractionPipeline:
         2. extract feature using FeatureExtractor
         3. save and return vectorized form of data
     """
-
     def __init__(self):
-        self.train_label = None
+        pass
 
-    def process(self):
+    @staticmethod
+    def process():
         """
         :return: vectorized form of data
         """
@@ -21,13 +23,18 @@ class FeatureExtractionPipeline:
 
         # extract feature
         feature_extractor = FeatureExtractor(
-            prepared_data=prepared_data
+            prepared_data=prepared_data.drop("당일조사가격", axis=1)
         )
-        train, test = feature_extractor.transform()
+        X = feature_extractor.transform()
+        y = prepared_data["당일조사가격"]
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, stratify=y
+        )
 
         # TODO: save
 
-        return train, self.train_label, test
+        return X_train, X_test, y_train, y_test
 
 
 def main():

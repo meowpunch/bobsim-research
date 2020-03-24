@@ -61,5 +61,8 @@ class PriceDataPipeline:
             how='inner', on="일시"
         ).reset_index()
 
-        # combine and return
-        return pd.merge(price, weather, how="left", left_on="조사일자", right_on="일시")
+        # combine price with weather and return
+        return pd.merge(
+            price, weather,
+            how="left", left_on="조사일자", right_on="일시"
+        ).drop("일시", axis=1).astype(dtype={"조사일자": "datetime64"})

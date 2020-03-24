@@ -8,7 +8,28 @@ class FeatureExtractor:
     """
         This class will provide a vectorized form
     """
+
+    @staticmethod
+    def extract_from_date(X: pd.DataFrame):
+        """
+        :return: pd DataFrame that 'season' and 'is_weekend' is extracted
+        """
+        # add is_weekend column
+        tmp_df = X.assign(
+            is_weekend=lambda df: df.조사일자.dt.dayofweek.apply(
+                lambda day: 1 if day > 4 else 0
+            )
+        )
+        # add season column and drop date
+        return tmp_df.assign(
+            season=lambda df: df.조사일자.dt.month.apply(
+                lambda month: (month % 12 + 3) // 3
+            )
+        ).drop("조사일자", axis=1)
+
     def __init__(self, prepared_data: pd.DataFrame):
+        self.x_data = self.extract_from_date(prepared_data)
+
         # contain null value [강수 계속시간(hr), 일강수량(mm) -> 0
         numeric_features = [
             '평균 기온(°C)', '최저기온(°C)', '최고기온(°C)', '강수 계속시간(hr)',
@@ -23,12 +44,6 @@ class FeatureExtractor:
         categorical_transformer = Pipeline(steps=[
             ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),
             ('onehot', OneHotEncoder(handle_unknown='ignore'))])
-
-
-
-
-
-        pass
 
     def fit(self):
         pass

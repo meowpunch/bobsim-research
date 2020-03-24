@@ -14,7 +14,7 @@ class PriceModelPipeline:
         """
         # extract features
         feature_pipeline = FeatureExtractionPipeline()
-        train_x, train_y, test_x = feature_pipeline.process()
+        train_x, train_y, test_x, test_y = feature_pipeline.process()
 
         # fit model
         model = RegressionModel(train_x, train_y)
