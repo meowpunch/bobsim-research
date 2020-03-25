@@ -1,13 +1,11 @@
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
-from sklearn.metrics import mean_squared_error , r2_score
-from sklearn.preprocessing import PolynomialFeatures, StandardScaler, MinMaxScaler, OneHotEncoder
-from sklearn.linear_model import LinearRegression
-from sklearn.pipeline import Pipeline
 import numpy as np
 import pandas as pd
+from sklearn.linear_model import Ridge, Lasso, ElasticNet
+from sklearn.model_selection import cross_val_score
+from sklearn.preprocessing import PolynomialFeatures, StandardScaler, MinMaxScaler, OneHotEncoder
 
 
+# TODO: move to jupyter notebook
 class ModelSection:
 
     def __init__(self, X_data, y_target):
@@ -44,7 +42,7 @@ class ModelSection:
             colname = 'alpha:' + str(param)
             coeff_df[colname] = coeff
 
-            #view_coeff_per_alpha
+            # view_coeff_per_alpha
             sort_column = 'alpha:' + str(alpha[0])
             coeff_df.sort_values(by=sort_column, ascending=False)
 
