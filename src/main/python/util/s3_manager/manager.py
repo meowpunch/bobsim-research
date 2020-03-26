@@ -13,7 +13,7 @@ class S3Manager:
             Add a func that write file to AWS S3
         :param bucket_name: AWS S3 bucket name
         """
-        self.bucket_name = bucket_name
+        # self.bucket_name = bucket_name
 
         self.s3 = boto3.resource('s3')
         self.s3_bucket = self.s3.Bucket(bucket_name)

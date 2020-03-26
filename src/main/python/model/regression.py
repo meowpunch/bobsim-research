@@ -16,11 +16,11 @@ class RegressionModel:
             "l1_ratio": np.arange(0.0, 1.0, 0.1)
         }
 
-        self.searcher = GridSearchCV(
-            estimator=self.model,
-            param_grid=self.param_grid,
-            scoring="r2", cv=10
-        )
+        # self.searcher = GridSearchCV(
+        #     estimator=self.model,
+        #     param_grid=self.param_grid,
+        #     scoring="r2", cv=10
+        # )
 
         self.x_train = x_train
         self.y_train = y_train
