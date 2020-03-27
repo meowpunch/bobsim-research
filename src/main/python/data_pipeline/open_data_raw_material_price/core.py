@@ -17,7 +17,10 @@ class OpenDataRawMaterialPrice:
         # s3
         self.bucket_name = "production-bobsim"
         self.file_name = "201908.csv"
-        self.s3_key = "public_data/public_price/origin/csv/{filename}".format(
+        self.load_key = "public_data/public_price/origin/csv/{filename}".format(
+            filename=self.file_name
+        )
+        self.save_key = "public_data/public_price/process/csv/{filename}".format(
             filename=self.file_name
         )
 
@@ -40,8 +43,7 @@ class OpenDataRawMaterialPrice:
         :return: pd DataFrame
         """
         manager = S3Manager(bucket_name=self.bucket_name)
-        df = manager.fetch_objects(key=self.s3_key)
-        print(df)
+        df = manager.fetch_objects(key=self.load_key)
 
         self.logger.info("{num} files is loaded".format(num=len(df)))
         self.logger.info("load df from origin bucket")
@@ -51,20 +53,21 @@ class OpenDataRawMaterialPrice:
         """
         return: pd Series represents the number of null values by column
         """
-        return self.input_df.isna().sum()
+        return self.input_df.isna().sum().reset_index(name='count')
 
     def clean(self):
         """
         :return: DataFrame cleaned by null value
         """
-        df_null = self.count_null()
-        df_null.map(
-            lambda x: self.logger.info(
-                "{col} has {num} null values".format(
-                    col=Index(df_null).get_loc(x), num=x
-                )))
+        df_null = self.count_null().apply(lambda x: x.count > 0, axis=1)
+        print(df_null)
 
-        if df_null.sum() > 0:
+        if df_null['count'].sum() > 0:
+            df_null.apply(
+                lambda x: self.logger.info(
+                    "{col} has {num} null values".format(
+                        col=x['index'], num=x['count']
+                    )), axis=1)
             # drop rows have null values.
             return self.input_df.dropna(axis=0)
         else:
@@ -85,7 +88,7 @@ class OpenDataRawMaterialPrice:
         # log by skew
         # TODO: define threshold not just '1'
         skew_features_top = skew_features[skew_features > 1]
-        return np.log1p(df[skew_features_top.index])
+        df[skew_features_top.index] = np.log1p(df[skew_features_top.index])
 
     def process(self):
         """
@@ -97,9 +100,18 @@ class OpenDataRawMaterialPrice:
         :return: exit_code code (bool)
         """
         df = self.clean()
-        self.processed_df = self.transform(df)
-        print(self.processed_df)
 
+        self.transform(df)
+
+        print(df.info())
+
+        self.save_s3(df)
         # TODO: save to s3
 
         return self.exit_code
+
+    def save_s3(self, df: pd.DataFrame):
+        manager = S3Manager(bucket_name=self.bucket_name)
+        manager.save_objects(to_save_df=df, key=self.save_key)
+        self.logger.info("{} is saved to s3 bucket({}) ".format(self.file_name, self.bucket_name))
+

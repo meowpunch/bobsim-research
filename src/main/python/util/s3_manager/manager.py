@@ -13,7 +13,7 @@ class S3Manager:
             Add a func that write file to AWS S3
         :param bucket_name: AWS S3 bucket name
         """
-        # self.bucket_name = bucket_name
+        self.bucket_name = bucket_name
 
         self.s3 = boto3.resource('s3')
         self.s3_bucket = self.s3.Bucket(bucket_name)
@@ -54,3 +54,10 @@ class S3Manager:
             df_list = list(map(read, filtered[0:12]))
 
         return df_list
+
+    def save_objects(self, to_save_df, key):
+        csv_buffer = StringIO()
+        to_save_df.to_csv(csv_buffer)
+        self.s3.Object(bucket_name=self.bucket_name, key=key).put(Body=csv_buffer.getvalue())
+
+
