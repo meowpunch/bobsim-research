@@ -78,6 +78,7 @@ class OpenDataRawMaterialPrice:
 
     @staticmethod
     def get_unit(unit_name):
+        # TODO: handle no supported unit_name
         return {
             '20KG': 200, '1.2KG': 12, '8KG': 80, '1KG': 10, '1KG(단)': 10, '1KG(1단)': 10,
             '500G': 5, '200G': 2, '100G': 1,
@@ -114,8 +115,9 @@ class OpenDataRawMaterialPrice:
         # TODO: define threshold not just '1'
         if abs(skew_feature) > 1:
             skewed_df = transformed.assign(당일조사가격=np.log1p(transformed["당일조사가격"]))
-
-        return skewed_df
+            return skewed_df
+        else:
+            return transformed
 
     def process(self):
         """
@@ -135,6 +137,6 @@ class OpenDataRawMaterialPrice:
         except Exception("fail to save") as e:
             self.logger.critical(e, exc_info=True)
             return 1
-
-        self.logger.info("{} is saved to s3 bucket({}) ".format(self.file_name, self.bucket_name))
-        return 0
+        finally:
+            self.logger.info("{} is saved to s3 bucket({}) ".format(self.file_name, self.bucket_name))
+            return 0
