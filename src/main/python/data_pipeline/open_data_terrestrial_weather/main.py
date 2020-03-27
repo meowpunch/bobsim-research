@@ -2,7 +2,7 @@ from data_pipeline.open_data_terrestrial_weather.core import OpenDataTerrestrial
 
 
 def main():
-    open_data_rterrestrial_weather = OpenDataRawMaterialPrice()
+    open_data_terrestrial_weather = OpenDataTerrestrialWeather()
     open_data_terrestrial_weather.process()
 
 

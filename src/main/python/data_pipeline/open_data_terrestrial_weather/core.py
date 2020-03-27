@@ -26,9 +26,10 @@ class OpenDataTerrestrialWeather:
 
         # load and filter by columns
         self.columns = [
-            "조사일자", "조사구분명",
-            "표준품목명", "조사가격품목명", "표준품종명", "조사가격품종명",
-            "조사등급명", "조사단위명", "당일조사가격", "조사지역명"
+            "일시", "평균기온(°C)", "최저기온(°C)",
+            "최고기온(°C)", "강수 계속시간(hr)", "일강수량(mm)",
+            "최대 풍속(m/s)", "평균 풍속(m/s)", "최소 상대습도(pct)",
+            "평균 상대습도(pct)", "합계 일조시간(hr)"
         ]
         try:
             self.input_df = self.load()
