@@ -9,6 +9,9 @@ class PriceModelPipeline:
 
     def __init__(self):
         self.logger = init_logger()
+        self.model_type = "ElasticNet"
+
+        self.join_key = "조사일자"
         pass
 
     def process(self):

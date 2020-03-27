@@ -27,8 +27,8 @@ class S3Manager:
 
     def fetch_objects(self, key):
         """
-            # TODO: consideration about one df return.
-        :return: list of pd DataFrame
+            # TODO: consideration about one df OR empty list return
+        :return: list of pd DataFrames
         """
         # init return variable
         df_list = list()
@@ -54,3 +54,18 @@ class S3Manager:
             df_list = list(map(read, filtered[0:12]))
 
         return df_list
+
+    def save_object(self, to_save_df, key):
+        """
+            save one object
+        :param to_save_df:
+        :param key:
+        :return: success
+        """
+        csv_buffer = StringIO()
+        to_save_df.to_csv(csv_buffer)
+        self.s3.Object(bucket_name=self.bucket_name, key=key).put(Body=csv_buffer.getvalue())
+
+        if len(self.fetch_objs_list(prefix=key)) is not 1:
+            raise Exception("fail to save")
+
