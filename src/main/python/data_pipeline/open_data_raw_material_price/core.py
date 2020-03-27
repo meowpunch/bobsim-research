@@ -17,10 +17,10 @@ class OpenDataRawMaterialPrice:
         # s3
         self.bucket_name = "production-bobsim"
         self.file_name = "201908.csv"
-        self.load_key = "public_data/public_price/origin/csv/{filename}".format(
+        self.load_key = "public_data/open_data_raw_material_price/origin/csv/{filename}".format(
             filename=self.file_name
         )
-        self.save_key = "public_data/public_price/process/csv/{filename}".format(
+        self.save_key = "public_data/open_data_raw_material_price/process/csv/{filename}".format(
             filename=self.file_name
         )
 
@@ -30,14 +30,11 @@ class OpenDataRawMaterialPrice:
             "표준품목명", "조사가격품목명", "표준품종명", "조사가격품종명",
             "조사등급명", "조사단위명", "당일조사가격", "조사지역명"
         ]
-
         try:
             self.input_df = self.load()
         except IndexError:
             self.logger.critical("there is no file to be loaded", exc_info=True)
             sys.exit()
-
-        self.processed_df = None
 
     def load(self):
         """
