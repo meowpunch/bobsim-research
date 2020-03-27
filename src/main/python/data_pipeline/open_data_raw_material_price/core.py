@@ -47,15 +47,12 @@ class OpenDataRawMaterialPrice:
         manager = S3Manager(bucket_name=self.bucket_name)
         df = manager.fetch_objects(key=self.load_key)
 
-        self.logger.info("{num} files is loaded".format(num=len(df)))
-        self.logger.info("load df from origin bucket")
-
         # TODO: no use index to get first element.
         return df[0][self.columns]
 
     def save(self, df: pd.DataFrame):
         manager = S3Manager(bucket_name=self.bucket_name)
-        return manager.save_object(to_save_df=df, key=self.save_key)
+        manager.save_object(to_save_df=df, key=self.save_key)
 
     def clean(self):
         """
@@ -96,7 +93,6 @@ class OpenDataRawMaterialPrice:
         :param df: cleaned pd DataFrame
         :return: transformed pd DataFrame
         """
-        print(df)
         # transform by unit
         transformed = df.assign(
             조사단위명=lambda r: r.조사단위명.map(
@@ -105,11 +101,9 @@ class OpenDataRawMaterialPrice:
         ).assign(
             당일조사가격=lambda x: x.당일조사가격 / x.조사단위명
         ).drop("조사단위명", axis=1)
-        print(transformed)
 
         # get skew
         skew_feature = transformed["당일조사가격"].skew()
-        print(skew_feature)
 
         # log by skew
         # TODO: define threshold not just '1'
@@ -135,8 +129,9 @@ class OpenDataRawMaterialPrice:
 
             self.save(transformed)
         except Exception("fail to save") as e:
+            # TODO: consider that it can repeat to save one more time
             self.logger.critical(e, exc_info=True)
             return 1
-        finally:
-            self.logger.info("{} is saved to s3 bucket({}) ".format(self.file_name, self.bucket_name))
-            return 0
+
+        self.logger.info("success to process raw material price")
+        return 0
