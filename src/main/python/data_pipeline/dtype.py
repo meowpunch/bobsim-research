@@ -1,5 +1,5 @@
 dtype = {
-    "public_price": {
+    "raw_material_price": {
         "조사일자": "object",
         "조사구분코드": "UInt8",
         "조사구분명": "object",
@@ -28,7 +28,7 @@ dtype = {
     },
 
     # TODO: Find reasons not applicable
-    "public_terrestrial_weather": {
+    "terrestrial_weather": {
         "지점": "int8",
         "지점명": "object",
         "일시": "object",
@@ -45,7 +45,7 @@ dtype = {
         "합계 일사량(MJ/m2)": "float16"
     },
 
-    "public_marine_weather": {
+    "marine_weather": {
         "지점": "int16",
         "일시": "object",
         "평균 풍속(m/s)": "float16",

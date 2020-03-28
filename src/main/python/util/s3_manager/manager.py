@@ -4,6 +4,8 @@ from io import StringIO
 import boto3
 import pandas as pd
 
+from util.logging import init_logger
+
 
 class S3Manager:
     def __init__(self, bucket_name):
@@ -13,6 +15,8 @@ class S3Manager:
             Add a func that write file to AWS S3
         :param bucket_name: AWS S3 bucket name
         """
+        self.logger = init_logger()
+
         self.bucket_name = bucket_name
 
         self.s3 = boto3.resource('s3')
@@ -28,6 +32,7 @@ class S3Manager:
     def fetch_objects(self, key):
         """
             # TODO: consideration about one df OR empty list return
+        :param key: prefix
         :return: list of pd DataFrames
         """
         # init return variable
@@ -40,7 +45,6 @@ class S3Manager:
         def read(x):
             """
                 read csv file
-
                 TODO: error handling
             :param x: s3.ObjectSummery
             :return: bool
@@ -49,23 +53,30 @@ class S3Manager:
             tmp_df = pd.read_csv(ls, header=0)
             return tmp_df
 
-        if len(filtered) > 0:
+        f_num = len(filtered)
+        if f_num > 0:
             # test partial filtered by index slicing
-            df_list = list(map(read, filtered[0:12]))
+            df_list = list(map(read, filtered))
 
+        self.logger.info("{num} files is loaded from s3 '{bucket_name}'x".format(
+            num=f_num, bucket_name=self.bucket_name))
         return df_list
 
     def save_object(self, to_save_df, key):
         """
             save one object
-        :param to_save_df:
-        :param key:
-        :return: success
+        :param to_save_df: pd DataFrame to be saved
+        :param key: key (dir + filename)
         """
         csv_buffer = StringIO()
         to_save_df.to_csv(csv_buffer)
         self.s3.Object(bucket_name=self.bucket_name, key=key).put(Body=csv_buffer.getvalue())
 
         if len(self.fetch_objs_list(prefix=key)) is not 1:
+            # if there is no saved file in s3, raise exception
             raise Exception("fail to save")
+        else:
+            self.logger.info("data is saved to {dir} in s3 '{bucket_name}'".format(
+                dir=key, bucket_name=self.bucket_name
+            ))
 
