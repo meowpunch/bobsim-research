@@ -8,7 +8,7 @@ from util.logging import init_logger
 from util.s3_manager.manager import S3Manager
 
 
-class OpenDataTerrestrialWeather:
+class OpenDataMarineWeather:
 
     def __init__(self):
         self.logger = init_logger()
@@ -16,28 +16,23 @@ class OpenDataTerrestrialWeather:
         # s3
         self.bucket_name = "production-bobsim"
         self.file_name = "2014-2020.csv"
-        self.load_key = "public_data/open_data_terrestrial_weather/origin/csv/{filename}".format(
+        self.load_key = "public_data/open_data_marine_weather/origin/csv/{filename}".format(
             filename=self.file_name
         )
-        self.save_key = "public_data/open_data_terrestrial_weather/process/csv/{filename}".format(
+        self.save_key = "public_data/open_data_marine_weather/process/csv/{filename}".format(
             filename=self.file_name
         )
 
         # type
         self.dtypes = {
             "일시": "datetime64",
-            "평균기온(°C)": "float16", "최저기온(°C)": "float16",
-            "최고기온(°C)": "float16", "강수 계속시간(hr)": "float16",
-            "일강수량(mm)": "float16", "최대 풍속(m/s)": "float16",
-            "평균 풍속(m/s)": "float16", "최소 상대습도(pct)": "float16",
-            "평균 상대습도(pct)": "float16", "합계 일조시간(hr)": "float16",
+            "평균 수온(°C)": "float16", "평균 최대 파고(m)": "float16"
         }
         self.columns = self.dtypes.keys()
 
         # fillna
-        self.columns_with_mean = ['평균기온(°C)', '최저기온(°C)', '최고기온(°C)', '최대 풍속(m/s)', '평균 풍속(m/s)',
-                                  '최소 상대습도(pct)', '평균 상대습도(pct)', '합계 일조시간(hr)']
-        self.columns_with_zero = ['강수 계속시간(hr)', '일강수량(mm)']
+        self.columns_with_mean = ['평균 수온(°C)']
+        self.columns_with_zero = ['평균 최대 파고(m)']
 
         # TODO: how to handle datetime? it will be parameterized
         self.term = datetime.strptime("201908", "%Y%m")
