@@ -45,8 +45,9 @@ class OpenDataTerrestrialWeather:
         manager = S3Manager(bucket_name=self.bucket_name)
         df = manager.fetch_objects(key=self.load_key)
 
-        # TODO: no use index to get first element.
-        return df[0][self.columns]
+        self.logger.info("{num} files is loaded".format(num=len(df)))
+        self.logger.info("load df from origin bucket")
+        return df[0][self.columns].query('조사일자')
 
     def save(self, df: pd.DataFrame):
         manager = S3Manager(bucket_name=self.bucket_name)

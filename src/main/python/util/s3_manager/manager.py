@@ -42,10 +42,9 @@ class S3Manager:
         objs_list = self.fetch_objs_list(prefix=key)
         filtered = list(filter(lambda x: x.size > 0, objs_list))
 
-        def read(x):
+        def to_df(x):
             """
-                read csv file
-                TODO: error handling
+                transform obj(x) to df
             :param x: s3.ObjectSummery
             :return: bool
             """
@@ -56,11 +55,14 @@ class S3Manager:
         f_num = len(filtered)
         if f_num > 0:
             # test partial filtered by index slicing
-            df_list = list(map(read, filtered))
+            df_list = list(map(to_df, filtered))
 
-        self.logger.info("{num} files is loaded from s3 '{bucket_name}'x".format(
-            num=f_num, bucket_name=self.bucket_name))
-        return df_list
+            self.logger.info("{num} files is loaded from s3 '{bucket_name}'".format(
+                num=f_num, bucket_name=self.bucket_name))
+            return df_list
+        else:
+            # TODO: error handling
+            raise Exception("nothing to be loaded")
 
     def save_object(self, to_save_df, key):
         """
