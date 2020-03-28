@@ -55,7 +55,7 @@ class OpenDataRawMaterialPrice:
         manager = S3Manager(bucket_name=self.bucket_name)
         manager.save_object(to_save_df=df, key=self.save_key)
 
-    def clean(self, df):
+    def clean(self, df: pd.DataFrame):
         """
             clean DataFrame by no used columns and null value
         :return: cleaned DataFrame
@@ -122,13 +122,14 @@ class OpenDataRawMaterialPrice:
         # get skew
         return self.by_skew(transformed)
 
-    def combine_categories(self):
+    @staticmethod
+    def combine_categories(df: pd.DataFrame):
         """
             starting point of process
             combine categories into one category
         :return: combined pd DataFrame
         """
-        return self.input_df.assign(
+        return df.assign(
             품목명=lambda x: x.표준품목명 + x.조사가격품목명 + x.표준품종명 + x.조사가격품종명
         ).drop(columns=["표준품목명", "조사가격품목명", "표준품종명", "조사가격품종명"], axis=1)
 
@@ -143,7 +144,7 @@ class OpenDataRawMaterialPrice:
         :return: exit_code code (bool)  0: success 1: fail
         """
         try:
-            combined = self.combine_categories()
+            combined = self.combine_categories(self.input_df)
             cleaned = self.clean(combined)
             transformed = self.transform(cleaned)
             self.save(transformed)

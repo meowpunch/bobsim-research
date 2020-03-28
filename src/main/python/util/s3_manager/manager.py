@@ -57,12 +57,12 @@ class S3Manager:
             # test partial filtered by index slicing
             df_list = list(map(to_df, filtered))
 
-            self.logger.info("{num} files is loaded from s3 '{bucket_name}'".format(
-                num=f_num, bucket_name=self.bucket_name))
+            self.logger.info("{num} files is loaded from {dir} in s3 '{bucket_name}'".format(
+                num=f_num, dir=key, bucket_name=self.bucket_name))
             return df_list
         else:
             # TODO: error handling
-            raise Exception("nothing to be loaded")
+            raise Exception("nothing to be loaded in '{dir}'".format(dir=key))
 
     def save_object(self, to_save_df, key):
         """
@@ -71,14 +71,15 @@ class S3Manager:
         :param key: key (dir + filename)
         """
         csv_buffer = StringIO()
-        to_save_df.to_csv(csv_buffer)
+        to_save_df.to_csv(csv_buffer, encoding='euc-kr')
+        print(csv_buffer.getvalue())
         self.s3.Object(bucket_name=self.bucket_name, key=key).put(Body=csv_buffer.getvalue())
 
         if len(self.fetch_objs_list(prefix=key)) is not 1:
             # if there is no saved file in s3, raise exception
             raise Exception("fail to save")
         else:
-            self.logger.info("data is saved to {dir} in s3 '{bucket_name}'".format(
+            self.logger.info("data is saved to '{dir}' in s3 '{bucket_name}'".format(
                 dir=key, bucket_name=self.bucket_name
             ))
 
