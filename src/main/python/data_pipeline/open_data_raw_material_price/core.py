@@ -24,6 +24,7 @@ class OpenDataRawMaterialPrice:
             filename=self.file_name
         )
 
+        # type
         self.dtypes = {
             "조사일자": "datetime64",
             "조사구분명": "object", "표준품목명": "object", "조사가격품목명": "object", "표준품종명": "object",
@@ -53,12 +54,12 @@ class OpenDataRawMaterialPrice:
         manager = S3Manager(bucket_name=self.bucket_name)
         manager.save_object(to_save_df=df, key=self.save_key)
 
-    def clean(self):
+    def clean(self, df):
         """
             clean DataFrame by no used columns and null value
         :return: cleaned DataFrame
         """
-        filtered_df = self.input_df[self.input_df.조사구분명 == "소비자가격"]
+        filtered_df = df[df.조사구분명 == "소비자가격"]
 
         # pd Series represents the number of null values by column
         df_null = filtered_df.isna().sum()
@@ -103,7 +104,6 @@ class OpenDataRawMaterialPrice:
     def by_skew(df: pd.DataFrame):
         # get skew
         skew_feature = df["당일조사가격"].skew()
-
         # log by skew
         # TODO: define threshold not just '1'
         if abs(skew_feature) > 1:
@@ -120,25 +120,33 @@ class OpenDataRawMaterialPrice:
         """
         # transform by unit
         transformed = self.by_unit(df)
-
         # get skew
         return self.by_skew(transformed)
 
+    def combine_categories(self):
+        """
+            starting point of process
+            combine categories into one category
+        :return: combined pd DataFrame
+        """
+        return self.input_df.assign(
+            품목명=lambda x: x.표준품목명 + x.조사가격품목명 + x.표준품종명 + x.조사가격품종명
+        ).drop(columns=["표준품목명", "조사가격품목명", "표준품종명", "조사가격품종명"], axis=1)
 
     def process(self):
         """
             process
-                clean null value
-                transform as distribution of data
-                save processed data to s3
+                1. combine categories
+                2. clean null value
+                3. transform as distribution of data
+                4. save processed data to s3
             TODO: save to rdb
         :return: exit_code code (bool)  0: success 1: fail
         """
         try:
-            cleaned = self.clean()
-
+            combined = self.combine_categories()
+            cleaned = self.clean(combined)
             transformed = self.transform(cleaned)
-
             self.save(transformed)
         except Exception("fail to save") as e:
             # TODO: consider that it can repeat to save one more time

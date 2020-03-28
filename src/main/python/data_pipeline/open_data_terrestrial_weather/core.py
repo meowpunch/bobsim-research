@@ -1,3 +1,4 @@
+import datetime
 import sys
 
 import pandas as pd
@@ -24,41 +25,49 @@ class OpenDataTerrestrialWeather:
             filename=self.file_name
         )
 
-        # load and filter by columns
-        self.columns = [
-            "일시", "평균기온(°C)", "최저기온(°C)",
-            "최고기온(°C)", "강수 계속시간(hr)", "일강수량(mm)",
-            "최대 풍속(m/s)", "평균 풍속(m/s)", "최소 상대습도(pct)",
-            "평균 상대습도(pct)", "합계 일조시간(hr)"
-        ]
-        try:
-            self.input_df = self.load()
-        except IndexError:
-            self.logger.critical("there is no file to be loaded", exc_info=True)
-            sys.exit()
+        # type
+        self.dtypes = {
+            "일시": "datetime64",
+            "평균기온(°C)": "float16", "최저기온(°C)": "float16",
+            "최고기온(°C)": "float16", "강수 계속시간(hr)": "float16",
+            "일강수량(mm)": "float16", "최대 풍속(m/s)": "float16",
+            "평균 풍속(m/s)": "float16", "최소 상대습도(pct)": "float16",
+            "평균 상대습도(pct)": "float16", "합계 일조시간(hr)": "float16",
+        }
+        self.columns = self.dtypes.keys()
+
+        # TODO: it will be parameterized
+        self.term = datetime.strptime("201908", "%y%m")
+        print(self.term)
+
+        # load filtered df
+        # TODO: how to handle datetime
+        df = self.load()
+        self.input_df = df["일시"].map(lambda x: x >= self.term)
 
     def load(self):
         """
-            init S3Manager instances and fetch objects
+            fetch DataFrame and astype and filter by columns
         :return: pd DataFrame
         """
         manager = S3Manager(bucket_name=self.bucket_name)
         df = manager.fetch_objects(key=self.load_key)
 
-        self.logger.info("{num} files is loaded".format(num=len(df)))
-        self.logger.info("load df from origin bucket")
-        return df[0][self.columns].query('조사일자')
+        # TODO: no use index to get first element.
+        # filter by column and check types
+        return df[0][self.columns].astype(dtype=self.dtypes)
 
     def save(self, df: pd.DataFrame):
         manager = S3Manager(bucket_name=self.bucket_name)
         manager.save_object(to_save_df=df, key=self.save_key)
 
-    def clean(self):
+    def clean(self, df):
         """
             clean DataFrame by no used columns and null value
         :return: cleaned DataFrame
         """
-        filtered_df = self.input_df[self.input_df.조사구분명 == "소비자가격"]
+        filtered_df = df[df.조사구분명 == "소비자가격"]
+
         # pd Series represents the number of null values by column
         df_null = filtered_df.isna().sum()
 
@@ -83,8 +92,32 @@ class OpenDataTerrestrialWeather:
             '1L': 10,
             '1속': 1,
             '1포기': 1,
-        }.get(unit_name, 1)
-        # default 1
+        }.get(unit_name, 1)  # default 1
+
+    def by_unit(self, df: pd.DataFrame):
+        """
+            transform unit
+        :return: transformed pd DataFrame
+        """
+        return df.assign(
+            조사단위명=lambda r: r.조사단위명.map(
+                lambda x: self.get_unit(x)
+            )
+        ).assign(
+            당일조사가격=lambda x: x.당일조사가격 / x.조사단위명
+        ).drop("조사단위명", axis=1)
+
+    @staticmethod
+    def by_skew(df: pd.DataFrame):
+        # get skew
+        skew_feature = df["당일조사가격"].skew()
+        # log by skew
+        # TODO: define threshold not just '1'
+        if abs(skew_feature) > 1:
+            skewed_df = df.assign(당일조사가격=np.log1p(df["당일조사가격"]))
+            return skewed_df
+        else:
+            return df
 
     def transform(self, df: pd.DataFrame):
         """
@@ -93,39 +126,34 @@ class OpenDataTerrestrialWeather:
         :return: transformed pd DataFrame
         """
         # transform by unit
-        transformed = df.assign(
-            조사단위명=lambda r: r.조사단위명.map(
-                lambda x: self.get_unit(x)
-            )
-        ).assign(
-            당일조사가격=lambda x: x.당일조사가격 / x.조사단위명
-        ).drop("조사단위명", axis=1)
-
+        transformed = self.by_unit(df)
         # get skew
-        skew_feature = transformed["당일조사가격"].skew()
+        return self.by_skew(transformed)
 
-        # log by skew
-        # TODO: define threshold not just '1'
-        if abs(skew_feature) > 1:
-            skewed_df = transformed.assign(당일조사가격=np.log1p(transformed["당일조사가격"]))
-            return skewed_df
-        else:
-            return transformed
+    def combine_categories(self):
+        """
+            starting point of process
+            combine categories into one category
+        :return: combined pd DataFrame
+        """
+        return self.input_df.assign(
+            품목명=lambda x: x.표준품목명 + x.조사가격품목명 + x.표준품종명 + x.조사가격품종명
+        ).drop(columns=["표준품목명", "조사가격품목명", "표준품종명", "조사가격품종명"], axis=1)
 
     def process(self):
         """
             process
-                clean null value
-                transform as distribution of data
-                save processed data to s3
+                1. combine categories
+                2. clean null value
+                3. transform as distribution of data
+                4. save processed data to s3
             TODO: save to rdb
         :return: exit_code code (bool)  0: success 1: fail
         """
         try:
-            cleaned = self.clean()
-
+            combined = self.combine_categories()
+            cleaned = self.clean(combined)
             transformed = self.transform(cleaned)
-
             self.save(transformed)
         except Exception("fail to save") as e:
             # TODO: consider that it can repeat to save one more time
