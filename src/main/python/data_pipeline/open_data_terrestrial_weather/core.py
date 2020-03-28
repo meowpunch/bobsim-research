@@ -1,5 +1,6 @@
-import datetime
+
 import sys
+from datetime import datetime
 
 import pandas as pd
 import numpy as np
@@ -36,14 +37,13 @@ class OpenDataTerrestrialWeather:
         }
         self.columns = self.dtypes.keys()
 
-        # TODO: it will be parameterized
-        self.term = datetime.strptime("201908", "%y%m")
-        print(self.term)
+        # TODO: how to handle datetime? it will be parameterized
+        self.term = datetime.strptime("201908", "%Y%m")
 
         # load filtered df
-        # TODO: how to handle datetime
         df = self.load()
-        self.input_df = df["일시"].map(lambda x: x >= self.term)
+        mask = (df.일시.dt.year == self.term.year) & (df.일시.dt.month == self.term.month)
+        self.input_df = df[mask]
 
     def load(self):
         """
@@ -66,20 +66,19 @@ class OpenDataTerrestrialWeather:
             clean DataFrame by no used columns and null value
         :return: cleaned DataFrame
         """
-        filtered_df = df[df.조사구분명 == "소비자가격"]
-
         # pd Series represents the number of null values by column
-        df_null = filtered_df.isna().sum()
+        df_null = df.isna().sum()
+        print(df_null)
 
         if df_null.sum() > 0:
             filtered = df_null[df_null.map(lambda x: x > 0)]
             self.logger.info(filtered)
 
             # drop rows have null values.
-            return filtered_df.dropna(axis=0)
+            return df.dropna(axis=0)
         else:
             self.logger.info("no missing value at raw material price")
-            return filtered_df
+            return df
 
     @staticmethod
     def get_unit(unit_name):
@@ -130,29 +129,17 @@ class OpenDataTerrestrialWeather:
         # get skew
         return self.by_skew(transformed)
 
-    def combine_categories(self):
-        """
-            starting point of process
-            combine categories into one category
-        :return: combined pd DataFrame
-        """
-        return self.input_df.assign(
-            품목명=lambda x: x.표준품목명 + x.조사가격품목명 + x.표준품종명 + x.조사가격품종명
-        ).drop(columns=["표준품목명", "조사가격품목명", "표준품종명", "조사가격품종명"], axis=1)
-
     def process(self):
         """
             process
-                1. combine categories
-                2. clean null value
-                3. transform as distribution of data
-                4. save processed data to s3
+                1. clean null value
+                2. transform as distribution of data
+                3. save processed data to s3
             TODO: save to rdb
         :return: exit_code code (bool)  0: success 1: fail
         """
         try:
-            combined = self.combine_categories()
-            cleaned = self.clean(combined)
+            cleaned = self.clean()
             transformed = self.transform(cleaned)
             self.save(transformed)
         except Exception("fail to save") as e:

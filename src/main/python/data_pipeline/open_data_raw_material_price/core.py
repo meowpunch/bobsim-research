@@ -36,7 +36,8 @@ class OpenDataRawMaterialPrice:
         self.columns = self.dtypes.keys()
 
         # load filtered df
-        self.input_df = self.load()
+        df = self.load()
+        self.input_df = df[df.조사구분명 == "소비자가격"]
 
     def load(self):
         """
@@ -59,20 +60,18 @@ class OpenDataRawMaterialPrice:
             clean DataFrame by no used columns and null value
         :return: cleaned DataFrame
         """
-        filtered_df = df[df.조사구분명 == "소비자가격"]
-
         # pd Series represents the number of null values by column
-        df_null = filtered_df.isna().sum()
+        df_null = df.isna().sum()
 
         if df_null.sum() > 0:
             filtered = df_null[df_null.map(lambda x: x > 0)]
             self.logger.info(filtered)
 
             # drop rows have null values.
-            return filtered_df.dropna(axis=0)
+            return df.dropna(axis=0)
         else:
             self.logger.info("no missing value at raw material price")
-            return filtered_df
+            return df
 
     @staticmethod
     def get_unit(unit_name):
