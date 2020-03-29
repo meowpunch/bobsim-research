@@ -30,7 +30,7 @@ class OpenDataMarineWeather:
         self.dtypes = {
             "일시": "datetime64",
             "평균 풍속(m/s)": "float16",
-            "평균기압(hPa)": "float16",
+            "평균기압(hPa)": "float32",
             "평균 상대습도(pct)": "float16",
             "평균 기온(°C)": "float16",
             "평균 수온(°C)": "float16",
@@ -54,7 +54,7 @@ class OpenDataMarineWeather:
         # load filtered df
         df = self.load()
         mask = (df.일시.dt.year == self.term.year) & (df.일시.dt.month == self.term.month)
-        self.input_df = df[mask]  # .groupby(["일시"]).mean().reset_index()
+        self.input_df = df[mask]
 
     def load(self):
         """
@@ -113,7 +113,6 @@ class OpenDataMarineWeather:
 
         # get skew
         skew_features = df[filtered].apply(lambda x: skew(x))
-        print(skew_features)
 
         # log by skew
         # TODO: define threshold not just '1'
@@ -142,8 +141,9 @@ class OpenDataMarineWeather:
         """
         try:
             cleaned = self.clean(self.input_df)
-            transformed = self.transform(cleaned)
-            print(transformed)
+            transformed = self.transform(
+                cleaned.groupby(["일시"]).mean().reset_index()
+            )
             self.save(transformed)
         except Exception("fail to save") as e:
             # TODO: consider that it can repeat to save one more time

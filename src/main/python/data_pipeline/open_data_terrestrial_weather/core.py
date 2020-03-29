@@ -29,11 +29,11 @@ class OpenDataTerrestrialWeather:
         # type
         self.dtypes = {
             "일시": "datetime64",
-            "평균기온(°C)": "float16", "최저기온(°C)": "float16",
+            "평균기온(°C)": "float32", "최저기온(°C)": "float32",
             "최고기온(°C)": "float16", "강수 계속시간(hr)": "float16",
             "일강수량(mm)": "float16", "최대 풍속(m/s)": "float16",
             "평균 풍속(m/s)": "float16", "최소 상대습도(pct)": "float16",
-            "평균 상대습도(pct)": "float16", "합계 일조시간(hr)": "float16",
+            "평균 상대습도(pct)": "float32", "합계 일조시간(hr)": "float16",
         }
         self.columns = self.dtypes.keys()
 
@@ -45,7 +45,7 @@ class OpenDataTerrestrialWeather:
         # load filtered df
         df = self.load()
         mask = (df.일시.dt.year == self.term.year) & (df.일시.dt.month == self.term.month)
-        self.input_df = df[mask].groupby(["일시"]).mean().reset_index()
+        self.input_df = df[mask]
 
     def load(self):
         """
@@ -104,7 +104,6 @@ class OpenDataTerrestrialWeather:
 
         # get skew
         skew_features = df[filtered].apply(lambda x: skew(x))
-        print(skew_features)
 
         # log by skew
         # TODO: define threshold not just '1'
@@ -133,7 +132,9 @@ class OpenDataTerrestrialWeather:
         """
         try:
             cleaned = self.clean(self.input_df)
-            transformed = self.transform(cleaned)
+            transformed = self.transform(
+                cleaned.groupby(["일시"]).mean().reset_index()
+            )
             self.save(transformed)
         except Exception("fail to save") as e:
             # TODO: consider that it can repeat to save one more time

@@ -3,11 +3,7 @@ from sklearn.linear_model import ElasticNet
 from sklearn.model_selection import GridSearchCV
 
 
-class RegressionModel:
-    """
-        TODO: Ridge, Lasso, Elastic?
-    """
-
+class ElasticNetModel:
     def __init__(self, m_type, x_train, y_train):
         self.model = ElasticNet()
         self.param_grid = {
