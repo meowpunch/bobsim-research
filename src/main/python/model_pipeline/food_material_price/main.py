@@ -3,7 +3,7 @@ from model_pipeline.food_material_price.core import PricePredictModelPipeline
 
 def main():
     model_pipeline = PricePredictModelPipeline(
-        date="201908"
+        date="201906"
     )
     model_pipeline.process()
 
