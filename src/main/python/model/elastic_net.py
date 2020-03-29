@@ -4,7 +4,7 @@ from sklearn.model_selection import GridSearchCV
 
 
 class ElasticNetModel:
-    def __init__(self, m_type, x_train, y_train):
+    def __init__(self, x_train, y_train):
         self.model = ElasticNet()
         self.param_grid = {
             "max_iter": [1, 5, 10],

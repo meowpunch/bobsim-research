@@ -2,7 +2,7 @@ from sklearn.linear_model import LinearRegression
 
 
 class LinearRegressionModel:
-    def __init__(self, m_type, x_train, y_train):
+    def __init__(self, x_train, y_train):
         self.model = LinearRegression()
 
         self.x_train = x_train
