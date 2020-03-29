@@ -16,7 +16,6 @@ class OpenDataRawMaterialPrice:
 
         # s3
         self.bucket_name = "production-bobsim"
-        # self.file_name = "201908.csv"
         self.load_key = "public_data/open_data_raw_material_price/origin/csv/{filename}.csv".format(
             filename=date
         )
