@@ -35,14 +35,16 @@ class PricePredictModelPipeline:
 
         return
 
+    def tune_hyperparameter(self):
+
+
     def process(self):
         """
-            TODO: logic comes here
-        :return: undefined
+            TODO: consider Step 1
+            1. set train, test volume (LinearRegression)
+            2. hyperparameter tuning
+            3. save
+        :return: exit code
         """
 
-
-
-
-        # extract features
 
