@@ -2,7 +2,9 @@ from data_pipeline.open_data_raw_material_price.core import OpenDataRawMaterialP
 
 
 def main():
-    open_data_raw_material_price = OpenDataRawMaterialPrice()
+    open_data_raw_material_price = OpenDataRawMaterialPrice(
+        date="201908"
+    )
     open_data_raw_material_price.process()
 
 

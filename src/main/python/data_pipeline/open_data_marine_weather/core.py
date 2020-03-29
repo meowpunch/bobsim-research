@@ -10,8 +10,11 @@ from util.s3_manager.manager import S3Manager
 
 class OpenDataMarineWeather:
 
-    def __init__(self):
+    def __init__(self, date: str):
         self.logger = init_logger()
+
+        # TODO: how to handle datetime?
+        self.term = datetime.strptime(date, "%Y%m")
 
         # s3
         self.bucket_name = "production-bobsim"
@@ -19,23 +22,34 @@ class OpenDataMarineWeather:
         self.load_key = "public_data/open_data_marine_weather/origin/csv/{filename}".format(
             filename=self.file_name
         )
-        self.save_key = "public_data/open_data_marine_weather/process/csv/{filename}".format(
-            filename=self.file_name
+        self.save_key = "public_data/open_data_marine_weather/process/csv/{filename}.csv".format(
+            filename=date
         )
 
         # type
         self.dtypes = {
             "일시": "datetime64",
-            "평균 수온(°C)": "float16", "평균 최대 파고(m)": "float16"
+            "평균 풍속(m/s)": "float16",
+            "평균기압(hPa)": "float16",
+            "평균 상대습도(pct)": "float16",
+            "평균 기온(°C)": "float16",
+            "평균 수온(°C)": "float16",
+            "평균 최대 파고(m)": "float16",
+            "평균 유의 파고(m)": "float16",
+            "최고 유의 파고(m)": "float16",
+            "최고 최대 파고(m)": "float16",
+            "평균 파주기(sec)": "float16",
+            "최고 파주기(sec)": "float16",
         }
         self.columns = self.dtypes.keys()
 
         # fillna
-        self.columns_with_mean = ['평균 수온(°C)']
-        self.columns_with_zero = ['평균 최대 파고(m)']
-
-        # TODO: how to handle datetime? it will be parameterized
-        self.term = datetime.strptime("201908", "%Y%m")
+        self.columns_with_mean = [
+            "평균 풍속(m/s)", "평균기압(hPa)", "평균 상대습도(pct)",
+            "평균 기온(°C)", "평균 수온(°C)", "평균 최대 파고(m)",
+            "평균 유의 파고(m)", "최고 유의 파고(m)", "최고 최대 파고(m)"
+        ]
+        self.columns_with_zero = ['평균 파주기(sec)', '최고 파주기(sec)']
 
         # load filtered df
         df = self.load()
@@ -124,7 +138,7 @@ class OpenDataMarineWeather:
                 2. transform as distribution of data
                 3. save processed data to s3
             TODO: save to rdb
-        :return: exit_code code (bool)  0: success 1: fail
+        :return: exit_code (bool)  0:success 1:fail
         """
         try:
             cleaned = self.clean(self.input_df)

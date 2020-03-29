@@ -5,7 +5,7 @@ from model.regression import RegressionModel
 from util.logging import init_logger
 
 
-class PriceModelPipeline:
+class FoodMaterialPriceModelPipeline:
 
     def __init__(self):
         self.logger = init_logger()

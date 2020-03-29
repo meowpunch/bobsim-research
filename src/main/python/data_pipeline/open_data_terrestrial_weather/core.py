@@ -10,8 +10,11 @@ from util.s3_manager.manager import S3Manager
 
 class OpenDataTerrestrialWeather:
 
-    def __init__(self):
+    def __init__(self, date: str):
         self.logger = init_logger()
+
+        # TODO: how to handle datetime?
+        self.term = datetime.strptime(date, "%Y%m")
 
         # s3
         self.bucket_name = "production-bobsim"
@@ -19,8 +22,8 @@ class OpenDataTerrestrialWeather:
         self.load_key = "public_data/open_data_terrestrial_weather/origin/csv/{filename}".format(
             filename=self.file_name
         )
-        self.save_key = "public_data/open_data_terrestrial_weather/process/csv/{filename}".format(
-            filename=self.file_name
+        self.save_key = "public_data/open_data_terrestrial_weather/process/csv/{filename}.csv".format(
+            filename=date
         )
 
         # type
@@ -39,13 +42,10 @@ class OpenDataTerrestrialWeather:
                                   '최소 상대습도(pct)', '평균 상대습도(pct)', '합계 일조시간(hr)']
         self.columns_with_zero = ['강수 계속시간(hr)', '일강수량(mm)']
 
-        # TODO: how to handle datetime? it will be parameterized
-        self.term = datetime.strptime("201908", "%Y%m")
-
         # load filtered df
         df = self.load()
         mask = (df.일시.dt.year == self.term.year) & (df.일시.dt.month == self.term.month)
-        self.input_df = df[mask]  # .groupby(["일시"]).mean().reset_index()
+        self.input_df = df[mask].groupby(["일시"]).mean().reset_index()
 
     def load(self):
         """
@@ -129,12 +129,11 @@ class OpenDataTerrestrialWeather:
                 2. transform as distribution of data
                 3. save processed data to s3
             TODO: save to rdb
-        :return: exit_code code (bool)  0: success 1: fail
+        :return: exit_code (bool)  0:success 1:fail
         """
         try:
             cleaned = self.clean(self.input_df)
             transformed = self.transform(cleaned)
-            print(transformed)
             self.save(transformed)
         except Exception("fail to save") as e:
             # TODO: consider that it can repeat to save one more time

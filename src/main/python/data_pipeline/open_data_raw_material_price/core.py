@@ -11,17 +11,17 @@ from util.s3_manager.manager import S3Manager
 
 class OpenDataRawMaterialPrice:
 
-    def __init__(self):
+    def __init__(self, date: str):
         self.logger = init_logger()
 
         # s3
         self.bucket_name = "production-bobsim"
-        self.file_name = "201908.csv"
-        self.load_key = "public_data/open_data_raw_material_price/origin/csv/{filename}".format(
-            filename=self.file_name
+        # self.file_name = "201908.csv"
+        self.load_key = "public_data/open_data_raw_material_price/origin/csv/{filename}.csv".format(
+            filename=date
         )
-        self.save_key = "public_data/open_data_raw_material_price/process/csv/{filename}".format(
-            filename=self.file_name
+        self.save_key = "public_data/open_data_raw_material_price/process/csv/{filename}.csv".format(
+            filename=date
         )
 
         # type
@@ -37,7 +37,10 @@ class OpenDataRawMaterialPrice:
 
         # load filtered df
         df = self.load()
-        self.input_df = df[df.조사구분명 == "소비자가격"]
+        self.input_df = df[df.조사구분명 == "소비자가격"].groupby([
+            "조사일자", "조사지역명", "조사구분명", "조사단위명",
+            "표준품목명", "조사가격품목명", "표준품종명", "조사가격품종명"
+        ]).mean().reset_index()
 
     def load(self):
         """
@@ -57,7 +60,7 @@ class OpenDataRawMaterialPrice:
 
     def clean(self, df: pd.DataFrame):
         """
-            clean DataFrame by no used columns and null value
+            clean null value
         :return: cleaned DataFrame
         """
         # pd Series represents the number of null values by column
@@ -75,16 +78,15 @@ class OpenDataRawMaterialPrice:
 
     @staticmethod
     def get_unit(unit_name):
-        # TODO: handle no supported unit_name
         return {
-            '20KG': 200, '1.2KG': 12, '8KG': 80, '1KG': 10, '1KG(단)': 10, '1KG(1단)': 10,
-            '500G': 5, '200G': 2, '100G': 1,
-            '10마리': 10, '2마리': 2, '1마리': 1,
-            '10개': 10, '1개': 1,
+            '20KG': 200, '1.2KG': 12, '8KG': 80, '5KG': 5, '2KG': 2, '1KG': 10, '1KG(단)': 10, '1KG(1단)': 10,
+            '600G': 6, '500G': 5, '200G': 2, '100G': 1,
+            '10마리': 10, '5마리': 5, '2마리': 2, '1마리': 1,
+            '30개': 10, '10개': 10, '1개': 1,
             '1L': 10,
             '1속': 1,
-            '1포기': 1,
-        }.get(unit_name, 1)  # default 1
+            # TODO: handle no supported unit
+        }.get(unit_name, 1)
 
     def by_unit(self, df: pd.DataFrame):
         """
@@ -133,21 +135,35 @@ class OpenDataRawMaterialPrice:
             품목명=lambda x: x.표준품목명 + x.조사가격품목명 + x.표준품종명 + x.조사가격품종명
         ).drop(columns=["표준품목명", "조사가격품목명", "표준품종명", "조사가격품종명"], axis=1)
 
+    @staticmethod
+    def add_columns(df: pd.DataFrame):
+        # add is_weekend & season column
+        return df.assign(
+            is_weekend=lambda x: x.조사일자.dt.dayofweek.apply(
+                lambda day: 1 if day > 4 else 0
+            ),
+            season=lambda x: x.조사일자.dt.month.apply(
+                lambda month: (month % 12 + 3) // 3
+            )
+        )
+
     def process(self):
         """
             process
                 1. combine categories
                 2. clean null value
                 3. transform as distribution of data
-                4. save processed data to s3
+                4. add 'season' and 'is_weekend" column
+                5. save processed data to s3
             TODO: save to rdb
-        :return: exit_code code (bool)  0: success 1: fail
+        :return: exit code (bool)  0:success 1:fail
         """
         try:
             combined = self.combine_categories(self.input_df)
             cleaned = self.clean(combined)
             transformed = self.transform(cleaned)
-            self.save(transformed)
+            added = self.add_columns(transformed)
+            self.save(added)
         except Exception("fail to save") as e:
             # TODO: consider that it can repeat to save one more time
             self.logger.critical(e, exc_info=True)

@@ -1,6 +1,6 @@
 import pandas as pd
 
-from data_pipeline.food_materials_price.columns import condition
+from data_pipeline.food_material_price.columns import condition
 from data_pipeline.main import DataPipeline
 
 
