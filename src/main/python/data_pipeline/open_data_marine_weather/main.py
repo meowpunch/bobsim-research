@@ -2,7 +2,9 @@ from data_pipeline.open_data_marine_weather.core import OpenDataMarineWeather
 
 
 def main():
-    open_data_marine_weather = OpenDataMarineWeather()
+    open_data_marine_weather = OpenDataMarineWeather(
+        date="201908"
+    )
     open_data_marine_weather.process()
 
 

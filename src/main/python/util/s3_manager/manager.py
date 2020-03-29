@@ -71,9 +71,8 @@ class S3Manager:
         :param key: key (dir + filename)
         """
         csv_buffer = StringIO()
-        to_save_df.to_csv(csv_buffer, encoding='euc-kr')
-        print(csv_buffer.getvalue())
-        self.s3.Object(bucket_name=self.bucket_name, key=key).put(Body=csv_buffer.getvalue())
+        to_save_df.to_csv(csv_buffer, index=False)
+        self.s3.Object(bucket_name=self.bucket_name, key=key).put(Body=csv_buffer.getvalue().encode('euc-kr'))
 
         if len(self.fetch_objs_list(prefix=key)) is not 1:
             # if there is no saved file in s3, raise exception
