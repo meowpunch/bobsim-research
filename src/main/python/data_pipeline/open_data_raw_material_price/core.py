@@ -36,8 +36,8 @@ class OpenDataRawMaterialPrice:
 
         # load filtered df
         df = self.load()
-        self.input_df = df[df.조사구분명 == "소비자가격"].groupby([
-            "조사일자", "조사지역명", "조사구분명", "조사단위명",
+        self.input_df = df[df.조사구분명 == "소비자가격"].drop("조사구분명", axis=1).groupby([
+            "조사일자", "조사지역명", "조사단위명",
             "표준품목명", "조사가격품목명", "표준품종명", "조사가격품종명"
         ]).mean().reset_index()
 
@@ -46,6 +46,7 @@ class OpenDataRawMaterialPrice:
             fetch DataFrame and astype and filter by columns
         :return: pd DataFrame
         """
+
         manager = S3Manager(bucket_name=self.bucket_name)
         df = manager.fetch_objects(key=self.load_key)
 
