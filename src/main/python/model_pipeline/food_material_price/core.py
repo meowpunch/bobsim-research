@@ -103,8 +103,3 @@ class PricePredictModelPipeline:
             bucket_name=self.bucket_name,
             key="food_material_price_predict_model/model.pkl"
         )
-
-
-
-
-
