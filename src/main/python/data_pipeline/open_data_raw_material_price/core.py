@@ -1,9 +1,7 @@
-import sys
+from io import StringIO
 
-import pandas as pd
 import numpy as np
-from pandas import Index
-from scipy.stats import skew
+import pandas as pd
 
 from util.logging import init_logger
 from util.s3_manager.manager import S3Manager
@@ -55,8 +53,10 @@ class OpenDataRawMaterialPrice:
         return df[0][self.columns].astype(dtype=self.dtypes)
 
     def save(self, df: pd.DataFrame):
+        csv_buffer = StringIO()
+        df.to_csv(csv_buffer, index=False)
         manager = S3Manager(bucket_name=self.bucket_name)
-        manager.save_object(to_save_df=df, key=self.save_key)
+        manager.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=self.save_key)
 
     def clean(self, df: pd.DataFrame):
         """

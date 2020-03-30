@@ -11,12 +11,11 @@ from util.logging import init_logger
 
 class PricePredictModelPipeline:
 
-    def __init__(self, date: str):
+    def __init__(self, bucket_name: str, date: str):
         self.logger = init_logger()
         self.date = date
 
-        self.bucket_name = "production_bobsim"
-
+        self.bucket_name = bucket_name
 
         # extract feature
         price, p_key = RawMaterialPriceExtractionPipeline(date=self.date).process()
@@ -38,6 +37,7 @@ class PricePredictModelPipeline:
     @staticmethod
     def customized_rmse(y, y_pred):
         error = y - y_pred
+
         def penalize(x):
             if x > 0:
                 # if y > y_pred, penalize 10%
@@ -82,8 +82,8 @@ class PricePredictModelPipeline:
             3. save model
         :return: exit code
         """
+        # set train, test dataset
         train, test = self.set_train_test(self.dataset)
-        print(train.조사일자, test.조사일자)
         train_x, train_y = self.split_xy(train)
         test_x, test_y = self.split_xy(test)
 
@@ -99,7 +99,10 @@ class PricePredictModelPipeline:
         self.logger.info("customized RMSE is {score}".format(score=score))
 
         # save model
-        searcher.save
+        searcher.save(
+            bucket_name=self.bucket_name,
+            key="food_material_price_predict_model/model.pkl"
+        )
 
 
 

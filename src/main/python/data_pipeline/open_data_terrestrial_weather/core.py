@@ -1,4 +1,5 @@
 from datetime import datetime
+from io import StringIO
 
 import numpy as np
 import pandas as pd
@@ -60,8 +61,10 @@ class OpenDataTerrestrialWeather:
         return df[0][self.columns].astype(dtype=self.dtypes)
 
     def save(self, df: pd.DataFrame):
+        csv_buffer = StringIO()
+        df.to_csv(csv_buffer, index=False)
         manager = S3Manager(bucket_name=self.bucket_name)
-        manager.save_object(to_save_df=df, key=self.save_key)
+        manager.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=self.save_key)
 
     @staticmethod
     def fillna_with_mean(df: pd.DataFrame):
