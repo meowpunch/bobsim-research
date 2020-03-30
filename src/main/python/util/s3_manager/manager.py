@@ -12,7 +12,6 @@ class S3Manager:
         """
         TODO:
             Add capability to process other formats (i.e. json, text, avro, parquet, etc.)
-            Add a func that write file to AWS S3
         :param bucket_name: AWS S3 bucket name
         """
         self.logger = init_logger()
