@@ -18,6 +18,7 @@ class PricePredictModelPipeline:
         self.bucket_name = bucket_name
 
         # extract feature
+        # TODO: it should be processed in process method.
         price, p_key = RawMaterialPriceExtractionPipeline(date=self.date).process()
         t_weather, t_key = TerrestrialWeatherExtractionPipeline(date=self.date).process()
         m_weather, m_key = MarineWeatherExtractionPipeline(date=self.date).process()
@@ -67,6 +68,7 @@ class PricePredictModelPipeline:
         :return: train Xy, test Xy
         """
         predict_days = 7
+        # TODO: it should be processed in data_pipeline
         reversed_time = df["조사일자"].drop_duplicates().sort_values(ascending=False).tolist()
         standard_date = reversed_time[predict_days]
 
@@ -82,6 +84,9 @@ class PricePredictModelPipeline:
             3. save model
         :return: exit code
         """
+        self.build_price()
+        self.build_weather()
+
         # set train, test dataset
         train, test = self.set_train_test(self.dataset)
         train_x, train_y = self.split_xy(train)
@@ -93,7 +98,7 @@ class PricePredictModelPipeline:
         )
         searcher.fit()
 
-        # log score
+        # through inverse function, get metric (customized rmse)
         pred_y = searcher.predict(test_x)
         score = self.customized_rmse(np.expm1(test_y), np.expm1(pred_y))
         self.logger.info("customized RMSE is {score}".format(score=score))
@@ -104,7 +109,8 @@ class PricePredictModelPipeline:
             key="food_material_price_predict_model/model.pkl"
         )
 
+    def build_price(self):
+        pass
 
-
-
-
+    def build_weather(self):
+        pass
