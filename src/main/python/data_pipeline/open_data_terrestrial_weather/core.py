@@ -34,19 +34,19 @@ class OpenDataTerrestrialWeather:
             "최고기온(°C)": "float16", "강수 계속시간(hr)": "float16",
             "일강수량(mm)": "float16", "최대 풍속(m/s)": "float16",
             "평균 풍속(m/s)": "float16", "최소 상대습도(pct)": "float16",
-            "평균 상대습도(pct)": "float32", "합계 일조시간(hr)": "float16",
+            "평균 상대습도(pct)": "float32"
         }
-        self.columns = self.dtypes.keys()
 
         # fillna
-        self.columns_with_mean = ['평균기온(°C)', '최저기온(°C)', '최고기온(°C)', '최대 풍속(m/s)', '평균 풍속(m/s)',
-                                  '최소 상대습도(pct)', '평균 상대습도(pct)', '합계 일조시간(hr)']
+        self.columns_with_mean = ['평균기온(°C)', '최저기온(°C)', '최고기온(°C)', '최대 풍속(m/s)',
+                                  '평균 풍속(m/s)', '최소 상대습도(pct)', '평균 상대습도(pct)']
         self.columns_with_zero = ['강수 계속시간(hr)', '일강수량(mm)']
 
         # load filtered df
         df = self.load()
-        mask = (df.일시.dt.year == self.term.year) & (df.일시.dt.month == self.term.month)
-        self.input_df = df[mask]
+        self.input_df = df[
+            (df.일시.dt.year == self.term.year) & (df.일시.dt.month == self.term.month)
+            ]
 
     def load(self):
         """
@@ -58,7 +58,7 @@ class OpenDataTerrestrialWeather:
 
         # TODO: no use index to get first element.
         # filter by column and check types
-        return df[0][self.columns].astype(dtype=self.dtypes)
+        return df[0][self.dtypes.keys()].astype(dtype=self.dtypes)
 
     def save(self, df: pd.DataFrame):
         csv_buffer = StringIO()

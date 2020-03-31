@@ -3,6 +3,7 @@ from io import StringIO
 import numpy as np
 import pandas as pd
 
+from data_pipeline.dtype import dtype
 from util.logging import init_logger
 from util.s3_manager.manager import S3Manager
 
@@ -20,17 +21,6 @@ class OpenDataRawMaterialPrice:
         self.save_key = "public_data/open_data_raw_material_price/process/csv/{filename}.csv".format(
             filename=date
         )
-
-        # type
-        self.dtypes = {
-            "조사일자": "datetime64",
-            "조사구분명": "object", "표준품목명": "object", "조사가격품목명": "object", "표준품종명": "object",
-            "조사가격품종명": "object", "조사등급명": "object", "조사단위명": "object",
-            # TODO: type casting error btw UInt and float while aggregate mean
-            "당일조사가격": "int",
-            "조사지역명": "object",
-        }
-        self.columns = self.dtypes.keys()
 
         # load filtered df
         df = self.load()
@@ -50,7 +40,7 @@ class OpenDataRawMaterialPrice:
 
         # TODO: no use index to get first element.
         # filter by column and check types
-        return df[0][self.columns].astype(dtype=self.dtypes)
+        return df[0][dtype['raw_material_price'].keys()].astype(dtype=dtype['raw_material_price'])
 
     def save(self, df: pd.DataFrame):
         csv_buffer = StringIO()
