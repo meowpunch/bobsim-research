@@ -30,7 +30,6 @@ class ElasticNetSearcher:
 
     def fit(self):
         self.searcher.fit(self.x_train, self.y_train)
-        self.model = self.searcher.best_estimator_
 
     def predict(self, x_test):
         return self.searcher.predict(x_test)
@@ -40,7 +39,7 @@ class ElasticNetSearcher:
 
     def save(self, bucket_name, key):
         with tempfile.TemporaryFile() as fp:
-            dump(self.model, fp)
+            dump(self.searcher.best_estimator_, fp)
             fp.seek(0)
             manager = S3Manager(bucket_name=bucket_name)
             manager.save_object(body=fp.read(), key=key)

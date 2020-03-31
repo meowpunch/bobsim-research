@@ -14,6 +14,7 @@ class RawMaterialPriceExtractor:
             filename=date
         )
 
+        # TODO: not loaded here. extractor just do preprocess data
         self.input_df = self.load()
         self.categorical_features = ['품목명', '조사지역명', 'is_weekend', 'season']
 
