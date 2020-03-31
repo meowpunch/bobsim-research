@@ -164,7 +164,7 @@ class OpenDataRawMaterialPrice:
             transformed = self.transform(cleaned)
             added = self.add_columns(transformed)
             self.save(added)
-        except Exception("fail to save") as e:
+        except Exception as e:
             # TODO: consider that it can repeat to save one more time
             self.logger.critical(e, exc_info=True)
             return 1
