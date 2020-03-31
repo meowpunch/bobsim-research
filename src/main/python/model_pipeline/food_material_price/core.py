@@ -17,24 +17,6 @@ class PricePredictModelPipeline:
 
         self.bucket_name = bucket_name
 
-        # extract feature
-        # TODO: it should be processed in process method.
-        price, p_key = RawMaterialPriceExtractionPipeline(date=self.date).process()
-        t_weather, t_key = TerrestrialWeatherExtractionPipeline(date=self.date).process()
-        m_weather, m_key = MarineWeatherExtractionPipeline(date=self.date).process()
-
-        # combine data
-        weather = pd.merge(
-            t_weather.groupby(["일시"]).mean(),
-            m_weather.groupby(["일시"]).mean(),
-            how='inner', left_on=t_key, right_on=m_key
-        ).reset_index()
-
-        self.dataset = pd.merge(
-            price, weather,
-            how="left", left_on=p_key, right_on=t_key
-        ).drop("일시", axis=1).astype(dtype={"조사일자": "datetime64"})
-
     @staticmethod
     def customized_rmse(y, y_pred):
         error = y - y_pred
@@ -78,39 +60,68 @@ class PricePredictModelPipeline:
 
     def process(self):
         """
-            TODO: consider Step 1
-            1. set train, test volume (LinearRegression)
-            2. hyperparameter tuning (ElasticNet)
-            3. save model
         :return: exit code
         """
-        self.build_price()
-        self.build_weather()
+        try:
+            # build dataset
+            dataset = self.build_dataset()
 
-        # set train, test dataset
-        train, test = self.set_train_test(self.dataset)
-        train_x, train_y = self.split_xy(train)
-        test_x, test_y = self.split_xy(test)
+            # set train, test dataset
+            train, test = self.set_train_test(dataset)
+            train_x, train_y = self.split_xy(train)
+            test_x, test_y = self.split_xy(test)
 
-        # hyperparameter tuning
-        searcher = ElasticNetSearcher(
-            x_train=train_x, y_train=train_y, score=self.customized_rmse
-        )
-        searcher.fit()
+            # hyperparameter tuning
+            searcher = ElasticNetSearcher(
+                x_train=train_x, y_train=train_y, score=self.customized_rmse
+            )
+            searcher.fit()
 
-        # through inverse function, get metric (customized rmse)
-        pred_y = searcher.predict(test_x)
-        score = self.customized_rmse(np.expm1(test_y), np.expm1(pred_y))
-        self.logger.info("customized RMSE is {score}".format(score=score))
+            # through inverse function, get metric (customized rmse)
+            pred_y = searcher.predict(test_x)
+            score = self.customized_rmse(np.expm1(test_y), np.expm1(pred_y))
+            self.logger.info("customized RMSE is {score}".format(score=score))
 
-        # save model
-        searcher.save(
-            bucket_name=self.bucket_name,
-            key="food_material_price_predict_model/model.pkl"
-        )
+            # save model
+            searcher.save(
+                bucket_name=self.bucket_name,
+                key="food_material_price_predict_model/model.pkl"
+            )
+        except Exception as e:
+            # TODO: consider that it can repeat to save one more time
+            self.logger.critical(e, exc_info=True)
+            return 1
 
     def build_price(self):
-        pass
+        """
+        :return: price DataFrame and key
+        """
+        # extract features
+        price, key = RawMaterialPriceExtractionPipeline(date=self.date).process()
+        return price, key
 
     def build_weather(self):
-        pass
+        """
+        :return: weather DataFrame and key
+        """
+        # extract weather features
+        t_weather, t_key = TerrestrialWeatherExtractionPipeline(date=self.date).process()
+        m_weather, m_key = MarineWeatherExtractionPipeline(date=self.date).process()
+
+        # combine marine and terrestrial weather
+        weather = pd.merge(
+            t_weather, m_weather,
+            how='inner', left_on=t_key, right_on=m_key
+        ).reset_index()
+        return weather, t_key
+
+    def build_dataset(self):
+        """
+            after build price and weather, join them
+        :return: combined pd DataFrame
+        """
+        price, p_key = self.build_price()
+        weather, w_key = self.build_weather()
+        return pd.merge(
+            price, weather, how="inner", left_on=p_key, right_on=w_key
+        ).drop("일시", axis=1).astype(dtype={"조사일자": "datetime64"})

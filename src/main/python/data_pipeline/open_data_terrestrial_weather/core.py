@@ -139,7 +139,7 @@ class OpenDataTerrestrialWeather:
                 cleaned.groupby(["일시"]).mean().reset_index()
             )
             self.save(transformed)
-        except Exception("fail to save") as e:
+        except Exception as e:
             # TODO: consider that it can repeat to save one more time
             self.logger.critical(e, exc_info=True)
             return 1

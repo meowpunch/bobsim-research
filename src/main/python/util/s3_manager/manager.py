@@ -68,7 +68,7 @@ class S3Manager:
 
         if len(self.fetch_objs_list(prefix=key)) is not 1:
             # if there is no saved file in s3, raise exception
-            raise Exception("fail to save")
+            raise Exception("SaveError")
         else:
             self.logger.info("data is saved to '{dir}' in s3 '{bucket_name}'".format(
                 dir=key, bucket_name=self.bucket_name
