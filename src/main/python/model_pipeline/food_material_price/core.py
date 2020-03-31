@@ -15,6 +15,7 @@ class PricePredictModelPipeline:
         self.logger = init_logger()
         self.date = date
 
+        # s3
         self.bucket_name = bucket_name
 
     @staticmethod
