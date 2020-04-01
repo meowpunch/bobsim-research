@@ -36,14 +36,12 @@ class OpenDataTerrestrialWeather:
                                     '평균 풍속(m/s)', '최소 상대습도(pct)', '평균 상대습도(pct)']
         self.columns_with_zero = ['강수 계속시간(hr)', '일강수량(mm)']
 
-        # load filtered df
+        # load filtered df and take certain term
         df = self.load()
+        # TODO: make function
         self.input_df = df[
             (df.일시.dt.year == self.term.year) & (df.일시.dt.month == self.term.month)
             ]
-
-    def date_picker(self):
-        pass
 
     def load(self):
         """
@@ -80,7 +78,7 @@ class OpenDataTerrestrialWeather:
         # pd Series represents the number of null values by column
         df_null = df.isna().sum()
         is_null = df_null[df_null.map(lambda x: x > 0)]
-        self.logger.info(is_null)
+        self.logger.info("isnan columns: ", is_null)
 
         # fillna
         filled_with_linear = self.fillna_with_linear(
@@ -96,14 +94,15 @@ class OpenDataTerrestrialWeather:
         return combined
 
     @staticmethod
-    def by_skew(df: pd.DataFrame):
+    def transform_by_skew(df: pd.DataFrame):
         """
             get skew by numeric columns and log by skew
+        :param df: cleaned pd DataFrame
+        :return: transformed pd DataFrame
         """
-        print(df.dtypes)
-        # remove categorical value.
-        filtered = df.dtypes[df.dtypes == "float"].index
-        print(filtered)
+        # numerical values remain
+        filtered = df.dtypes[df.dtypes != "datetime64[ns]"].index
+
         # get skew
         skew_features = df[filtered].apply(lambda x: skew(x))
 
@@ -115,17 +114,10 @@ class OpenDataTerrestrialWeather:
             [df.drop(columns=skew_features_top.index), np.log1p(df[skew_features_top.index])], axis=1
         )
 
-    def transform(self, df: pd.DataFrame):
-        """
-        :param df: cleaned pd DataFrame
-        :return: transformed pd DataFrame
-        """
-        # get skew
-        return self.by_skew(df)
-
     def process(self):
         """
             process
+                0. filter
                 1. clean null value
                 2. transform as distribution of data
                 3. save processed data to s3
@@ -133,10 +125,9 @@ class OpenDataTerrestrialWeather:
         :return: exit_code (bool)  0:success 1:fail
         """
         try:
-            cleaned = self.clean(self.input_df)
-            transformed = self.transform(
-                cleaned.groupby(["일시"]).mean().reset_index()
-            )
+            filtered = self.filter(self.input_df)
+            cleaned = self.clean(filtered)
+            transformed = self.transform_by_skew(cleaned)
             self.save(transformed)
         except Exception as e:
             # TODO: consider that it can repeat to save one more time
@@ -145,3 +136,8 @@ class OpenDataTerrestrialWeather:
 
         self.logger.info("success to process")
         return 0
+
+    @staticmethod
+    def filter(df: pd.DataFrame):
+        # weather by divided 'region' (지점) will be used on average
+        return df.groupby(["일시"]).mean().reset_index()

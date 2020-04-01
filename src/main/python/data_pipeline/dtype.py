@@ -11,6 +11,7 @@ dtype = {
     # TODO: Find reasons not applicable
     "terrestrial_weather": {
         "일시": "datetime64",
+        "지점": "object",
         "평균기온(°C)": "float32",
         "최저기온(°C)": "float32",
         "최고기온(°C)": "float16",
@@ -24,6 +25,7 @@ dtype = {
 
     "marine_weather": {
         "일시": "datetime64",
+        "지점": "object",
         "평균 풍속(m/s)": "float16",
         "평균기압(hPa)": "float32",
         "평균 상대습도(pct)": "float16",

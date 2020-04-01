@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import skew
 
+from data_pipeline.dtype import dtype
 from util.logging import init_logger
 from util.s3_manager.manager import S3Manager
 
@@ -28,21 +29,7 @@ class OpenDataMarineWeather:
         )
 
         # type
-        self.dtypes = {
-            "일시": "datetime64",
-            "평균 수온(°C)": "float16",
-            "평균기압(hPa)": "float32",
-            "평균 상대습도(pct)": "float16",
-            "평균 풍속(m/s)": "float16",
-            "평균 기온(°C)": "float16",
-            "평균 최대 파고(m)": "float16",
-            "평균 유의 파고(m)": "float16",
-            "최고 유의 파고(m)": "float16",
-            "최고 최대 파고(m)": "float16",
-            "평균 파주기(sec)": "float16",
-            "최고 파주기(sec)": "float16",
-        }
-        self.columns = self.dtypes.keys()
+        self.dtypes = dtype["marine_weather"]
 
         # fillna
         self.columns_with_linear = [
@@ -52,10 +39,12 @@ class OpenDataMarineWeather:
         ]
         self.columns_with_zero = ['평균 파주기(sec)', '최고 파주기(sec)']
 
-        # load filtered df
+        # load filtered df and take certain term
         df = self.load()
-        mask = (df.일시.dt.year == self.term.year) & (df.일시.dt.month == self.term.month)
-        self.input_df = df[mask]
+        # TODO: make function
+        self.input_df = df[
+            (df.일시.dt.year == self.term.year) & (df.일시.dt.month == self.term.month)
+            ]
 
     def load(self):
         """
@@ -67,7 +56,7 @@ class OpenDataMarineWeather:
 
         # TODO: no use index to get first element.
         # filter by column and check types
-        return df[0][self.columns].astype(dtype=self.dtypes)
+        return df[0][self.dtypes.keys()].astype(dtype=self.dtypes)
 
     def save(self, df: pd.DataFrame):
         csv_buffer = StringIO()
@@ -92,7 +81,7 @@ class OpenDataMarineWeather:
         # pd Series represents the number of null values by column
         df_null = df.isna().sum()
         is_null = df_null[df_null.map(lambda x: x > 0)]
-        self.logger.info(is_null)
+        self.logger.info("isnan columns: ", is_null)
 
         # fillna
         filled_with_linear = self.fillna_with_linear(
@@ -108,12 +97,14 @@ class OpenDataMarineWeather:
         return combined
 
     @staticmethod
-    def by_skew(df: pd.DataFrame):
+    def transform_by_skew(df: pd.DataFrame):
         """
             get skew by numeric columns and log by skew
+        :param df: cleaned pd DataFrame
+        :return: transformed pd DataFrame
         """
-        # remove categorical value.
-        filtered = df.dtypes[df.dtypes == "float16"].index
+        # numerical values remain
+        filtered = df.dtypes[df.dtypes != "datetime64[ns]"].index
 
         # get skew
         skew_features = df[filtered].apply(lambda x: skew(x))
@@ -126,17 +117,10 @@ class OpenDataMarineWeather:
             [df.drop(columns=skew_features_top.index), np.log1p(df[skew_features_top.index])], axis=1
         )
 
-    def transform(self, df: pd.DataFrame):
-        """
-        :param df: cleaned pd DataFrame
-        :return: transformed pd DataFrame
-        """
-        # get skew
-        return self.by_skew(df)
-
     def process(self):
         """
             process
+                0. filter
                 1. clean null value
                 2. transform as distribution of data
                 3. save processed data to s3
@@ -144,8 +128,9 @@ class OpenDataMarineWeather:
         :return: exit_code (bool)  0:success 1:fail
         """
         try:
-            cleaned = self.clean(self.input_df)
-            transformed = self.transform(
+            filtered = self.filter(self.input_df)
+            cleaned = self.clean(filtered)
+            transformed = self.transform_by_skew(
                 cleaned.groupby(["일시"]).mean().reset_index()
             )
             self.save(transformed)
@@ -156,3 +141,8 @@ class OpenDataMarineWeather:
 
         self.logger.info("success to process")
         return 0
+
+    @staticmethod
+    def filter(df: pd.DataFrame):
+        # weather by divided 'region' (지점) will be used on average
+        return df.groupby(["일시"]).mean().reset_index()
