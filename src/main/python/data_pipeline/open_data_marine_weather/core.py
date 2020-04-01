@@ -39,6 +39,14 @@ class OpenDataMarineWeather:
         ]
         self.columns_with_zero = ['평균 파주기(sec)', '최고 파주기(sec)']
 
+        # log transformation
+        self.columns_with_log = [
+            "평균 풍속(m/s)", "평균기압(hPa)", "평균 상대습도(pct)",
+            "평균 기온(°C)", "평균 수온(°C)", "평균 최대 파고(m)",
+            "평균 유의 파고(m)", "최고 최대 파고(m)",
+            '평균 파주기(sec)', '최고 파주기(sec)'
+        ]
+
         # load filtered df and take certain term
         df = self.load()
         # TODO: make function
@@ -96,8 +104,7 @@ class OpenDataMarineWeather:
         ), filled_with_linear, filled_with_zero], axis=1)
         return combined
 
-    @staticmethod
-    def transform_by_skew(df: pd.DataFrame):
+    def transform_by_skew(self, df: pd.DataFrame):
         """
             get skew by numeric columns and log by skew
         :param df: cleaned pd DataFrame
@@ -114,7 +121,7 @@ class OpenDataMarineWeather:
         skew_features_top = skew_features[skew_features > 1]
 
         return pd.concat(
-            [df.drop(columns=skew_features_top.index), np.log1p(df[skew_features_top.index])], axis=1
+            [df.drop(columns=self.columns_with_log), np.log1p(df[self.columns_with_log])], axis=1
         )
 
     def process(self):
@@ -130,10 +137,8 @@ class OpenDataMarineWeather:
         try:
             filtered = self.filter(self.input_df)
             cleaned = self.clean(filtered)
-            transformed = self.transform_by_skew(
-                cleaned.groupby(["일시"]).mean().reset_index()
-            )
-            self.save(transformed)
+            # transformed = self.transform_by_skew(cleaned)
+            self.save(cleaned)
         except Exception as e:
             # TODO: consider that it can repeat to save one more time
             self.logger.critical(e, exc_info=True)
