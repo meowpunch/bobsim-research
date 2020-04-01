@@ -36,6 +36,12 @@ class OpenDataTerrestrialWeather:
                                     '평균 풍속(m/s)', '최소 상대습도(pct)', '평균 상대습도(pct)']
         self.columns_with_zero = ['강수 계속시간(hr)', '일강수량(mm)']
 
+        # log transformation
+        self.columns_with_log = [
+            '최저기온(°C)', '최고기온(°C)', '최소 상대습도(pct)',
+            '평균 상대습도(pct)', '강수 계속시간(hr)', '일강수량(mm)'
+        ]
+
         # load filtered df and take certain term
         df = self.load()
         # TODO: make function
@@ -93,8 +99,7 @@ class OpenDataTerrestrialWeather:
         ), filled_with_linear, filled_with_zero], axis=1)
         return combined
 
-    @staticmethod
-    def transform_by_skew(df: pd.DataFrame):
+    def transform_by_skew(self, df: pd.DataFrame):
         """
             get skew by numeric columns and log by skew
         :param df: cleaned pd DataFrame
@@ -111,7 +116,7 @@ class OpenDataTerrestrialWeather:
         skew_features_top = skew_features[skew_features > 1]
 
         return pd.concat(
-            [df.drop(columns=skew_features_top.index), np.log1p(df[skew_features_top.index])], axis=1
+            [df.drop(columns=self.columns_with_log), np.log1p(df[self.columns_with_log])], axis=1
         )
 
     def process(self):
@@ -127,8 +132,8 @@ class OpenDataTerrestrialWeather:
         try:
             filtered = self.filter(self.input_df)
             cleaned = self.clean(filtered)
-            transformed = self.transform_by_skew(cleaned)
-            self.save(transformed)
+            # transformed = self.transform_by_skew(cleaned)
+            self.save(cleaned)
         except Exception as e:
             # TODO: consider that it can repeat to save one more time
             self.logger.critical(e, exc_info=True)

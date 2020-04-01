@@ -25,7 +25,8 @@ class ElasticNetSearcher:
             estimator=self.model,
             param_grid=self.param_grid,
             scoring=make_scorer(score, greater_is_better=False),
-            cv=TimeSeriesSplit(n_splits=3).split(self.x_train)
+            # we have to know the relationship before and after obviously, so n_splits: 2
+            cv=TimeSeriesSplit(n_splits=2).split(self.x_train)
         )
 
     def fit(self):

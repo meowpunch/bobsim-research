@@ -151,8 +151,8 @@ class OpenDataRawMaterialPrice:
         try:
             filtered = self.filter(self.input_df)
             cleaned = self.clean(filtered)
-            transformed = self.transform_by_skew(cleaned)
-            decomposed = self.decompose_date(transformed)
+            # transformed = self.transform_by_skew(cleaned)
+            decomposed = self.decompose_date(cleaned)
 
             self.save(decomposed)
         except Exception as e:
