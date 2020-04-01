@@ -34,9 +34,6 @@ class S3Manager:
         :param key: prefix
         :return: list of pd DataFrames
         """
-        # init return variable
-        df_list = list()
-
         # filter
         objs_list = self.fetch_objs_list(prefix=key)
         filtered = list(filter(lambda x: x.size > 0, objs_list))
@@ -63,21 +60,18 @@ class S3Manager:
             # TODO: error handling
             raise Exception("nothing to be loaded in '{dir}'".format(dir=key))
 
-    def save_object(self, to_save_df, key):
+    def save_object(self, body, key):
         """
-            save one object
-        :param to_save_df: pd DataFrame to be saved
-        :param key: key (dir + filename)
+            save to s3
         """
-        csv_buffer = StringIO()
-        to_save_df.to_csv(csv_buffer, index=False)
-        self.s3.Object(bucket_name=self.bucket_name, key=key).put(Body=csv_buffer.getvalue().encode('euc-kr'))
+        self.s3.Object(bucket_name=self.bucket_name, key=key).put(Body=body)
 
         if len(self.fetch_objs_list(prefix=key)) is not 1:
             # if there is no saved file in s3, raise exception
-            raise Exception("fail to save")
+            raise Exception("SaveError")
         else:
             self.logger.info("data is saved to '{dir}' in s3 '{bucket_name}'".format(
                 dir=key, bucket_name=self.bucket_name
             ))
+
 

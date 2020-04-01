@@ -6,6 +6,7 @@ from feature_extraction_pipeline.open_data_raw_material_price.core import RawMat
 
 class RawMaterialPriceExtractionPipeline:
     def __init__(self, date: str):
+        # TODO: load data and pass to extractor
         self.date = date
 
     def process(self):

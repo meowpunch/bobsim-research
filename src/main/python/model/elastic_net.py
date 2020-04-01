@@ -6,6 +6,8 @@ from sklearn.linear_model import ElasticNet
 from sklearn.metrics import make_scorer, mean_squared_error
 from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 
+from util.s3_manager.manager import S3Manager
+
 
 class ElasticNetSearcher:
     def __init__(self, x_train, y_train, score=mean_squared_error):
@@ -14,7 +16,7 @@ class ElasticNetSearcher:
 
         self.model = ElasticNet()
         self.param_grid = {
-            "max_iter": [1, 5, 10, 50, 100, 500, 1000],
+            "max_iter": [1, 5, 10],  # , 50, 100, 500, 1000],
             "alpha": [0.0001, 0.001, 0.01, 0.1, 1, 10, 100],
             "l1_ratio": np.arange(0.0, 1.0, 0.1)
         }
@@ -23,7 +25,8 @@ class ElasticNetSearcher:
             estimator=self.model,
             param_grid=self.param_grid,
             scoring=make_scorer(score, greater_is_better=False),
-            cv=TimeSeriesSplit(n_splits=3).split(self.x_train)
+            # we have to know the relationship before and after obviously, so n_splits: 2
+            cv=TimeSeriesSplit(n_splits=2).split(self.x_train)
         )
 
     def fit(self):
@@ -37,7 +40,8 @@ class ElasticNetSearcher:
 
     def save(self, bucket_name, key):
         with tempfile.TemporaryFile() as fp:
-            dump(self.model, fp)
+            dump(self.searcher.best_estimator_, fp)
             fp.seek(0)
-            self.s3.Bucket(bucket_name).put_object(Body=fp.read(), Bucket=bucket_name, Key=key)
+            manager = S3Manager(bucket_name=bucket_name)
+            manager.save_object(body=fp.read(), key=key)
             fp.close()

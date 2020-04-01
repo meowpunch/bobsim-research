@@ -1,9 +1,11 @@
 from datetime import datetime
+from io import StringIO
 
 import numpy as np
 import pandas as pd
 from scipy.stats import skew
 
+from data_pipeline.dtype import dtype
 from util.logging import init_logger
 from util.s3_manager.manager import S3Manager
 
@@ -27,25 +29,25 @@ class OpenDataTerrestrialWeather:
         )
 
         # type
-        self.dtypes = {
-            "일시": "datetime64",
-            "평균기온(°C)": "float32", "최저기온(°C)": "float32",
-            "최고기온(°C)": "float16", "강수 계속시간(hr)": "float16",
-            "일강수량(mm)": "float16", "최대 풍속(m/s)": "float16",
-            "평균 풍속(m/s)": "float16", "최소 상대습도(pct)": "float16",
-            "평균 상대습도(pct)": "float32", "합계 일조시간(hr)": "float16",
-        }
-        self.columns = self.dtypes.keys()
+        self.dtypes = dtype["terrestrial_weather"]
 
         # fillna
-        self.columns_with_mean = ['평균기온(°C)', '최저기온(°C)', '최고기온(°C)', '최대 풍속(m/s)', '평균 풍속(m/s)',
-                                  '최소 상대습도(pct)', '평균 상대습도(pct)', '합계 일조시간(hr)']
+        self.columns_with_linear = ['평균기온(°C)', '최저기온(°C)', '최고기온(°C)', '최대 풍속(m/s)',
+                                    '평균 풍속(m/s)', '최소 상대습도(pct)', '평균 상대습도(pct)']
         self.columns_with_zero = ['강수 계속시간(hr)', '일강수량(mm)']
 
-        # load filtered df
+        # log transformation
+        self.columns_with_log = [
+            '최저기온(°C)', '최고기온(°C)', '최소 상대습도(pct)',
+            '평균 상대습도(pct)', '강수 계속시간(hr)', '일강수량(mm)'
+        ]
+
+        # load filtered df and take certain term
         df = self.load()
-        mask = (df.일시.dt.year == self.term.year) & (df.일시.dt.month == self.term.month)
-        self.input_df = df[mask]
+        # TODO: make function
+        self.input_df = df[
+            (df.일시.dt.year == self.term.year) & (df.일시.dt.month == self.term.month)
+            ]
 
     def load(self):
         """
@@ -57,15 +59,18 @@ class OpenDataTerrestrialWeather:
 
         # TODO: no use index to get first element.
         # filter by column and check types
-        return df[0][self.columns].astype(dtype=self.dtypes)
+        return df[0][self.dtypes.keys()].astype(dtype=self.dtypes)
 
     def save(self, df: pd.DataFrame):
+        csv_buffer = StringIO()
+        df.to_csv(csv_buffer, index=False)
         manager = S3Manager(bucket_name=self.bucket_name)
-        manager.save_object(to_save_df=df, key=self.save_key)
+        manager.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=self.save_key)
 
     @staticmethod
-    def fillna_with_mean(df: pd.DataFrame):
-        return df.fillna(df.mean())
+    def fillna_with_linear(df: pd.DataFrame):
+        # fill nan by linear formula.
+        return df.interpolate(method='linear', limit_direction='both')
 
     @staticmethod
     def fillna_with_zero(df: pd.DataFrame):
@@ -82,25 +87,26 @@ class OpenDataTerrestrialWeather:
         self.logger.info(is_null)
 
         # fillna
-        filled_with_mean = self.fillna_with_mean(
-            df.filter(items=self.columns_with_mean, axis=1)
+        filled_with_linear = self.fillna_with_linear(
+            df.filter(items=self.columns_with_linear, axis=1)
         )
         filled_with_zero = self.fillna_with_zero(
             df.filter(items=self.columns_with_zero, axis=1)
         )
 
         combined = pd.concat([df.drop(
-            columns=self.columns_with_zero + self.columns_with_mean, axis=1
-        ), filled_with_mean, filled_with_zero], axis=1)
-        return combined.dropna(axis=0)
+            columns=self.columns_with_linear + self.columns_with_zero, axis=1
+        ), filled_with_linear, filled_with_zero], axis=1)
+        return combined
 
-    @staticmethod
-    def by_skew(df: pd.DataFrame):
+    def transform_by_skew(self, df: pd.DataFrame):
         """
             get skew by numeric columns and log by skew
+        :param df: cleaned pd DataFrame
+        :return: transformed pd DataFrame
         """
-        # remove categorical value.
-        filtered = df.dtypes[df.dtypes == "float16"].index
+        # numerical values remain
+        filtered = df.dtypes[df.dtypes != "datetime64[ns]"].index
 
         # get skew
         skew_features = df[filtered].apply(lambda x: skew(x))
@@ -110,20 +116,13 @@ class OpenDataTerrestrialWeather:
         skew_features_top = skew_features[skew_features > 1]
 
         return pd.concat(
-            [df.drop(columns=skew_features_top.index), np.log1p(df[skew_features_top.index])], axis=1
+            [df.drop(columns=self.columns_with_log), np.log1p(df[self.columns_with_log])], axis=1
         )
-
-    def transform(self, df: pd.DataFrame):
-        """
-        :param df: cleaned pd DataFrame
-        :return: transformed pd DataFrame
-        """
-        # get skew
-        return self.by_skew(df)
 
     def process(self):
         """
             process
+                0. filter
                 1. clean null value
                 2. transform as distribution of data
                 3. save processed data to s3
@@ -131,15 +130,19 @@ class OpenDataTerrestrialWeather:
         :return: exit_code (bool)  0:success 1:fail
         """
         try:
-            cleaned = self.clean(self.input_df)
-            transformed = self.transform(
-                cleaned.groupby(["일시"]).mean().reset_index()
-            )
-            self.save(transformed)
-        except Exception("fail to save") as e:
+            filtered = self.filter(self.input_df)
+            cleaned = self.clean(filtered)
+            # transformed = self.transform_by_skew(cleaned)
+            self.save(cleaned)
+        except Exception as e:
             # TODO: consider that it can repeat to save one more time
             self.logger.critical(e, exc_info=True)
             return 1
 
         self.logger.info("success to process")
         return 0
+
+    @staticmethod
+    def filter(df: pd.DataFrame):
+        # weather by divided 'region' (지점) will be used on average
+        return df.groupby(["일시"]).mean().reset_index()

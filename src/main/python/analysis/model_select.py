@@ -12,7 +12,7 @@ class ModelSection:
         self.X_data = X_data
         self.y_target = y_target
 
-    def select_model(self, model_name, alpha:list =None, X_data_n=None, y_target_n=None, verbose=True):
+    def select_model(self, model_name, alpha: list = None, X_data_n=None, y_target_n=None, verbose=True):
         """
         TODO : think about this func's location and return anything or not
         :return: coeff_DataFrame
@@ -49,7 +49,7 @@ class ModelSection:
         return coeff_df
 
     def view_coeff_per_alpha(self, coeff_df):
-            pass
+        pass
 
     # TODO : change func's location to Preprocessing
     @staticmethod
