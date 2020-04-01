@@ -78,7 +78,7 @@ class OpenDataTerrestrialWeather:
         # pd Series represents the number of null values by column
         df_null = df.isna().sum()
         is_null = df_null[df_null.map(lambda x: x > 0)]
-        self.logger.info("isnan columns: ", is_null)
+        self.logger.info(is_null)
 
         # fillna
         filled_with_linear = self.fillna_with_linear(
