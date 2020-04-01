@@ -113,7 +113,7 @@ class PricePredictModelPipeline:
         weather = pd.merge(
             t_weather, m_weather,
             how='inner', left_on=t_key, right_on=m_key
-        ).reset_index()
+        )
         return weather, t_key
 
     def build_dataset(self):
