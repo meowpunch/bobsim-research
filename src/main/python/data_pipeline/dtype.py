@@ -1,11 +1,11 @@
 dtype = {
     "raw_material_price": {
         "조사일자": "datetime64",
-        "조사구분명": "object", "표준품목명": "object", "조사가격품목명": "object", "표준품종명": "object",
-        "조사가격품종명": "object", "조사등급명": "object", "조사단위명": "object",
+        "조사지역명": "object", "조사단위명": "object",
+        "조사등급명": "object", "조사구분명": "object",
+        "표준품목명": "object", "조사가격품목명": "object", "표준품종명": "object", "조사가격품종명": "object",
         # TODO: type casting error btw UInt and float while aggregate mean
         "당일조사가격": "int",
-        "조사지역명": "object",
     },
 
     # TODO: Find reasons not applicable

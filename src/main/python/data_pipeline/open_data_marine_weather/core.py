@@ -30,11 +30,11 @@ class OpenDataMarineWeather:
         # type
         self.dtypes = {
             "일시": "datetime64",
-            "평균 풍속(m/s)": "float16",
+            "평균 수온(°C)": "float16",
             "평균기압(hPa)": "float32",
             "평균 상대습도(pct)": "float16",
+            "평균 풍속(m/s)": "float16",
             "평균 기온(°C)": "float16",
-            "평균 수온(°C)": "float16",
             "평균 최대 파고(m)": "float16",
             "평균 유의 파고(m)": "float16",
             "최고 유의 파고(m)": "float16",
@@ -45,7 +45,7 @@ class OpenDataMarineWeather:
         self.columns = self.dtypes.keys()
 
         # fillna
-        self.columns_with_mean = [
+        self.columns_with_linear = [
             "평균 풍속(m/s)", "평균기압(hPa)", "평균 상대습도(pct)",
             "평균 기온(°C)", "평균 수온(°C)", "평균 최대 파고(m)",
             "평균 유의 파고(m)", "최고 유의 파고(m)", "최고 최대 파고(m)"
@@ -76,8 +76,9 @@ class OpenDataMarineWeather:
         manager.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=self.save_key)
 
     @staticmethod
-    def fillna_with_mean(df: pd.DataFrame):
-        return df.fillna(df.mean())
+    def fillna_with_linear(df: pd.DataFrame):
+        # fill nan by linear formula.
+        return df.interpolate(method='linear', limit_direction='both')
 
     @staticmethod
     def fillna_with_zero(df: pd.DataFrame):
@@ -94,17 +95,17 @@ class OpenDataMarineWeather:
         self.logger.info(is_null)
 
         # fillna
-        filled_with_mean = self.fillna_with_mean(
-            df.filter(items=self.columns_with_mean, axis=1)
+        filled_with_linear = self.fillna_with_linear(
+            df.filter(items=self.columns_with_linear, axis=1)
         )
         filled_with_zero = self.fillna_with_zero(
             df.filter(items=self.columns_with_zero, axis=1)
         )
 
         combined = pd.concat([df.drop(
-            columns=self.columns_with_zero + self.columns_with_mean, axis=1
-        ), filled_with_mean, filled_with_zero], axis=1)
-        return combined.dropna(axis=0)
+            columns=self.columns_with_zero + self.columns_with_linear, axis=1
+        ), filled_with_linear, filled_with_zero], axis=1)
+        return combined
 
     @staticmethod
     def by_skew(df: pd.DataFrame):

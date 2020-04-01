@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import skew
 
+from data_pipeline.dtype import dtype
 from util.logging import init_logger
 from util.s3_manager.manager import S3Manager
 
@@ -28,18 +29,11 @@ class OpenDataTerrestrialWeather:
         )
 
         # type
-        self.dtypes = {
-            "일시": "datetime64",
-            "평균기온(°C)": "float32", "최저기온(°C)": "float32",
-            "최고기온(°C)": "float16", "강수 계속시간(hr)": "float16",
-            "일강수량(mm)": "float16", "최대 풍속(m/s)": "float16",
-            "평균 풍속(m/s)": "float16", "최소 상대습도(pct)": "float16",
-            "평균 상대습도(pct)": "float32"
-        }
+        self.dtypes = dtype["terrestrial_weather"]
 
         # fillna
-        self.columns_with_mean = ['평균기온(°C)', '최저기온(°C)', '최고기온(°C)', '최대 풍속(m/s)',
-                                  '평균 풍속(m/s)', '최소 상대습도(pct)', '평균 상대습도(pct)']
+        self.columns_with_linear = ['평균기온(°C)', '최저기온(°C)', '최고기온(°C)', '최대 풍속(m/s)',
+                                    '평균 풍속(m/s)', '최소 상대습도(pct)', '평균 상대습도(pct)']
         self.columns_with_zero = ['강수 계속시간(hr)', '일강수량(mm)']
 
         # load filtered df
@@ -47,6 +41,9 @@ class OpenDataTerrestrialWeather:
         self.input_df = df[
             (df.일시.dt.year == self.term.year) & (df.일시.dt.month == self.term.month)
             ]
+
+    def date_picker(self):
+        pass
 
     def load(self):
         """
@@ -67,8 +64,9 @@ class OpenDataTerrestrialWeather:
         manager.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=self.save_key)
 
     @staticmethod
-    def fillna_with_mean(df: pd.DataFrame):
-        return df.fillna(df.mean())
+    def fillna_with_linear(df: pd.DataFrame):
+        # fill nan by linear formula.
+        return df.interpolate(method='linear', limit_direction='both')
 
     @staticmethod
     def fillna_with_zero(df: pd.DataFrame):
@@ -85,26 +83,27 @@ class OpenDataTerrestrialWeather:
         self.logger.info(is_null)
 
         # fillna
-        filled_with_mean = self.fillna_with_mean(
-            df.filter(items=self.columns_with_mean, axis=1)
+        filled_with_linear = self.fillna_with_linear(
+            df.filter(items=self.columns_with_linear, axis=1)
         )
         filled_with_zero = self.fillna_with_zero(
             df.filter(items=self.columns_with_zero, axis=1)
         )
 
         combined = pd.concat([df.drop(
-            columns=self.columns_with_zero + self.columns_with_mean, axis=1
-        ), filled_with_mean, filled_with_zero], axis=1)
-        return combined.dropna(axis=0)
+            columns=self.columns_with_linear + self.columns_with_zero, axis=1
+        ), filled_with_linear, filled_with_zero], axis=1)
+        return combined
 
     @staticmethod
     def by_skew(df: pd.DataFrame):
         """
             get skew by numeric columns and log by skew
         """
+        print(df.dtypes)
         # remove categorical value.
-        filtered = df.dtypes[df.dtypes == "float16"].index
-
+        filtered = df.dtypes[df.dtypes == "float"].index
+        print(filtered)
         # get skew
         skew_features = df[filtered].apply(lambda x: skew(x))
 
