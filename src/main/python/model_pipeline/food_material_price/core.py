@@ -77,10 +77,11 @@ class PricePredictModelPipeline:
                 x_train=train_x, y_train=train_y, score=self.customized_rmse
             )
             searcher.fit()
+            self.logger.info("tuned params are {params}".format(params=searcher.get_best_params()))
 
             # through inverse function, get metric (customized rmse)
             pred_y = searcher.predict(test_x)
-            score = self.customized_rmse(np.expm1(test_y), np.expm1(pred_y))
+            score = self.customized_rmse(test_y, pred_y)
             self.logger.info("customized RMSE is {score}".format(score=score))
 
             # save model
