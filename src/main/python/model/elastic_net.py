@@ -9,21 +9,52 @@ from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 from util.s3_manager.manager import S3Manager
 
 
+class ElasticNetModel:
+    def __init__(self, x_train, y_train):
+        self.model = ElasticNet(
+            alpha=0, l1_ratio=0.0, max_iter=5
+        )
+        self.x_train = x_train
+        self.y_train = y_train
+
+    def fit(self):
+        self.model.fit(self.x_train, self.y_train)
+
+    def predict(self, x_test):
+        return self.model.predict(x_test)
+
+    def score(self):
+        return self.model.score(self.x_train, self.y_train)
+
+    def save(self, bucket_name, key):
+        with tempfile.TemporaryFile() as fp:
+            dump(self.model, fp)
+            fp.seek(0)
+            manager = S3Manager(bucket_name=bucket_name)
+            manager.save_object(body=fp.read(), key=key)
+            fp.close()
+
+
 class ElasticNetSearcher:
-    def __init__(self, x_train, y_train, score=mean_squared_error):
+    def __init__(
+            self, x_train, y_train, score=mean_squared_error,
+            params=None
+    ):
+        if params is None:
+            params = {
+                "max_iter": [1, 5, 10],
+                "alpha": [0, 0.00001, 0.0001, 0.001, 0.01, 0.1, 1, 10, 100],
+                "l1_ratio": np.arange(0.0, 1.0, 0.1)
+            }
+
         self.x_train = x_train
         self.y_train = y_train
 
         self.model = ElasticNet()
-        self.param_grid = {
-            "max_iter": [1, 5, 10],  # , 50, 100, 500, 1000],
-            "alpha": [0.0001, 0.001, 0.01, 0.1, 1, 10, 100],
-            "l1_ratio": np.arange(0.0, 1.0, 0.1)
-        }
 
         self.searcher = GridSearchCV(
             estimator=self.model,
-            param_grid=self.param_grid,
+            param_grid=params,
             scoring=make_scorer(score, greater_is_better=False),
             # we have to know the relationship before and after obviously, so n_splits: 2
             cv=TimeSeriesSplit(n_splits=2).split(self.x_train)
@@ -37,6 +68,9 @@ class ElasticNetSearcher:
 
     def score(self):
         return self.model.score(self.x_train, self.y_train)
+
+    def get_best_params(self):
+        return self.searcher.best_params_
 
     def save(self, bucket_name, key):
         with tempfile.TemporaryFile() as fp:
