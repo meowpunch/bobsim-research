@@ -6,11 +6,10 @@ def main():
         standalone process to load and save CSV file data with AWS S3
     """
     manager = S3Manager(
-        bucket_name="",
+        bucket_name="production-bobsim",
     )
     df_list = manager.fetch_objects(key="")
-
-    print(df)
+    print(df_list)
 
 
 if __name__ == '__main__':

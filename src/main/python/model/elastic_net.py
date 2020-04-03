@@ -10,6 +10,9 @@ from util.s3_manager.manager import S3Manager
 
 
 class ElasticNetModel:
+    """
+        tested
+    """
     def __init__(self, x_train, y_train):
         self.model = ElasticNet(
             alpha=0, l1_ratio=0.0, max_iter=5

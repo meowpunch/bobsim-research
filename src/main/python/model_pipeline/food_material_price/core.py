@@ -82,6 +82,9 @@ class PricePredictModelPipeline:
             # through inverse function, get metric (customized rmse)
             pred_y = searcher.predict(test_x)
             score = self.customized_rmse(test_y, pred_y)
+            self.logger.info("coef: {coef}".format(
+                coef=pd.Series(searcher.searcher.best_estimator_.coef_, index=train_x.columns)
+            ))
             self.logger.info("customized RMSE is {score}".format(score=score))
 
             # save model
