@@ -1,66 +1,61 @@
+from functools import reduce
+
+import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
-from sklearn.impute import SimpleImputer
-from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, FunctionTransformer, StandardScaler
 
-from data_pipeline.open_data_raw_material_price.core import OpenDataRawMaterialPrice
 from util.s3_manager.manager import S3Manager
-import numpy as np
 
 
 class Transformer:
 
-    def __init__(self, strategy=None, df=None):
+    def __init__(self, strategy=None, input_df=None):
         """
         TODO : overwrite to self.strategy
         :param strategy:
         """
-
         if strategy is None:
             self.strategy = {
-                "categorical_features": {
-                    "one_hot_encoding": ['품목명', '조사지역명', 'is_weekend', 'season'],
-                },
-                "numerical_features": {
-                    "log": [
-                        "최저기온(°C)", "최대 풍속(m/s)", "평균 풍속(m/s)", "최소 상대습도(pct)",
-                        "강수 계속시간(hr)", "평균 수온(°C)", "평균 최대 파고(m)", "평균 유의 파고(m)",
-                        "최고 유의 파고(m)", "최고 최대 파고(m)", "평균 파주기(sec)", "최고 파주기(sec)"
-                    ],
-                    "standard": ["당일조사가격"],
-                    "none": [
-                        "평균기온(°C)", "최고기온(°C)", "일강수량(mm)",
-                        "평균 상대습도(pct)", "평균기압(hPa)", "평균 기온(°C)"
-                    ]
-                }
+                "one_hot_encoding": ['품목명', '조사지역명', 'is_weekend', 'season'],
+                "log": [
+                    "최저기온(°C)", "최대 풍속(m/s)", "평균 풍속(m/s)", "최소 상대습도(pct)",
+                    "강수 계속시간(hr)", "평균 수온(°C)", "평균 최대 파고(m)", "평균 유의 파고(m)",
+                    "최고 유의 파고(m)", "최고 최대 파고(m)", "평균 파주기(sec)", "최고 파주기(sec)"
+                ],
+                "standard": ["당일조사가격"],
             }
         else:
             self.strategy = strategy
 
-        self.df = df
-        # categorical columns
-        categorical_features = self.strategy["categorical_features"]["one_hot_encoding"]
+        self.transform_method = {
+            "log": FunctionTransformer(np.log1p),
+            "standard": StandardScaler(),
+            "one_hot_encoding": OneHotEncoder(sparse=False),
+        }
 
-        # numerical columns
-        numeric_features_log = self.strategy["numerical_features"]["log"]
-        numeric_features_standard = self.strategy["numerical_features"]["standard"]
-        numeric_features_none = self.strategy["numerical_features"]["none"]
+        self.input_df = input_df
 
+        self.column_transformer = ColumnTransformer(transformers=self.make_transformers())
 
+    def make_transformers(self):
+        method_list = self.strategy.keys()
+        return list(map(
+            lambda name: tuple([name, self.transform_method[name], self.strategy[name]])
+            , method_list
+        ))
 
+    def header(self):
+        """
+            # TODO: get header columns after transformed
+        :return: list of column name
+        """
+        method_list = self.strategy.keys()
+        print(self.column_transformer.transformers_)
+        return self.column_transformer.get_feature_names()
 
-    def header(self, df):
-        print(df["품목명"].unique())
-        x = df[self.strategy["categorical_features"]["one_hot_encoding"]].apply(lambda x: x.unique(), axis=1)
-        print(x)
-
-    def execute(self):
-        return self.proccess()
-
-    def proccess(self):
-        transformed_df = self.column_transformer.fit_transform(self.df)
-        return transformed_df
+    def process(self):
+        return self.column_transformer.fit_transform(self.input_df)
 
 
 def load(filename):
@@ -76,11 +71,17 @@ def load(filename):
     # TODO: no use index to get first element.
     return df[0]
 
-
 def main():
     df = load("201908")
-    t = Transformer(df=df)
-    print(t.proccess())
+    print(df)
+    t = Transformer(
+        strategy={
+            "one_hot_encoding": ['품목명', '조사지역명', 'is_weekend', 'season'],
+            "standard": ["당일조사가격"]
+        }, input_df=df
+    )
+    print(pd.DataFrame(t.process()))
+    print(t.header())
     # t.header(df)
 
 
