@@ -6,6 +6,7 @@ from feature_extraction_pipeline.open_data_raw_material_price.main import RawMat
 from feature_extraction_pipeline.open_data_terrestrial_weather.main import TerrestrialWeatherExtractionPipeline
 from model.elastic_net import ElasticNetSearcher
 from model.linear_regression import LinearRegressionModel
+from util.build_dataset import build_process_fmp
 from util.logging import init_logger
 
 
@@ -65,7 +66,7 @@ class PricePredictModelPipeline:
         """
         try:
             # build dataset
-            dataset = self.build_dataset()
+            dataset = build_process_fmp(date=self.date)
 
             # set train, test dataset
             train, test = self.set_train_test(dataset)
@@ -97,36 +98,4 @@ class PricePredictModelPipeline:
             self.logger.critical(e, exc_info=True)
             return 1
 
-    def build_price(self):
-        """
-        :return: price DataFrame and key
-        """
-        # extract features
-        price, key = RawMaterialPriceExtractionPipeline(date=self.date).process()
-        return price, key
 
-    def build_weather(self):
-        """
-        :return: weather DataFrame and key
-        """
-        # extract weather features
-        t_weather, t_key = TerrestrialWeatherExtractionPipeline(date=self.date).process()
-        m_weather, m_key = MarineWeatherExtractionPipeline(date=self.date).process()
-
-        # combine marine and terrestrial weather
-        weather = pd.merge(
-            t_weather, m_weather,
-            how='inner', left_on=t_key, right_on=m_key
-        )
-        return weather, t_key
-
-    def build_dataset(self):
-        """
-            after build price and weather, join them
-        :return: combined pd DataFrame
-        """
-        price, p_key = self.build_price()
-        weather, w_key = self.build_weather()
-        return pd.merge(
-            price, weather, how="inner", left_on=p_key, right_on=w_key
-        ).drop("일시", axis=1).astype(dtype={"조사일자": "datetime64"})
