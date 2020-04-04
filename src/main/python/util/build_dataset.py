@@ -10,10 +10,10 @@ from feature_extraction_pipeline.open_data_terrestrial_weather.main import Terre
 
 # TODO: consider of classification
 
-def build_origin_fmp(date="201908"):
+def build_origin_fmp(date, prefix):
     # load origin data filtered
-    p_df, p_key = build_origin_price(date=date)
-    w_df, w_key = build_origin_weather(date=date)
+    p_df, p_key = build_origin_price(date=date, prefix=prefix)
+    w_df, w_key = build_origin_weather(date=date, prefix=prefix)
 
     # merge
     return pd.merge(
@@ -21,21 +21,30 @@ def build_origin_fmp(date="201908"):
     ).drop("일시", axis=1).astype(dtype={"조사일자": "datetime64"})
 
 
-def build_origin_price(date):
+def build_origin_price(date, prefix):
     p = OpenDataRawMaterialPrice(date=date)
-    return p.filter(p.input_df), "조사일자"
+    filtered = p.filter(p.input_df)
+    if prefix == "filter":
+        return filtered, "조사일자"
+    else:
+        return p.clean(filtered), "조사일자"
 
 
-def build_origin_weather(date):
+def build_origin_weather(date, prefix):
     t = OpenDataTerrestrialWeather(date=date)
     t_df = t.filter(t.input_df)
 
     m = OpenDataMarineWeather(date=date)
     m_df = m.filter(m.input_df)
 
-    return pd.merge(
-        t_df, m_df, how='inner', on="일시"
-    ), "일시"
+    if prefix == "filter":
+        return pd.merge(
+            t_df, m_df, how='inner', on="일시"
+        ), "일시"
+    else:
+        return pd.merge(
+            t.clean(t_df), m.clean(m_df), how='inner', on="일시"
+        ), "일시"
 
 
 def build_process_fmp(date):
@@ -86,8 +95,10 @@ def build_master(dataset="origin_fmp", date="201908"):
     :param date: str represents date
     :return: pd DataFrame combined
     """
-    if dataset == "origin_fmp":
-        return build_origin_fmp()
+    if dataset == "clean_origin_fmp":
+        return build_origin_fmp(date=date, prefix="clean")
+    elif dataset == "filter_origin_fmp":
+        return build_origin_fmp(date=date, prefix="filter")
     elif dataset == "process_fmp":
         return build_process_fmp(date=date)
     else:
@@ -104,9 +115,15 @@ def main():
     # process_df = build_master("process_fmp", date="201908")
     # print(process_df)
 
-    p_df, p_key = build_process_price(date="201908")
-    print(p_df)
-    print(p_df.info())
+    # p_df, p_key = build_process_price(date="201908")
+    # print(p_df)
+    # print(p_df.info())
+
+    filter_origin_df = build_master(dataset="filter_origin_fmp", date="201908")
+    clean_origin_df = build_master(dataset="clean_origin_fmp", date="201908")
+
+    print(filter_origin_df.info())
+    print(clean_origin_df.info())
 
 
 if __name__ == '__main__':
