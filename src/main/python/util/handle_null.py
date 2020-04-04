@@ -33,6 +33,7 @@ class NullHandler:
         return df.dropna(axis=0)
 
     def get_columns_list(self):
+        # TODO: in order not to scan df twice, combine this method with fillnan
         if len(self.strategy.values()) is 1:
             return list(self.strategy.values())[0]
         else:
