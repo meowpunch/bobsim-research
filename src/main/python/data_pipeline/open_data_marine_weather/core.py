@@ -6,6 +6,8 @@ import pandas as pd
 from scipy.stats import skew
 
 from data_pipeline.dtype import dtype
+from data_pipeline.translate import translation
+from util.handle_null import NullHandler
 from util.logging import init_logger
 from util.s3_manager.manager import S3Manager
 
@@ -30,29 +32,31 @@ class OpenDataMarineWeather:
 
         # type
         self.dtypes = dtype["marine_weather"]
+        self.translate = translation["marine_weather"]
 
         # fillna
         self.columns_with_linear = [
-            "평균 풍속(m/s)", "평균기압(hPa)", "평균 상대습도(pct)",
-            "평균 기온(°C)", "평균 수온(°C)", "평균 최대 파고(m)",
-            "평균 유의 파고(m)", "최고 유의 파고(m)", "최고 최대 파고(m)"
+            "m_wind_speed_avg", "m_atm_pressure_avg", "m_rel_humid_avg",
+            "m_temper_avg", "m_water_temper_avg", "m_max_wave_height_avg",
+            "m_sign_wave_height_avg", "m_sign_wave_height_highest", "m_max_wave_height_highest"
         ]
-        self.columns_with_zero = ['평균 파주기(sec)', '최고 파주기(sec)']
+        self.columns_with_zero = ['m_wave_period_avg', 'm_wave_period_highest']
+        self.columns_with_drop = ['date']
 
         # log transformation
         self.columns_with_log = [
-            "평균 풍속(m/s)", "평균기압(hPa)", "평균 상대습도(pct)",
-            "평균 기온(°C)", "평균 수온(°C)", "평균 최대 파고(m)",
-            "평균 유의 파고(m)", "최고 최대 파고(m)",
-            '평균 파주기(sec)', '최고 파주기(sec)'
+            "m_wind_speed_avg", "m_atm_pressure_avg", "m_rel_humid_avg",
+            "m_temper_avg", "m_water_temper_avg", "m_max_wave_height_avg",
+            "m_sign_wave_height_avg", "m_max_wave_height_highest",
+            'm_wave_period_avg', 'm_wave_period_highest'
         ]
 
         # load filtered df and take certain term
         df = self.load()
         # TODO: make function
-        self.input_df = df[
-            (df.일시.dt.year == self.term.year) & (df.일시.dt.month == self.term.month)
-            ]
+        print(df)
+        date_picker = (df['date'].dt.year == self.term.year) & (df['date'].dt.month == self.term.month)
+        self.input_df = df[date_picker]
 
     def load(self):
         """
@@ -64,7 +68,7 @@ class OpenDataMarineWeather:
 
         # TODO: no use index to get first element.
         # filter by column and check types
-        return df[0][self.dtypes.keys()].astype(dtype=self.dtypes)
+        return df[0][self.dtypes.keys()].astype(dtype=self.dtypes).rename(columns=self.translate, inplace=False)
 
     def save(self, df: pd.DataFrame):
         csv_buffer = StringIO()
@@ -73,71 +77,40 @@ class OpenDataMarineWeather:
         manager.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=self.save_key)
 
     @staticmethod
-    def fillna_with_linear(df: pd.DataFrame):
-        # fill nan by linear formula.
-        return df.interpolate(method='linear', limit_direction='both')
-
-    @staticmethod
-    def fillna_with_zero(df: pd.DataFrame):
-        return df.fillna(value=0)
+    def groupby_date(df: pd.DataFrame):
+        # weather by divided 'region' (지점) will be used on average
+        return df.groupby("date").mean().reset_index()
 
     def clean(self, df: pd.DataFrame):
         """
-            clean DataFrame by no used columns and null value
         :return: cleaned DataFrame
         """
-        # pd Series represents the number of null values by column
-        df_null = df.isna().sum()
-        is_null = df_null[df_null.map(lambda x: x > 0)]
-        self.logger.info(is_null)
-
-        # fillna
-        filled_with_linear = self.fillna_with_linear(
-            df.filter(items=self.columns_with_linear, axis=1)
+        # null handler (drop, zero)
+        nh = NullHandler(
+            strategy={"drop": self.columns_with_drop, "zero": self.columns_with_zero},
+            df=df[self.columns_with_drop+self.columns_with_zero]
         )
-        filled_with_zero = self.fillna_with_zero(
-            df.filter(items=self.columns_with_zero, axis=1)
+        # groupby -> fillna (linear)
+        linear = nh.fillna_with_linear(
+            self.groupby_date(df)[self.columns_with_linear]
         )
-
-        combined = pd.concat([df.drop(
-            columns=self.columns_with_zero + self.columns_with_linear, axis=1
-        ), filled_with_linear, filled_with_zero], axis=1)
-        return combined
-
-    def transform_by_skew(self, df: pd.DataFrame):
-        """
-            get skew by numeric columns and log by skew
-        :param df: cleaned pd DataFrame
-        :return: transformed pd DataFrame
-        """
-        # numerical values remain
-        filtered = df.dtypes[df.dtypes != "datetime64[ns]"].index
-
-        # get skew
-        skew_features = df[filtered].apply(lambda x: skew(x))
-
-        # log by skew
-        # TODO: define threshold not just '1'
-        skew_features_top = skew_features[skew_features > 1]
-
-        return pd.concat(
-            [df.drop(columns=self.columns_with_log), np.log1p(df[self.columns_with_log])], axis=1
-        )
+        # fillna -> groupby (drop, zero)
+        drop_and_zero = self.groupby_date(nh.process())
+        return pd.concat([drop_and_zero, linear], axis=1)
 
     def process(self):
         """
             process
-                0. filter
-                1. clean null value
+                1. clean
                 2. transform as distribution of data
                 3. save processed data to s3
             TODO: save to rdb
         :return: exit_code (bool)  0:success 1:fail
         """
         try:
-            filtered = self.filter(self.input_df)
-            cleaned = self.clean(filtered)
+            cleaned = self.clean(self.input_df)
             # transformed = self.transform_by_skew(cleaned)
+            print(cleaned)
             self.save(cleaned)
         except Exception as e:
             # TODO: consider that it can repeat to save one more time
@@ -146,8 +119,3 @@ class OpenDataMarineWeather:
 
         self.logger.info("success to process")
         return 0
-
-    @staticmethod
-    def filter(df: pd.DataFrame):
-        # weather by divided 'region' (지점) will be used on average
-        return df.groupby(["일시"]).mean().reset_index()

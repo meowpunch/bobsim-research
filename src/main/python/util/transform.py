@@ -1,5 +1,4 @@
 import sys
-from functools import reduce
 
 import numpy as np
 import pandas as pd
@@ -7,16 +6,16 @@ from sklearn.base import BaseEstimator
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, FunctionTransformer, StandardScaler
 
-from util.build_dataset import build_process_weather, build_process_price, build_origin_price
 from util.logging import init_logger
-from util.s3_manager.manager import S3Manager
+from util.reduce import combine_list
 
 
 class CustomTransformer(ColumnTransformer):
     """
         overwrite sklearn ColumnTransformer
     """
-    def __init__(self, strategy=None):
+
+    def __init__(self, df=None, strategy: dict = None):
         """
         TODO : overwrite to self.strategy
         :param strategy: dictionary {
@@ -25,26 +24,15 @@ class CustomTransformer(ColumnTransformer):
         """
         self.logger = init_logger()
 
-        if strategy is None:
-            self.strategy = {
-                "one_hot_encoding": ['품목명', '조사지역명', 'is_weekend', 'season'],
-                "log": [
-                    "최저기온(°C)", "최대 풍속(m/s)", "평균 풍속(m/s)", "최소 상대습도(pct)",
-                    "강수 계속시간(hr)", "평균 수온(°C)", "평균 최대 파고(m)", "평균 유의 파고(m)",
-                    "최고 유의 파고(m)", "최고 최대 파고(m)", "평균 파주기(sec)", "최고 파주기(sec)"
-                ],
-                "standard": ["당일조사가격"],
-            }
-        else:
-            self.strategy = strategy
-
-        # self.input_df = input_df
+        self.input_df = df
+        self.strategy = strategy
 
         # constant
         self.transform_method = {
             "log": FunctionTransformer(np.log1p),
             "standard": StandardScaler(),
             "one_hot_encoding": OneHotEncoder(sparse=False),
+            "none": FunctionTransformer(lambda x: x)
         }
 
         # self.column_transformer = ColumnTransformer(transformers=self.make_transformers())
@@ -68,17 +56,17 @@ class CustomTransformer(ColumnTransformer):
     @property
     def transformed_df(self):
         if self.transformed is None:
-            raise Exception("Not processed")
+            raise Exception("Not transformed")
         return pd.DataFrame(self.transformed, columns=self.header)
 
     @property
     def header(self):
         """
             It should be called after transformers are fitted
-        :return: list of column name
+        :return: list of column named
         """
         if self.transformed is None:
-            raise Exception("Not processed")
+            raise Exception("Not transformed")
 
         def get_columns(method_name):
             # columns for method
@@ -90,8 +78,9 @@ class CustomTransformer(ColumnTransformer):
                     self.strategy[method_name]
                 ))
 
+        # transformed columns
         columns_list = list(map(get_columns, self.strategy.keys()))
-        return list(reduce(lambda x, y: x + y, columns_list))
+        return combine_list(columns_list)
 
     def fitted_transformer(self, method="one_hot_encoding"):
         """
@@ -106,43 +95,37 @@ class CustomTransformer(ColumnTransformer):
         ).__next__()
         return filter(lambda x: isinstance(x, BaseEstimator), filtered).__next__()
 
-    def fit_transform(self, X, y=None):
+    def fit_transform(self, X: pd.DataFrame = None, y=None):
+        if X is None:
+            X = self.input_df
+
+        # TODO: use only once?
         if self.transformed is None:
             self.transformed = super().fit_transform(X)
+            return self.transformed
 
         return self.transformed
-
-
-def load(date):
-    """
-        fetch DataFrame and astype and filter by columns
-    :return: pd DataFrame
-    """
-    manager = S3Manager(bucket_name="production-bobsim")
-    df = manager.fetch_objects(
-        key="public_data/open_data_raw_material_price/process/csv/{filename}.csv".format(filename=date)
-    )
-
-    # TODO: no use index to get first element.
-    return df[0]
 
 
 def main():
     """
         test for Transformer
     """
-    df, key = build_origin_price(date="201908")
-    print(df.info())
-    t = CustomTransformer(
-        strategy={
-            "one_hot_encoding": ['품목명', '조사지역명'],
-            "standard": ["당일조사가격"],
-            # "hey": ['ㅎ']
-        }
-    )
-    print(t.fit_transform(df))
-    print(t.header)
-    print(t.transformed_df)
+
+    # df, key = build_origin_price(date="201908", prefix="clean")
+    # print(df.info())
+    # t = CustomTransformer(
+    #     strategy={
+    #         "one_hot_encoding": ['품목명', '조사지역명'],
+    #         "standard": ["당일조사가격"],
+    #         # "hey": ['ㅎ']
+    #     }, df=df
+    # )
+    # print(t.fit_transform())
+    # print(t.header)
+    # print(t.transformed_df)
+
+    pass
 
 
 if __name__ == '__main__':

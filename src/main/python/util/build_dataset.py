@@ -10,32 +10,40 @@ from feature_extraction_pipeline.open_data_terrestrial_weather.main import Terre
 
 # TODO: consider of classification
 
-def build_origin_fmp(date="201908"):
+def build_origin_fmp(date, prefix=None):
     # load origin data filtered
-    p_df, p_key = build_origin_price(date=date)
-    w_df, w_key = build_origin_weather(date=date)
+    p_df, p_key = build_origin_price(date=date, prefix=prefix)
+    w_df, w_key = build_origin_weather(date=date, prefix=prefix)
 
-    # merge
-    return pd.merge(
-        p_df, w_df, how="inner", left_on=p_key, right_on=w_key
-    ).drop("일시", axis=1).astype(dtype={"조사일자": "datetime64"})
+    if prefix is "clean":
+        # merge
+        return pd.merge(
+            p_df, w_df, how="inner", left_on=p_key, right_on=w_key
+        ).astype(dtype={"date": "datetime64"})
+    else:
+        return p_df, w_df
 
 
-def build_origin_price(date):
+def build_origin_price(date, prefix=None):
     p = OpenDataRawMaterialPrice(date=date)
-    return p.filter(p.input_df), "조사일자"
+    if prefix is "clean":
+        return p.clean(p.filter(p.input_df)), "date"
+    else:
+        return p.input_df, "date"
 
 
-def build_origin_weather(date):
+def build_origin_weather(date, prefix=None):
     t = OpenDataTerrestrialWeather(date=date)
-    t_df = t.filter(t.input_df)
-
     m = OpenDataMarineWeather(date=date)
-    m_df = m.filter(m.input_df)
 
-    return pd.merge(
-        t_df, m_df, how='inner', on="일시"
-    ), "일시"
+    if prefix is "clean":
+        return pd.merge(
+            t.clean(t.input_df), m.clean(m.input_df), how='inner', on="date"
+        ), "date"
+    else:
+        return pd.merge(
+            t.input_df, m.input_df, how='inner', on="date"
+        ), "date"
 
 
 def build_process_fmp(date):
@@ -47,7 +55,7 @@ def build_process_fmp(date):
     weather, w_key = build_process_weather(date=date)
     return pd.merge(
         price, weather, how="inner", left_on=p_key, right_on=w_key
-    ).drop("일시", axis=1).astype(dtype={"조사일자": "datetime64"})
+    ).astype(dtype={"date": "datetime64"})
 
 
 def build_process_price(date):
@@ -86,9 +94,14 @@ def build_master(dataset="origin_fmp", date="201908"):
     :param date: str represents date
     :return: pd DataFrame combined
     """
-    if dataset == "origin_fmp":
-        return build_origin_fmp()
+    if dataset == "clean_origin_fmp":
+        # df combined with p_df, t_df, m_df
+        return build_origin_fmp(date=date, prefix="clean")
+    elif dataset == "origin_fmp":
+        # p_df, w_df(t+m)
+        return build_origin_fmp(date=date)
     elif dataset == "process_fmp":
+        # df combined with p_df, t_df, m_df
         return build_process_fmp(date=date)
     else:
         raise Exception("not supported")
@@ -104,9 +117,16 @@ def main():
     # process_df = build_master("process_fmp", date="201908")
     # print(process_df)
 
-    p_df, p_key = build_process_price(date="201908")
-    print(p_df)
+    # p_df, p_key = build_process_price(date="201908")
+    # print(p_df)
+    # print(p_df.info())
+
+    p_df, w_df = build_master(dataset="origin_fmp", date="201908")
+    clean_origin_df = build_master(dataset="clean_origin_fmp", date="201908")
+
     print(p_df.info())
+    print(w_df.info())
+    print(clean_origin_df.info())
 
 
 if __name__ == '__main__':
