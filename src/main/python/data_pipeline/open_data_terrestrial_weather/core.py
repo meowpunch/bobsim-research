@@ -33,10 +33,13 @@ class OpenDataTerrestrialWeather:
         # type
         self.dtypes = dtype["terrestrial_weather"]
         self.translate = translation["terrestrial_weather"]
+
         # fillna
         self.columns_with_linear = ['t_temper_avg', 't_temper_lowest', 't_temper_highest', 't_wind_speed_max',
                                     't_wind_speed_avg', 't_rel_humid_min', 't_rel_humid_avg']
         self.columns_with_zero = ['t_duration_precipitation', 't_daily_precipitation']
+        self.columns_with_drop = ["date"]
+
 
         # log transformation
         self.columns_with_log = [
@@ -46,11 +49,9 @@ class OpenDataTerrestrialWeather:
 
         # load filtered df and take certain term
         df = self.load()
-
         # TODO: make function
-        self.input_df = df[
-            (df.date.dt.year == self.term.year) & (df.date.dt.month == self.term.month)
-            ]
+        date_picker = (df['date'].dt.year == self.term.year) & (df['date'].dt.month == self.term.month)
+        self.input_df = df[date_picker]
 
     def load(self):
         """
@@ -77,25 +78,22 @@ class OpenDataTerrestrialWeather:
 
     def clean(self, df: pd.DataFrame):
         """
-            1. fillna with zero
-            2. groupby "date" mean of "region"s
-            3. fillna with linear
         :return: cleaned DataFrame
         """
-        # null handler
-        nh = NullHandler()
-
-        # fill na
-        filled_with_linear = nh.fillna_with_linear(
-            self.groupby_date(df[self.columns_with_linear])
+        # null handler (drop, zero)
+        nh = NullHandler(
+            strategy={"drop": self.columns_with_drop, "zero": self.columns_with_zero},
+            df=df[self.columns_with_drop + self.columns_with_zero]
         )
-        filled_with_zero = self.groupby_date(nh.fillna_with_zero(
-            df[self.columns_with_zero]
-        ))
 
-        return pd.concat([df.drop(
-            columns=self.columns_with_linear + self.columns_with_zero, axis=1
-        ), filled_with_linear, filled_with_zero], axis=1)
+        # groupby -> fillna (linear)
+        linear = nh.fillna_with_linear(
+            self.groupby_date(df)[self.columns_with_linear]
+        )
+        # fillna -> groupby (drop, zero)
+        drop_and_zero = self.groupby_date(nh.process())
+
+        return pd.concat([drop_and_zero, linear], axis=1)
 
     def transform_by_skew(self, df: pd.DataFrame):
         """

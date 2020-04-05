@@ -16,7 +16,7 @@ translation = {
         "최고 파주기(sec)": "m_wave_period_highest"
     },
 
-    "terristrial_weather": {
+    "terrestrial_weather": {
         "지점": "t_location",
         "일시": "date",
         "평균기온(°C)": "t_temper_avg",
@@ -32,6 +32,7 @@ translation = {
 
     "raw_material_price": {
         "조사일자": "date",
+        "조사지역명": "region",
         "조사구분명": "survey_class_name",
         "표준품목명": "standard_item_name",
         "조사가격품목명": "survey_price_item_name",
@@ -39,6 +40,5 @@ translation = {
         "조사가격품종명": "survey_price_type_name",
         "조사등급명": "survey_grade_name",
         "조사단위명": "survey_unit_name",
-        "당일조사가격": "today_price",
-        "조사지역명": "survey_location_name"
+        "당일조사가격": "price",
         }}

@@ -3,23 +3,20 @@ from functools import reduce
 
 import pandas as pd
 
-from util.build_dataset import build_origin_weather
 from util.logging import init_logger
 from util.s3_manager.manager import S3Manager
 
 
 class NullHandler:
-    def __init__(self, strategy, df):
-        # only using staticmethod, no init instance variables
-        if strategy is not None:
-            self.input_df = df
-            self.strategy = strategy
+    def __init__(self, strategy=None, df=None):
+        self.input_df = df
+        self.strategy = strategy
 
-            self.fillna_method = {
-                "drop": self.fillna_with_drop,
-                "zero": self.fillna_with_zero,
-                "linear": self.fillna_with_linear,
-            }
+        self.fillna_method = {
+            "drop": self.fillna_with_drop,
+            "zero": self.fillna_with_zero,
+            "linear": self.fillna_with_linear,
+        }
 
     @staticmethod
     def fillna_with_linear(df: pd.DataFrame):
@@ -72,7 +69,7 @@ class NullHandler:
 
         return pd.concat(
             df_list + [self.input_df.drop(columns=self.get_columns_list(), axis=1)],
-            axis=1, join="inner", keys='index'
+            axis=1, join="inner"
         )
 
 
@@ -91,6 +88,7 @@ def load(filename="2014-2020"):
 
 
 def main():
+    """
     df, key = build_origin_weather(date="201908")
     print(df.info())
     t = NullHandler(
@@ -100,6 +98,8 @@ def main():
         }, df=df
     )
     print(t.process())
+    """
+    pass
 
 
 if __name__ == '__main__':

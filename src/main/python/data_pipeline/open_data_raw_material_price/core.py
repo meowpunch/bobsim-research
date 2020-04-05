@@ -29,7 +29,6 @@ class OpenDataRawMaterialPrice:
         # load filtered df
         self.input_df = self.load()
 
-
     def load(self):
         """
             fetch DataFrame and check validate
@@ -75,11 +74,11 @@ class OpenDataRawMaterialPrice:
         :return: transformed pd DataFrame
         """
         # get skew
-        skew_feature = df["today_price"].skew()
+        skew_feature = df["price"].skew()
         # log by skew
         # TODO: define threshold not just '1'
         if abs(skew_feature) > 1:
-            skewed_df = df.assign(today_price=np.log1p(df["today_price"]))
+            skewed_df = df.assign(price=np.log1p(df["price"]))
             return skewed_df
         else:
             return df
@@ -91,8 +90,11 @@ class OpenDataRawMaterialPrice:
         :return: combined pd DataFrame
         """
         return df.assign(
-            item_name=lambda x: x.standard_item_name + x.survey_price_item_name + x.standard_breed_name + x.survey_prive_type_name
-        ).drop(columns=["standard_item_name", "survey_price_item_name", "standard_breed_name", "survey_prive_type_name"], axis=1)
+            item_name=lambda
+                x: x.standard_item_name + x.survey_price_item_name + x.standard_breed_name + x.survey_price_type_name
+        ).drop(
+            columns=["standard_item_name", "survey_price_item_name", "standard_breed_name", "survey_price_type_name"],
+            axis=1)
 
     @staticmethod
     def get_unit(unit_name):
@@ -116,7 +118,7 @@ class OpenDataRawMaterialPrice:
                 lambda x: self.get_unit(x)
             )
         ).assign(
-            today_price=lambda x: x.today_price / x.survey_unit_name
+            price=lambda x: x.price / x.survey_unit_name
         ).drop("survey_unit_name", axis=1)
 
     def filter(self, df):
@@ -133,7 +135,7 @@ class OpenDataRawMaterialPrice:
 
         # prices divided by 'material grade'(survey_grade_name) will be used on average.
         aggregated = combined.drop("survey_grade_name", axis=1).groupby(
-            ["date", "survey_location_name", "survey_unit_name", "item_name"]
+            ["date", "region", "survey_unit_name", "item_name"]
         ).mean().reset_index()
 
         # convert prices in standard unit
@@ -170,13 +172,10 @@ class OpenDataRawMaterialPrice:
     def decompose_date(df: pd.DataFrame):
         # add is_weekend & season column
         return df.assign(
-            is_weekend=lambda x: x.date.dt.dayofweek.apply(
+            is_weekend=lambda x: x["date"].dt.dayofweek.apply(
                 lambda day: 1 if day > 4 else 0
             ),
-            season=lambda x: x.date.dt.month.apply(
+            season=lambda x: x["date"].dt.month.apply(
                 lambda month: (month % 12 + 3) // 3
             )
         )
-
-
-

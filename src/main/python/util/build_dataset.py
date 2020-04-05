@@ -15,32 +15,35 @@ def build_origin_fmp(date, prefix=None):
     p_df, p_key = build_origin_price(date=date, prefix=prefix)
     w_df, w_key = build_origin_weather(date=date, prefix=prefix)
 
-    # merge
-    return pd.merge(
-        p_df, w_df, how="inner", left_on=p_key, right_on=w_key
-    ).drop("일시", axis=1).astype(dtype={"조사일자": "datetime64"})
+    if prefix is "clean":
+        # merge
+        return pd.merge(
+            p_df, w_df, how="inner", left_on=p_key, right_on=w_key
+        ).astype(dtype={"date": "datetime64"})
+    else:
+        return p_df, w_df
 
 
-def build_origin_price(date, prefix):
+def build_origin_price(date, prefix=None):
     p = OpenDataRawMaterialPrice(date=date)
     if prefix is "clean":
-        return p.clean(p.filter(p.input_df)), "조사일자"
+        return p.clean(p.filter(p.input_df)), "date"
     else:
-        return p.input_df, "조사일자"
+        return p.input_df, "date"
 
 
-def build_origin_weather(date, prefix):
+def build_origin_weather(date, prefix=None):
     t = OpenDataTerrestrialWeather(date=date)
     m = OpenDataMarineWeather(date=date)
 
     if prefix is "clean":
         return pd.merge(
-            t.clean(t.input_df), m.clean(m.input_df), how='inner', on="일시"
-        ), "일시"
+            t.clean(t.input_df), m.clean(m.input_df), how='inner', on="date"
+        ), "date"
     else:
         return pd.merge(
-            t.input_df, m.input_df, how='inner', on="일시"
-        ), "일시"
+            t.input_df, m.input_df, how='inner', on="date"
+        ), "date"
 
 
 def build_process_fmp(date):
@@ -52,7 +55,7 @@ def build_process_fmp(date):
     weather, w_key = build_process_weather(date=date)
     return pd.merge(
         price, weather, how="inner", left_on=p_key, right_on=w_key
-    ).drop("일시", axis=1).astype(dtype={"조사일자": "datetime64"})
+    ).astype(dtype={"date": "datetime64"})
 
 
 def build_process_price(date):
@@ -118,10 +121,11 @@ def main():
     # print(p_df)
     # print(p_df.info())
 
-    filter_origin_df = build_master(dataset="filter_origin_fmp", date="201908")
+    p_df, w_df = build_master(dataset="origin_fmp", date="201908")
     clean_origin_df = build_master(dataset="clean_origin_fmp", date="201908")
 
-    print(filter_origin_df.info())
+    print(p_df.info())
+    print(w_df.info())
     print(clean_origin_df.info())
 
 

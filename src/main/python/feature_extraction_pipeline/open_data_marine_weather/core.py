@@ -27,5 +27,5 @@ class MarineWeatherExtractor:
         return df[0]
 
     def process(self):
-        return self.input_df, "일시"
+        return self.input_df, "date"
 

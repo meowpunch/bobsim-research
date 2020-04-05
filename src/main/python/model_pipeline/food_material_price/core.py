@@ -34,7 +34,7 @@ class PricePredictModelPipeline:
 
     @staticmethod
     def split_xy(df: pd.DataFrame):
-        return df.drop(columns=["당일조사가격", "조사일자"]), df["당일조사가격"]
+        return df.drop(columns=["price", "date"]), df["price"]
 
     def get_score(self, train, test):
         x_train, y_train = self.split_xy(train)
@@ -53,11 +53,11 @@ class PricePredictModelPipeline:
         """
         predict_days = 7
         # TODO: it should be processed in data_pipeline
-        reversed_time = df["조사일자"].drop_duplicates().sort_values(ascending=False).tolist()
+        reversed_time = df["date"].drop_duplicates().sort_values(ascending=False).tolist()
         standard_date = reversed_time[predict_days]
 
-        train = df[df.조사일자.dt.date < standard_date]
-        test = df[df.조사일자.dt.date >= standard_date]
+        train = df[df["date"].dt.date < standard_date]
+        test = df[df["date"].dt.date >= standard_date]
         return train, test
 
     def process(self):
@@ -83,7 +83,7 @@ class PricePredictModelPipeline:
             # through inverse function, get metric (customized rmse)
             pred_y = searcher.predict(test_x)
             score = self.customized_rmse(test_y, pred_y)
-            self.logger.info("coef: {coef}".format(
+            self.logger.info("coef:\n{coef}".format(
                 coef=pd.Series(searcher.searcher.best_estimator_.coef_, index=train_x.columns)
             ))
             self.logger.info("customized RMSE is {score}".format(score=score))

@@ -5,7 +5,7 @@ def main():
     open_data_marine_weather = OpenDataMarineWeather(
         date="201908"
     )
-    print(open_data_marine_weather.process())
+    open_data_marine_weather.process()
 
 
 if __name__ == '__main__':
