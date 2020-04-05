@@ -10,7 +10,7 @@ from feature_extraction_pipeline.open_data_terrestrial_weather.main import Terre
 
 # TODO: consider of classification
 
-def build_origin_fmp(date, prefix):
+def build_origin_fmp(date, prefix=None):
     # load origin data filtered
     p_df, p_key = build_origin_price(date=date, prefix=prefix)
     w_df, w_key = build_origin_weather(date=date, prefix=prefix)
@@ -23,27 +23,23 @@ def build_origin_fmp(date, prefix):
 
 def build_origin_price(date, prefix):
     p = OpenDataRawMaterialPrice(date=date)
-    filtered = p.filter(p.input_df)
-    if prefix == "filter":
-        return filtered, "조사일자"
+    if prefix is "clean":
+        return p.clean(p.filter(p.input_df)), "조사일자"
     else:
-        return p.clean(filtered), "조사일자"
+        return p.input_df, "조사일자"
 
 
 def build_origin_weather(date, prefix):
     t = OpenDataTerrestrialWeather(date=date)
-    t_df = t.filter(t.input_df)
-
     m = OpenDataMarineWeather(date=date)
-    m_df = m.filter(m.input_df)
 
-    if prefix == "filter":
+    if prefix is "clean":
         return pd.merge(
-            t_df, m_df, how='inner', on="일시"
+            t.clean(t.input_df), m.clean(m.input_df), how='inner', on="일시"
         ), "일시"
     else:
         return pd.merge(
-            t.clean(t_df), m.clean(m_df), how='inner', on="일시"
+            t.input_df, m.input_df, how='inner', on="일시"
         ), "일시"
 
 
@@ -96,10 +92,13 @@ def build_master(dataset="origin_fmp", date="201908"):
     :return: pd DataFrame combined
     """
     if dataset == "clean_origin_fmp":
+        # df combined with p_df, t_df, m_df
         return build_origin_fmp(date=date, prefix="clean")
-    elif dataset == "filter_origin_fmp":
-        return build_origin_fmp(date=date, prefix="filter")
+    elif dataset == "origin_fmp":
+        # p_df, w_df(t+m)
+        return build_origin_fmp(date=date)
     elif dataset == "process_fmp":
+        # df combined with p_df, t_df, m_df
         return build_process_fmp(date=date)
     else:
         raise Exception("not supported")

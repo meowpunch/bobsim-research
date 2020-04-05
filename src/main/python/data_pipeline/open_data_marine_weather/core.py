@@ -6,6 +6,7 @@ import pandas as pd
 from scipy.stats import skew
 
 from data_pipeline.dtype import dtype
+from util.handle_null import NullHandler
 from util.logging import init_logger
 from util.s3_manager.manager import S3Manager
 
@@ -73,70 +74,43 @@ class OpenDataMarineWeather:
         manager.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=self.save_key)
 
     @staticmethod
-    def fillna_with_linear(df: pd.DataFrame):
-        # fill nan by linear formula.
-        return df.interpolate(method='linear', limit_direction='both')
-
-    @staticmethod
-    def fillna_with_zero(df: pd.DataFrame):
-        return df.fillna(value=0)
+    def groupby_date(df: pd.DataFrame):
+        # weather by divided 'region' (지점) will be used on average
+        return df.groupby(["일시"]).mean().reset_index()
 
     def clean(self, df: pd.DataFrame):
         """
-            clean DataFrame by no used columns and null value
+            1. fillna with zero
+            2. groupby "date" mean of "region"s
+            3. fillna with linear
         :return: cleaned DataFrame
         """
-        # pd Series represents the number of null values by column
-        df_null = df.isna().sum()
-        is_null = df_null[df_null.map(lambda x: x > 0)]
-        self.logger.info(is_null)
+        # null handler
+        nh = NullHandler()
 
-        # fillna
-        filled_with_linear = self.fillna_with_linear(
-            df.filter(items=self.columns_with_linear, axis=1)
+        # fill na
+        filled_with_linear = nh.fillna_with_linear(
+            self.groupby_date(df[self.columns_with_linear])
         )
-        filled_with_zero = self.fillna_with_zero(
-            df.filter(items=self.columns_with_zero, axis=1)
-        )
+        filled_with_zero = self.groupby_date(nh.fillna_with_zero(
+            df[self.columns_with_zero]
+        ))
 
-        combined = pd.concat([df.drop(
-            columns=self.columns_with_zero + self.columns_with_linear, axis=1
+        return pd.concat([df.drop(
+            columns=self.columns_with_linear + self.columns_with_zero, axis=1
         ), filled_with_linear, filled_with_zero], axis=1)
-        return combined
-
-    def transform_by_skew(self, df: pd.DataFrame):
-        """
-            get skew by numeric columns and log by skew
-        :param df: cleaned pd DataFrame
-        :return: transformed pd DataFrame
-        """
-        # numerical values remain
-        filtered = df.dtypes[df.dtypes != "datetime64[ns]"].index
-
-        # get skew
-        skew_features = df[filtered].apply(lambda x: skew(x))
-
-        # log by skew
-        # TODO: define threshold not just '1'
-        skew_features_top = skew_features[skew_features > 1]
-
-        return pd.concat(
-            [df.drop(columns=self.columns_with_log), np.log1p(df[self.columns_with_log])], axis=1
-        )
 
     def process(self):
         """
             process
-                0. filter
-                1. clean null value
+                1. clean
                 2. transform as distribution of data
                 3. save processed data to s3
             TODO: save to rdb
         :return: exit_code (bool)  0:success 1:fail
         """
         try:
-            filtered = self.filter(self.input_df)
-            cleaned = self.clean(filtered)
+            cleaned = self.clean(self.input_df)
             # transformed = self.transform_by_skew(cleaned)
             self.save(cleaned)
         except Exception as e:
@@ -146,8 +120,3 @@ class OpenDataMarineWeather:
 
         self.logger.info("success to process")
         return 0
-
-    @staticmethod
-    def filter(df: pd.DataFrame):
-        # weather by divided 'region' (지점) will be used on average
-        return df.groupby(["일시"]).mean().reset_index()
