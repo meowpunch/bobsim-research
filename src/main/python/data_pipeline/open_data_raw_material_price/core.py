@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 from data_pipeline.dtype import dtype
+from data_pipeline.translate import translation
 from util.logging import init_logger
 from util.s3_manager.manager import S3Manager
 
@@ -23,6 +24,7 @@ class OpenDataRawMaterialPrice:
         )
 
         self.dtypes = dtype["raw_material_price"]
+        self.translate = translation["raw_material_price"]
 
         # load filtered df
         self.input_df = self.load()
@@ -38,7 +40,7 @@ class OpenDataRawMaterialPrice:
 
         # TODO: no use index to get first element.
         # validate (filter by column and check types)
-        return df[0][self.dtypes.keys()].astype(dtype=self.dtypes)
+        return df[0][self.dtypes.keys()].astype(dtype=self.dtypes).rename(columns=self.translate, inplace=False)
 
     def save(self, df: pd.DataFrame):
         csv_buffer = StringIO()
@@ -72,11 +74,11 @@ class OpenDataRawMaterialPrice:
         :return: transformed pd DataFrame
         """
         # get skew
-        skew_feature = df["당일조사가격"].skew()
+        skew_feature = df["price"].skew()
         # log by skew
         # TODO: define threshold not just '1'
         if abs(skew_feature) > 1:
-            skewed_df = df.assign(당일조사가격=np.log1p(df["당일조사가격"]))
+            skewed_df = df.assign(price=np.log1p(df["price"]))
             return skewed_df
         else:
             return df
@@ -88,8 +90,11 @@ class OpenDataRawMaterialPrice:
         :return: combined pd DataFrame
         """
         return df.assign(
-            품목명=lambda x: x.표준품목명 + x.조사가격품목명 + x.표준품종명 + x.조사가격품종명
-        ).drop(columns=["표준품목명", "조사가격품목명", "표준품종명", "조사가격품종명"], axis=1)
+            item_name=lambda
+                x: x.standard_item_name + x.survey_price_item_name + x.standard_breed_name + x.survey_price_type_name
+        ).drop(
+            columns=["standard_item_name", "survey_price_item_name", "standard_breed_name", "survey_price_type_name"],
+            axis=1)
 
     @staticmethod
     def get_unit(unit_name):
@@ -109,12 +114,12 @@ class OpenDataRawMaterialPrice:
         :return: transformed pd DataFrame
         """
         return df.assign(
-            조사단위명=lambda r: r.조사단위명.map(
+            survey_unit_name=lambda r: r.survey_unit_name.map(
                 lambda x: self.get_unit(x)
             )
         ).assign(
-            당일조사가격=lambda x: x.당일조사가격 / x.조사단위명
-        ).drop("조사단위명", axis=1)
+            price=lambda x: x.price / x.survey_unit_name
+        ).drop("survey_unit_name", axis=1)
 
     def filter(self, df):
         """
@@ -123,14 +128,14 @@ class OpenDataRawMaterialPrice:
         :return: filtered pd DataFrame
         """
         # only retail price
-        retail = df[df.조사구분명 == "소비자가격"].drop("조사구분명", axis=1)
+        retail = df[df.survey_class_name == "소비자가격"].drop("survey_class_name", axis=1)
 
         # combine 4 categories into one
         combined = self.combine_categories(retail)
 
-        # prices divided by 'material grade'(조사등급명) will be used on average.
-        aggregated = combined.drop("조사등급명", axis=1).groupby(
-            ["조사일자", "조사지역명", "조사단위명", "품목명"]
+        # prices divided by 'material grade'(survey_grade_name) will be used on average.
+        aggregated = combined.drop("survey_grade_name", axis=1).groupby(
+            ["date", "region", "survey_unit_name", "item_name"]
         ).mean().reset_index()
 
         # convert prices in standard unit
@@ -167,13 +172,10 @@ class OpenDataRawMaterialPrice:
     def decompose_date(df: pd.DataFrame):
         # add is_weekend & season column
         return df.assign(
-            is_weekend=lambda x: x.조사일자.dt.dayofweek.apply(
+            is_weekend=lambda x: x["date"].dt.dayofweek.apply(
                 lambda day: 1 if day > 4 else 0
             ),
-            season=lambda x: x.조사일자.dt.month.apply(
+            season=lambda x: x["date"].dt.month.apply(
                 lambda month: (month % 12 + 3) // 3
             )
         )
-
-
-
