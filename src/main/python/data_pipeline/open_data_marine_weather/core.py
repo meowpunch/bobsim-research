@@ -36,25 +36,24 @@ class OpenDataMarineWeather:
 
         # fillna
         self.columns_with_linear = [
-            "m_wind_speed_avg", "m_atm_pressure_avg", "m_rel_humid_avg",
-            "m_temper_avg", "m_water_temper_avg", "m_max_wave_height_avg",
-            "m_sign_wave_height_avg", "m_sign_wave_height_highest", "m_max_wave_height_highest"
+            "m_wind_spd_avg", "m_atm_press_avg", "m_rel_hmd_avg",
+            "m_temper_avg", "m_water_temper_avg", "m_max_wave_h_avg",
+            "m_sign_wave_h_avg", "m_sign_wave_h_high", "m_max_wave_h_high"
         ]
-        self.columns_with_zero = ['m_wave_period_avg', 'm_wave_period_highest']
+        self.columns_with_zero = ['m_wave_p_avg', 'm_wave_p_high']
         self.columns_with_drop = ['date']
 
         # log transformation
         self.columns_with_log = [
-            "m_wind_speed_avg", "m_atm_pressure_avg", "m_rel_humid_avg",
-            "m_temper_avg", "m_water_temper_avg", "m_max_wave_height_avg",
-            "m_sign_wave_height_avg", "m_max_wave_height_highest",
-            'm_wave_period_avg', 'm_wave_period_highest'
+            "m_wind_spd_avg", "m_atm_press_avg", "m_rel_hmd_avg",
+            "m_temper_avg", "m_water_temper_avg", "m_max_wave_h_avg",
+            "m_sign_wave_h_avg", "m_max_wave_h_high",
+            'm_wave_p_avg', 'm_wave_p_high'
         ]
 
         # load filtered df and take certain term
         df = self.load()
         # TODO: make function
-        print(df)
         date_picker = (df['date'].dt.year == self.term.year) & (df['date'].dt.month == self.term.month)
         self.input_df = df[date_picker]
 

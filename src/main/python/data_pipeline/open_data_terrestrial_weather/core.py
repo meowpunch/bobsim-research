@@ -35,16 +35,15 @@ class OpenDataTerrestrialWeather:
         self.translate = translation["terrestrial_weather"]
 
         # fillna
-        self.columns_with_linear = ['t_temper_avg', 't_temper_lowest', 't_temper_highest', 't_wind_speed_max',
-                                    't_wind_speed_avg', 't_rel_humid_min', 't_rel_humid_avg']
-        self.columns_with_zero = ['t_duration_precipitation', 't_daily_precipitation']
+        self.columns_with_linear = ['t_temper_avg', 't_temper_lowest', 't_temper_high', 't_wind_spd_max',
+                                    't_wind_spd_avg', 't_rel_hmd_min', 't_rel_hmd_avg']
+        self.columns_with_zero = ['t_dur_preci', 't_daily_preci']
         self.columns_with_drop = ["date"]
-
 
         # log transformation
         self.columns_with_log = [
-            't_temper_lowest', 't_temper_highest', 't_rel_humid_min',
-            't_rel_humid_avg', 't_duration_precipitation', 't_daily_precipitation'
+            't_temper_lowest', 't_temper_high', 't_rel_hmd_min',
+            't_rel_hmd_avg', 't_dur_preci', 't_daily_preci'
         ]
 
         # load filtered df and take certain term

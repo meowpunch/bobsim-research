@@ -114,12 +114,12 @@ class OpenDataRawMaterialPrice:
         :return: transformed pd DataFrame
         """
         return df.assign(
-            survey_unit_name=lambda r: r.survey_unit_name.map(
+            unit=lambda r: r.unit_name.map(
                 lambda x: self.get_unit(x)
             )
         ).assign(
-            price=lambda x: x.price / x.survey_unit_name
-        ).drop("survey_unit_name", axis=1)
+            price=lambda x: x.price / x.unit
+        ).drop("unit_name", axis=1)
 
     def filter(self, df):
         """
@@ -128,14 +128,14 @@ class OpenDataRawMaterialPrice:
         :return: filtered pd DataFrame
         """
         # only retail price
-        retail = df[df.survey_class_name == "소비자가격"].drop("survey_class_name", axis=1)
+        retail = df[df["class"] == "소비자가격"].drop("class", axis=1)
 
         # combine 4 categories into one
         combined = self.combine_categories(retail)
 
-        # prices divided by 'material grade'(survey_grade_name) will be used on average.
-        aggregated = combined.drop("survey_grade_name", axis=1).groupby(
-            ["date", "region", "survey_unit_name", "item_name"]
+        # prices divided by 'material grade'(grade) will be used on average.
+        aggregated = combined.drop("grade", axis=1).groupby(
+            ["date", "region", "unit_name", "item_name"]
         ).mean().reset_index()
 
         # convert prices in standard unit

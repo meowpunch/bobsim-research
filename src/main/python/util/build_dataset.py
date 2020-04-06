@@ -111,6 +111,7 @@ def main():
     """
         test for build master
     """
+    pass
     # origin_df = build_master("origin_fmp", date="201908")
     # print(origin_df)
     #
@@ -121,12 +122,12 @@ def main():
     # print(p_df)
     # print(p_df.info())
 
-    p_df, w_df = build_master(dataset="origin_fmp", date="201908")
-    clean_origin_df = build_master(dataset="clean_origin_fmp", date="201908")
-
-    print(p_df.info())
-    print(w_df.info())
-    print(clean_origin_df.info())
+    # p_df, w_df = build_master(dataset="origin_fmp", date="201908")
+    # clean_origin_df = build_master(dataset="clean_origin_fmp", date="201908")
+    #
+    # print(p_df.info())
+    # print(w_df.info())
+    # print(clean_origin_df.info())
 
 
 if __name__ == '__main__':
