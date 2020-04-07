@@ -30,6 +30,6 @@ class RawMaterialPriceExtractor:
         return df[0]
 
     def process(self):
-        categorical_features = ['item_name', 'region', 'is_weekend', 'season']
+        categorical_features = ['item_name', 'region']  # , 'is_weekend', 'season']
         df = get_dummies(self.input_df, columns=categorical_features)
         return df, "date"

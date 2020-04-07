@@ -1,5 +1,4 @@
 translation = {
-
     "marine_weather": {
         "지점": "m_location",
         "일시": "date",
@@ -15,7 +14,6 @@ translation = {
         "평균 파주기(sec)": "m_wave_p_avg",
         "최고 파주기(sec)": "m_wave_p_high"
     },
-
     "terrestrial_weather": {
         "지점": "t_location",
         "일시": "date",
@@ -29,7 +27,6 @@ translation = {
         "최소 상대습도(pct)": "t_rel_hmd_min",
         "평균 상대습도(pct)": "t_rel_hmd_avg"
     },
-
     "raw_material_price": {
         "조사일자": "date",
         "조사지역명": "region",
@@ -41,4 +38,6 @@ translation = {
         "조사등급명": "grade",
         "조사단위명": "unit_name",
         "당일조사가격": "price",
-        }}
+    }
+}
+

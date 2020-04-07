@@ -12,9 +12,8 @@ from util.logging import init_logger
 
 class PricePredictModelPipeline:
 
-    def __init__(self, bucket_name: str, date: str):
+    def __init__(self, bucket_name: str):
         self.logger = init_logger()
-        self.date = date
 
         # s3
         self.bucket_name = bucket_name
@@ -60,13 +59,13 @@ class PricePredictModelPipeline:
         test = df[df["date"].dt.date >= standard_date]
         return train, test
 
-    def process(self):
+    def process(self, date: str, data_process: bool):
         """
         :return: exit code
         """
         try:
             # build dataset
-            dataset = build_process_fmp(date=self.date)
+            dataset = build_process_fmp(date=date, process=data_process)
 
             # set train, test dataset
             train, test = self.set_train_test(dataset)

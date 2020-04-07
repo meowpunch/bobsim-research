@@ -40,12 +40,6 @@ class OpenDataTerrestrialWeather:
         self.columns_with_zero = ['t_dur_preci', 't_daily_preci']
         self.columns_with_drop = ["date"]
 
-        # log transformation
-        self.columns_with_log = [
-            't_temper_lowest', 't_temper_high', 't_rel_hmd_min',
-            't_rel_hmd_avg', 't_dur_preci', 't_daily_preci'
-        ]
-
         # load filtered df and take certain term
         df = self.load()
         # TODO: make function
@@ -63,12 +57,6 @@ class OpenDataTerrestrialWeather:
         # TODO: no use index to get first element.
         # filter by column and check types
         return df[0][self.dtypes.keys()].astype(dtype=self.dtypes).rename(columns=self.translate, inplace=False)
-
-    def save(self, df: pd.DataFrame):
-        csv_buffer = StringIO()
-        df.to_csv(csv_buffer, index=False)
-        manager = S3Manager(bucket_name=self.bucket_name)
-        manager.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=self.save_key)
 
     @staticmethod
     def groupby_date(df: pd.DataFrame):
@@ -94,25 +82,15 @@ class OpenDataTerrestrialWeather:
 
         return pd.concat([drop_and_zero, linear], axis=1)
 
-    def transform_by_skew(self, df: pd.DataFrame):
-        """
-            get skew by numeric columns and log by skew
-        :param df: cleaned pd DataFrame
-        :return: transformed pd DataFrame
-        """
-        # numerical values remain
-        filtered = df.dtypes[df.dtypes != "datetime64[ns]"].index
+    def transform(self, df):
+        columns_with_log = [
+            't_temper_lowest', 't_temper_high', 't_rel_hmd_min',
+            't_rel_hmd_avg', 't_dur_preci', 't_daily_preci'
+        ]
 
-        # get skew
-        skew_features = df[filtered].apply(lambda x: skew(x))
-
-        # log by skew
-        # TODO: define threshold not just '1'
-        skew_features_top = skew_features[skew_features > 1]
-
-        return pd.concat(
-            [df.drop(columns=self.columns_with_log), np.log1p(df[self.columns_with_log])], axis=1
-        )
+        return pd.concat([
+            df.drop(columns=columns_with_log), np.log1p(df[columns_with_log])
+        ], axis=1)
 
     def process(self):
         """
@@ -125,12 +103,18 @@ class OpenDataTerrestrialWeather:
         """
         try:
             cleaned = self.clean(self.input_df)
-            # transformed = self.transform_by_skew(cleaned)
-            self.save(cleaned)
+            transformed = self.transform(cleaned)
+            self.save(transformed)
         except Exception as e:
             # TODO: consider that it can repeat to save one more time
             self.logger.critical(e, exc_info=True)
             return 1
 
-        self.logger.info("success to process")
+        self.logger.info("success to process terrestrial weather")
         return 0
+
+    def save(self, df: pd.DataFrame):
+        csv_buffer = StringIO()
+        df.to_csv(csv_buffer, index=False)
+        manager = S3Manager(bucket_name=self.bucket_name)
+        manager.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=self.save_key)

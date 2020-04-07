@@ -69,12 +69,6 @@ class OpenDataMarineWeather:
         # filter by column and check types
         return df[0][self.dtypes.keys()].astype(dtype=self.dtypes).rename(columns=self.translate, inplace=False)
 
-    def save(self, df: pd.DataFrame):
-        csv_buffer = StringIO()
-        df.to_csv(csv_buffer, index=False)
-        manager = S3Manager(bucket_name=self.bucket_name)
-        manager.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=self.save_key)
-
     @staticmethod
     def groupby_date(df: pd.DataFrame):
         # weather by divided 'region' (지점) will be used on average
@@ -87,7 +81,7 @@ class OpenDataMarineWeather:
         # null handler (drop, zero)
         nh = NullHandler(
             strategy={"drop": self.columns_with_drop, "zero": self.columns_with_zero},
-            df=df[self.columns_with_drop+self.columns_with_zero]
+            df=df[self.columns_with_drop + self.columns_with_zero]
         )
         # groupby -> fillna (linear)
         linear = nh.fillna_with_linear(
@@ -96,6 +90,18 @@ class OpenDataMarineWeather:
         # fillna -> groupby (drop, zero)
         drop_and_zero = self.groupby_date(nh.process())
         return pd.concat([drop_and_zero, linear], axis=1)
+
+    def transform(self, df):
+        columns_with_log = [
+            "m_wind_spd_avg", "m_atm_press_avg", "m_rel_hmd_avg",
+            "m_temper_avg", "m_water_temper_avg", "m_max_wave_h_avg",
+            "m_sign_wave_h_avg", "m_max_wave_h_high",
+            'm_wave_p_avg', 'm_wave_p_high'
+        ]
+
+        return pd.concat([
+            df.drop(columns=columns_with_log), np.log1p(df[columns_with_log])
+        ], axis=1)
 
     def process(self):
         """
@@ -108,13 +114,18 @@ class OpenDataMarineWeather:
         """
         try:
             cleaned = self.clean(self.input_df)
-            # transformed = self.transform_by_skew(cleaned)
-            print(cleaned)
-            self.save(cleaned)
+            transformed = self.transform(cleaned)
+            self.save(transformed)
         except Exception as e:
             # TODO: consider that it can repeat to save one more time
             self.logger.critical(e, exc_info=True)
             return 1
 
-        self.logger.info("success to process")
+        self.logger.info("success to process marine weather")
         return 0
+
+    def save(self, df: pd.DataFrame):
+        csv_buffer = StringIO()
+        df.to_csv(csv_buffer, index=False)
+        manager = S3Manager(bucket_name=self.bucket_name)
+        manager.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=self.save_key)
