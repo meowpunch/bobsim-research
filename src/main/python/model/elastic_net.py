@@ -15,6 +15,7 @@ class ElasticNetModel:
     """
         tested
     """
+
     def __init__(self, x_train, y_train):
         self.model = ElasticNet(
             alpha=0, l1_ratio=0.0, max_iter=5
@@ -44,6 +45,7 @@ class ElasticNetSearcher(GridSearchCV):
     """
         for research
     """
+
     def __init__(
             self, x_train, y_train, score=mean_squared_error,
             params=None
@@ -83,7 +85,6 @@ class ElasticNetSearcher(GridSearchCV):
         ))
         self.logger.info("customized RMSE is {score}".format(score=score))
 
-
     # def fit(self):
     #     self.fit(self.x_train, self.y_train)
     #
@@ -101,6 +102,5 @@ class ElasticNetSearcher(GridSearchCV):
         with tempfile.TemporaryFile() as fp:
             dump(self.best_estimator_, fp)
             fp.seek(0)
-            manager = S3Manager(bucket_name=bucket_name)
-            manager.save_object(body=fp.read(), key=key)
+            S3Manager(bucket_name=bucket_name).save_object(body=fp.read(), key=key)
             fp.close()

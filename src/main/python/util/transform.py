@@ -1,13 +1,38 @@
 import sys
+import tempfile
 
 import numpy as np
 import pandas as pd
+from joblib import load, dump
 from sklearn.base import BaseEstimator
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, FunctionTransformer, StandardScaler
 
 from util.logging import init_logger
 from util.reduce import combine_list
+from util.s3_manager.manager import S3Manager
+
+
+# TODO: not working, make available
+def save(self):
+    dump(self, 'custom_transformer.bin', compress=True)
+
+
+def save_to_s3(transformer, bucket_name, key):
+    with tempfile.TemporaryFile() as fp:
+        dump(transformer, fp)
+        fp.seek(0)
+        S3Manager(bucket_name=bucket_name).save_object(body=fp.read(), key=key)
+        fp.close()
+
+
+def load_from_s3(bucket_name, key):
+    with tempfile.TemporaryFile() as fp:
+        S3Manager(bucket_name=bucket_name).s3_bucket.download_fileobj(Fileobj=fp, Key=key)
+        fp.seek(0)
+        column_transformer = load(fp)
+        fp.close()
+    return column_transformer
 
 
 class CustomTransformer(ColumnTransformer):
@@ -22,22 +47,25 @@ class CustomTransformer(ColumnTransformer):
             "method": [] list of columns
         }
         """
-        self.logger = init_logger()
+        if df is not None and strategy is not None:
+            self.logger = init_logger()
 
-        self.input_df = df
-        self.strategy = strategy
+            self.input_df = df
+            self.strategy = strategy
 
-        # constant
-        self.transform_method = {
-            "log": FunctionTransformer(np.log1p),
-            "standard": StandardScaler(),
-            "one_hot_encoding": OneHotEncoder(sparse=False),
-            "none": FunctionTransformer(lambda x: x)
-        }
+            # constant
+            self.transform_method = {
+                "log": FunctionTransformer(np.log1p),
+                "standard": StandardScaler(),
+                "one_hot_encoding": OneHotEncoder(sparse=False),
+                "none": FunctionTransformer(lambda x: x)
+            }
 
-        # self.column_transformer = ColumnTransformer(transformers=self.make_transformers())
-        self.transformed = None
-        super().__init__(transformers=self.make_transformers())
+            # self.column_transformer = ColumnTransformer(transformers=self.make_transformers())
+            self.transformed = None
+            super().__init__(transformers=self.make_transformers())
+        else:
+            super().__init__()
 
     def make_transformers(self):
         # transformers for ColumnTransformer
@@ -82,6 +110,25 @@ class CustomTransformer(ColumnTransformer):
         columns_list = list(map(get_columns, self.strategy.keys()))
         return combine_list(columns_list)
 
+    # override
+    def fit(self, X=None, y=None):
+        if X is None:
+            X = self.input_df
+
+        return super().fit(X)
+
+    # override
+    def fit_transform(self, X: pd.DataFrame = None, y=None):
+        if X is None:
+            X = self.input_df
+
+        # TODO: use only once?
+        if self.transformed is None:
+            self.transformed = super().fit_transform(X)
+            return self.transformed
+
+        return self.transformed
+
     def fitted_transformer(self, method="one_hot_encoding"):
         """
             get fitted transformer
@@ -94,17 +141,6 @@ class CustomTransformer(ColumnTransformer):
             lambda x: method in x, self.transformers_
         ).__next__()
         return filter(lambda x: isinstance(x, BaseEstimator), filtered).__next__()
-
-    def fit_transform(self, X: pd.DataFrame = None, y=None):
-        if X is None:
-            X = self.input_df
-
-        # TODO: use only once?
-        if self.transformed is None:
-            self.transformed = super().fit_transform(X)
-            return self.transformed
-
-        return self.transformed
 
 
 def main():

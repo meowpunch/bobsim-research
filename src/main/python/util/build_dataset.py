@@ -102,7 +102,7 @@ def build_master(dataset="origin_fmp", date="201908"):
         return build_origin_fmp(date=date)
     elif dataset == "process_fmp":
         # df combined with p_df, t_df, m_df
-        return build_process_fmp(date=date)
+        return build_process_fmp(date=date  )
     else:
         raise Exception("not supported")
 

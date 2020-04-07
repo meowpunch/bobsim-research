@@ -1,6 +1,5 @@
 from io import StringIO
 
-import numpy as np
 import pandas as pd
 
 from data_pipeline.dtype import dtype
@@ -9,6 +8,7 @@ from data_pipeline.unit import get_unit
 from util.handle_null import NullHandler
 from util.logging import init_logger
 from util.s3_manager.manager import S3Manager
+from util.transform import save_to_s3
 
 
 class OpenDataRawMaterialPrice:
@@ -65,14 +65,19 @@ class OpenDataRawMaterialPrice:
         else:
             return df.dropna(axis=0)
 
-    @staticmethod
-    def transform(df: pd.DataFrame):
+    def transform(self, df: pd.DataFrame):
         """
             get skew by numeric columns and log by skew
         :param df: cleaned pd DataFrame
         :return: transformed pd DataFrame
         """
-        return df.assign(price=np.log1p(df["price"]))
+        p = df["price"]
+        mean = p.mean()
+        std = p.std()
+
+        save_to_s3(transformer=(mean, std), bucket_name=self.bucket_name,
+                   key="food_material_price_predict_model/price_transformer.pkl")
+        return df.assign(price=p.apply(lambda x: (x-mean)/std))
 
     @staticmethod
     def combine_categories(df: pd.DataFrame):
