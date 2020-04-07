@@ -1,12 +1,14 @@
 from io import StringIO
 
-import numpy as np
 import pandas as pd
 
 from data_pipeline.dtype import dtype
 from data_pipeline.translate import translation
+from data_pipeline.unit import get_unit
+from util.handle_null import NullHandler
 from util.logging import init_logger
 from util.s3_manager.manager import S3Manager
+from util.transform import save_to_s3
 
 
 class OpenDataRawMaterialPrice:
@@ -54,34 +56,28 @@ class OpenDataRawMaterialPrice:
         :return: cleaned DataFrame
         """
         # pd Series represents the number of null values by column
-        df_null = df.isna().sum()
+        nh = NullHandler()
+        df_null = nh.missing_values(df)
+        self.logger.info("missing values: \n {}".format(df_null))
 
-        if df_null.sum() > 0:
-            filtered = df_null[df_null.map(lambda x: x > 0)]
-            self.logger.info(filtered)
-
-            # drop rows have null values.
-            return df.dropna(axis=0)
-        else:
-            self.logger.info("no missing value at raw material price")
+        if df_null is None:
             return df
+        else:
+            return df.dropna(axis=0)
 
-    @staticmethod
-    def transform_by_skew(df: pd.DataFrame):
+    def transform(self, df: pd.DataFrame):
         """
             get skew by numeric columns and log by skew
         :param df: cleaned pd DataFrame
         :return: transformed pd DataFrame
         """
-        # get skew
-        skew_feature = df["price"].skew()
-        # log by skew
-        # TODO: define threshold not just '1'
-        if abs(skew_feature) > 1:
-            skewed_df = df.assign(price=np.log1p(df["price"]))
-            return skewed_df
-        else:
-            return df
+        p = df["price"]
+        mean = p.mean()
+        std = p.std()
+
+        save_to_s3(transformer=(mean, std), bucket_name=self.bucket_name,
+                   key="food_material_price_predict_model/price_transformer.pkl")
+        return df.assign(price=p.apply(lambda x: (x-mean)/std))
 
     @staticmethod
     def combine_categories(df: pd.DataFrame):
@@ -97,29 +93,14 @@ class OpenDataRawMaterialPrice:
             axis=1)
 
     @staticmethod
-    def get_unit(unit_name):
-        return {
-            '20KG': 200, '1.2KG': 12, '8KG': 80, '5KG': 5, '2KG': 2, '1KG': 10, '1KG(단)': 10, '1KG(1단)': 10,
-            '600G': 6, '500G': 5, '200G': 2, '100G': 1,
-            '10마리': 10, '5마리': 5, '2마리': 2, '1마리': 1,
-            '30개': 10, '10개': 10, '1개': 1,
-            '1L': 10,
-            '1속': 1,
-            # TODO: handle no supported unit
-        }.get(unit_name, 1)
-
-    def convert_by_unit(self, df: pd.DataFrame):
+    def convert_by_unit(df: pd.DataFrame):
         """
             transform unit
         :return: transformed pd DataFrame
         """
-        return df.assign(
-            survey_unit_name=lambda r: r.survey_unit_name.map(
-                lambda x: self.get_unit(x)
-            )
-        ).assign(
-            price=lambda x: x.price / x.survey_unit_name
-        ).drop("survey_unit_name", axis=1)
+        return df.assign(unit=lambda r: r.unit_name.map(
+            lambda x: get_unit(x)
+        )).assign(price=lambda x: x.price / x.unit).drop("unit_name", axis=1)
 
     def filter(self, df):
         """
@@ -128,14 +109,14 @@ class OpenDataRawMaterialPrice:
         :return: filtered pd DataFrame
         """
         # only retail price
-        retail = df[df.survey_class_name == "소비자가격"].drop("survey_class_name", axis=1)
+        retail = df[df["class"] == "소비자가격"].drop("class", axis=1)
 
         # combine 4 categories into one
         combined = self.combine_categories(retail)
 
-        # prices divided by 'material grade'(survey_grade_name) will be used on average.
-        aggregated = combined.drop("survey_grade_name", axis=1).groupby(
-            ["date", "region", "survey_unit_name", "item_name"]
+        # prices divided by 'material grade'(grade) will be used on average.
+        aggregated = combined.drop("grade", axis=1).groupby(
+            ["date", "region", "unit_name", "item_name"]
         ).mean().reset_index()
 
         # convert prices in standard unit
@@ -156,10 +137,10 @@ class OpenDataRawMaterialPrice:
         try:
             filtered = self.filter(self.input_df)
             cleaned = self.clean(filtered)
-            # transformed = self.transform_by_skew(cleaned)
-            decomposed = self.decompose_date(cleaned)
+            transformed = self.transform(cleaned)
+            # decomposed = self.decompose_date(transformed)
 
-            self.save(decomposed)
+            self.save(transformed)
         except Exception as e:
             # TODO: consider that it can repeat to save one more time
             self.logger.critical(e, exc_info=True)
@@ -170,6 +151,7 @@ class OpenDataRawMaterialPrice:
 
     @staticmethod
     def decompose_date(df: pd.DataFrame):
+        # TODO: do by argument
         # add is_weekend & season column
         return df.assign(
             is_weekend=lambda x: x["date"].dt.dayofweek.apply(

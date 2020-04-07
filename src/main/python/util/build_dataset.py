@@ -46,34 +46,34 @@ def build_origin_weather(date, prefix=None):
         ), "date"
 
 
-def build_process_fmp(date):
+def build_process_fmp(date, process: bool = False):
     """
         after build price and weather, join them
     :return: combined pd DataFrame
     """
-    price, p_key = build_process_price(date=date)
-    weather, w_key = build_process_weather(date=date)
+    price, p_key = build_process_price(date=date, process=process)
+    weather, w_key = build_process_weather(date=date, process=process)
     return pd.merge(
         price, weather, how="inner", left_on=p_key, right_on=w_key
     ).astype(dtype={"date": "datetime64"})
 
 
-def build_process_price(date):
+def build_process_price(date, process: bool = False):
     """
     :return: price DataFrame and key
     """
     # extract features
-    price, key = RawMaterialPriceExtractionPipeline(date=date).process()
+    price, key = RawMaterialPriceExtractionPipeline(date=date).process(data_process=process)
     return price, key
 
 
-def build_process_weather(date):
+def build_process_weather(date, process: bool = False):
     """
     :return: weather DataFrame and key
     """
     # extract weather features
-    t_weather, t_key = TerrestrialWeatherExtractionPipeline(date=date).process()
-    m_weather, m_key = MarineWeatherExtractionPipeline(date=date).process()
+    t_weather, t_key = TerrestrialWeatherExtractionPipeline(date=date).process(data_process=process)
+    m_weather, m_key = MarineWeatherExtractionPipeline(date=date).process(data_process=process)
 
     # combine marine and terrestrial weather
     weather = pd.merge(
@@ -102,7 +102,7 @@ def build_master(dataset="origin_fmp", date="201908"):
         return build_origin_fmp(date=date)
     elif dataset == "process_fmp":
         # df combined with p_df, t_df, m_df
-        return build_process_fmp(date=date)
+        return build_process_fmp(date=date  )
     else:
         raise Exception("not supported")
 
@@ -111,6 +111,7 @@ def main():
     """
         test for build master
     """
+    pass
     # origin_df = build_master("origin_fmp", date="201908")
     # print(origin_df)
     #
@@ -121,12 +122,12 @@ def main():
     # print(p_df)
     # print(p_df.info())
 
-    p_df, w_df = build_master(dataset="origin_fmp", date="201908")
-    clean_origin_df = build_master(dataset="clean_origin_fmp", date="201908")
-
-    print(p_df.info())
-    print(w_df.info())
-    print(clean_origin_df.info())
+    # p_df, w_df = build_master(dataset="origin_fmp", date="201908")
+    # clean_origin_df = build_master(dataset="clean_origin_fmp", date="201908")
+    #
+    # print(p_df.info())
+    # print(w_df.info())
+    # print(clean_origin_df.info())
 
 
 if __name__ == '__main__':

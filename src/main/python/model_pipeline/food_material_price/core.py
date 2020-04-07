@@ -1,20 +1,20 @@
-import pandas as pd
-import numpy as np
+from io import StringIO
 
-from feature_extraction_pipeline.open_data_marine_weather.main import MarineWeatherExtractionPipeline
-from feature_extraction_pipeline.open_data_raw_material_price.main import RawMaterialPriceExtractionPipeline
-from feature_extraction_pipeline.open_data_terrestrial_weather.main import TerrestrialWeatherExtractionPipeline
+import numpy as np
+import pandas as pd
+
 from model.elastic_net import ElasticNetSearcher
 from model.linear_regression import LinearRegressionModel
 from util.build_dataset import build_process_fmp
 from util.logging import init_logger
+from util.s3_manager.manager import S3Manager
+from util.transform import load_from_s3
 
 
 class PricePredictModelPipeline:
 
-    def __init__(self, bucket_name: str, date: str):
+    def __init__(self, bucket_name: str):
         self.logger = init_logger()
-        self.date = date
 
         # s3
         self.bucket_name = bucket_name
@@ -29,6 +29,7 @@ class PricePredictModelPipeline:
                 return x * 1.1
             else:
                 return x
+
         X = np.vectorize(penalize)(error)
         return np.sqrt(np.square(X).mean())
 
@@ -60,13 +61,16 @@ class PricePredictModelPipeline:
         test = df[df["date"].dt.date >= standard_date]
         return train, test
 
-    def process(self):
+    def metric(self):
+        pass
+
+    def process(self, date: str, data_process: bool):
         """
         :return: exit code
         """
         try:
             # build dataset
-            dataset = build_process_fmp(date=self.date)
+            dataset = build_process_fmp(date=date, process=data_process)
 
             # set train, test dataset
             train, test = self.set_train_test(dataset)
@@ -78,15 +82,24 @@ class PricePredictModelPipeline:
                 x_train=train_x, y_train=train_y, score=self.customized_rmse
             )
             searcher.fit()
-            self.logger.info("tuned params are {params}".format(params=searcher.get_best_params()))
+            self.logger.info("tuned params are {params}".format(params=searcher.best_params_))
 
             # through inverse function, get metric (customized rmse)
-            pred_y = searcher.predict(test_x)
-            score = self.customized_rmse(test_y, pred_y)
+            # TODO: decompose
+            self.analyze()
+            pred_y = searcher.predict(X=test_x)
+            (mean, std) = load_from_s3(bucket_name=self.bucket_name,
+                                       key="food_material_price_predict_model/price_transformer.pkl")
+            pd.set_option('display.max_rows', 100)
+            pd.set_option('display.max_columns', 100)
+            self.logger.info((mean, std))
+            score = self.customized_rmse(test_y * std + mean, pred_y * std + mean)
             self.logger.info("coef:\n{coef}".format(
-                coef=pd.Series(searcher.searcher.best_estimator_.coef_, index=train_x.columns)
+                coef=pd.Series(searcher.best_estimator_.coef_, index=train_x.columns)
             ))
             self.logger.info("customized RMSE is {score}".format(score=score))
+            self.save(df=pd.Series(searcher.best_estimator_.coef_, index=train_x.columns).to_frame().T,
+                      key="food_material_price_predict_model/coef.csv")
 
             # save model
             searcher.save(
@@ -98,4 +111,11 @@ class PricePredictModelPipeline:
             self.logger.critical(e, exc_info=True)
             return 1
 
+    def save(self, df: pd.DataFrame, key):
+        csv_buffer = StringIO()
+        df.to_csv(csv_buffer, index=False)
+        manager = S3Manager(bucket_name=self.bucket_name)
+        manager.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=key)
 
+    def analyze(self):
+        pass
