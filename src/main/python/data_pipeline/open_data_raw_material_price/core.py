@@ -93,13 +93,9 @@ class OpenDataRawMaterialPrice:
             transform unit
         :return: transformed pd DataFrame
         """
-        return df.assign(
-            unit=lambda r: r.unit_name.map(
-                lambda x: get_unit(x)
-            )
-        ).assign(
-            price=lambda x: x.price / x.unit
-        ).drop("unit_name", axis=1)
+        return df.assign(unit=lambda r: r.unit_name.map(
+            lambda x: get_unit(x)
+        )).assign(price=lambda x: x.price / x.unit).drop("unit_name", axis=1)
 
     def filter(self, df):
         """

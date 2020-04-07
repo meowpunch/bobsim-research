@@ -5,7 +5,7 @@ def main():
     model_pipeline = PricePredictModelPipeline(
         bucket_name="production-bobsim",
     )
-    model_pipeline.process(date="201908", data_process=True)
+    model_pipeline.process(date="201908", data_process=False)
 
 
 if __name__ == '__main__':

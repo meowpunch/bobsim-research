@@ -59,6 +59,9 @@ class PricePredictModelPipeline:
         test = df[df["date"].dt.date >= standard_date]
         return train, test
 
+    def metric(self):
+        pass
+
     def process(self, date: str, data_process: bool):
         """
         :return: exit code
@@ -77,13 +80,13 @@ class PricePredictModelPipeline:
                 x_train=train_x, y_train=train_y, score=self.customized_rmse
             )
             searcher.fit()
-            self.logger.info("tuned params are {params}".format(params=searcher.get_best_params()))
+            self.logger.info("tuned params are {params}".format(params=searcher.best_params_))
 
             # through inverse function, get metric (customized rmse)
-            pred_y = searcher.predict(test_x)
-            score = self.customized_rmse(test_y, pred_y)
+            pred_y = searcher.predict(X=test_x)
+            score = self.customized_rmse(np.expm1(test_y), np.expm1(pred_y))
             self.logger.info("coef:\n{coef}".format(
-                coef=pd.Series(searcher.searcher.best_estimator_.coef_, index=train_x.columns)
+                coef=pd.Series(searcher.best_estimator_.coef_, index=train_x.columns)
             ))
             self.logger.info("customized RMSE is {score}".format(score=score))
 
