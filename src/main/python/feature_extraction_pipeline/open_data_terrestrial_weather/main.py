@@ -6,20 +6,21 @@ from util.logging import init_logger
 
 
 class TerrestrialWeatherExtractionPipeline:
-    def __init__(self, date: str):
+    def __init__(self, bucket_name: str, date: str):
+        self.bucket_name = bucket_name
         self.date = date
 
         self.logger = init_logger()
 
     @property
     def feature_extractor(self):
-        return TerrestrialWeatherExtractor(date=self.date)
+        return TerrestrialWeatherExtractor(bucket_name=self.bucket_name, date=self.date)
 
     def bridge(self):
         """
             bridge btw data_pipeline & feature_extractor
         """
-        data_pipeline = OpenDataTerrestrialWeather(date=self.date)
+        data_pipeline = OpenDataTerrestrialWeather(bucket_name=self.bucket_name, date=self.date)
 
         if data_pipeline.process():
             # TODO: handle exit code is 1 (fail)

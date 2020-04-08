@@ -11,12 +11,12 @@ from util.visualize import draw_hist
 
 class OpenDataRawMaterialPrice:
 
-    def __init__(self, date: str):
+    def __init__(self, bucket_name: str, date: str):
         self.logger = init_logger()
 
         # s3
         # TODO: bucket_name -> parameterized
-        self.s3_manager = S3Manager(bucket_name="production-bobsim")
+        self.s3_manager = S3Manager(bucket_name=bucket_name)
         self.load_key = "public_data/open_data_raw_material_price/origin/csv/{filename}.csv".format(
             filename=date
         )

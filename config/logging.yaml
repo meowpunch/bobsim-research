@@ -34,3 +34,7 @@ loggers:
 #    - file_debug
 #    - file_error
     propagate: true
+  food_material_price_pipeline:
+    handlers:
+      - console
+      - file_info

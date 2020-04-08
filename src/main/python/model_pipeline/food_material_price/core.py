@@ -5,7 +5,7 @@ import pandas as pd
 
 from model.elastic_net import ElasticNetSearcher
 from model.linear_regression import LinearRegressionModel
-from util.build_dataset import build_process_fmp
+from util.build_dataset import build_process_fmp, build_master
 from util.logging import init_logger
 from util.s3_manager.manage import S3Manager
 from util.transform import load_from_s3
@@ -13,7 +13,7 @@ from util.transform import load_from_s3
 
 class PricePredictModelPipeline:
 
-    def __init__(self, bucket_name: str):
+    def __init__(self, bucket_name: str, logger_name: str):
         self.logger = init_logger()
 
         # s3
@@ -59,13 +59,16 @@ class PricePredictModelPipeline:
         test = df[df["date"].dt.date >= standard_date]
         return train, test
 
-    def process(self, date: str, data_process: bool):
+    def process(self, date: str, pipe_data: bool):
         """
         :return: exit code
         """
         try:
             # build dataset
-            dataset = build_process_fmp(date=date, process=data_process)
+            dataset = build_master(
+                dataset="process_fmp", bucket_name=self.bucket_name,
+                date=date, pipe_data=pipe_data
+            )
 
             # set train, test dataset
             train, test = self.set_train_test(dataset)

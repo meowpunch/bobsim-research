@@ -14,14 +14,14 @@ from util.s3_manager.manage import S3Manager
 
 class OpenDataMarineWeather:
 
-    def __init__(self, date: str):
+    def __init__(self, bucket_name: str, date: str):
         self.logger = init_logger()
 
         # TODO: how to handle datetime?
         self.term = datetime.strptime(date, "%Y%m")
 
         # s3
-        self.bucket_name = "production-bobsim"
+        self.bucket_name = bucket_name
         self.file_name = "2014-2020.csv"
         self.load_key = "public_data/open_data_marine_weather/origin/csv/{filename}".format(
             filename=self.file_name
