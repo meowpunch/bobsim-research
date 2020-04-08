@@ -9,6 +9,12 @@ handlers:
     class: logging.StreamHandler
     level: DEBUG
     formatter: basic
+  file_info:
+    class: logging.FileHandler
+    level: INFO
+    formatter: basic
+    filename: info.log
+    encoding: euc-kr
 #  file_debug:
 #    class: logging.FileHandler
 #    level: DEBUG
@@ -24,6 +30,7 @@ loggers:
     level: DEBUG
     handlers:
     - console
+    - file_info
 #    - file_debug
 #    - file_error
     propagate: true

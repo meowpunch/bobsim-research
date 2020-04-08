@@ -45,10 +45,8 @@ class OpenDataRawMaterialPrice:
         return df[0][self.dtypes.keys()].astype(dtype=self.dtypes).rename(columns=self.translate, inplace=False)
 
     def save(self, df: pd.DataFrame):
-        csv_buffer = StringIO()
-        df.to_csv(csv_buffer, index=False)
         manager = S3Manager(bucket_name=self.bucket_name)
-        manager.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=self.save_key)
+        manager.save_df_to_csv(df=df, key=self.save_key)
 
     def clean(self, df: pd.DataFrame):
         """
@@ -72,12 +70,11 @@ class OpenDataRawMaterialPrice:
         :return: transformed pd DataFrame
         """
         p = df["price"]
-        mean = p.mean()
-        std = p.std()
-
+        mean, std = p.mean(), p.std()
+        self.logger.info((mean, std))
         save_to_s3(transformer=(mean, std), bucket_name=self.bucket_name,
                    key="food_material_price_predict_model/price_transformer.pkl")
-        return df.assign(price=p.apply(lambda x: (x-mean)/std))
+        return df.assign(price=p.apply(lambda x: (x - mean) / std))
 
     @staticmethod
     def combine_categories(df: pd.DataFrame):
@@ -90,7 +87,8 @@ class OpenDataRawMaterialPrice:
                 x: x.standard_item_name + x.survey_price_item_name + x.standard_breed_name + x.survey_price_type_name
         ).drop(
             columns=["standard_item_name", "survey_price_item_name", "standard_breed_name", "survey_price_type_name"],
-            axis=1)
+            axis=1
+        )
 
     @staticmethod
     def convert_by_unit(df: pd.DataFrame):
@@ -100,7 +98,8 @@ class OpenDataRawMaterialPrice:
         """
         return df.assign(unit=lambda r: r.unit_name.map(
             lambda x: get_unit(x)
-        )).assign(price=lambda x: x.price / x.unit).drop("unit_name", axis=1)
+            # TODO: not unit but stardard unit name
+        )).assign(price=lambda x: x.price / x.unit).drop(columns=["unit_name", "unit"], axis=1)
 
     def filter(self, df):
         """
@@ -112,11 +111,11 @@ class OpenDataRawMaterialPrice:
         retail = df[df["class"] == "소비자가격"].drop("class", axis=1)
 
         # combine 4 categories into one
-        combined = self.combine_categories(retail)
+        # combined = self.combine_categories(retail)
 
         # prices divided by 'material grade'(grade) will be used on average.
-        aggregated = combined.drop("grade", axis=1).groupby(
-            ["date", "region", "unit_name", "item_name"]
+        aggregated = retail.drop("grade", axis=1).groupby(
+            ["date", "region", "unit_name", "standard_item_name"]  # "item_name"]
         ).mean().reset_index()
 
         # convert prices in standard unit

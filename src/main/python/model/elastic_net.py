@@ -85,17 +85,12 @@ class ElasticNetSearcher(GridSearchCV):
         ))
         self.logger.info("customized RMSE is {score}".format(score=score))
 
-    # def fit(self):
-    #     self.fit(self.x_train, self.y_train)
-    #
-    # def predict(self, x_test):
-    #     return self.searcher.predict(x_test)
-    #
-    # def score(self):
-    #     return self.model.score(self.x_train, self.y_train)
-
-    def get_coef(self):
-        return self.best_estimator_.coef_
+    @property
+    def coef_df(self):
+        """
+        :return: pd DataFrame
+        """
+        return pd.Series(self.best_estimator_.coef_, index=self.x_train.columns).to_frame()
 
     def save(self, bucket_name, key):
         # save best elastic net

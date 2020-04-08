@@ -85,10 +85,7 @@ class OpenDataMarineWeather:
 
     def transform(self, df):
         columns_with_log = [
-            "m_wind_spd_avg", "m_atm_press_avg", "m_rel_hmd_avg",
-            "m_temper_avg", "m_water_temper_avg", "m_max_wave_h_avg",
-            "m_sign_wave_h_avg", "m_max_wave_h_high",
-            'm_wave_p_avg', 'm_wave_p_high'
+            'm_wave_p_high', "m_sign_wave_h_high", "m_max_wave_h_avg", "m_sign_wave_h_avg", "m_max_wave_h_high"
         ]
 
         return pd.concat([
@@ -117,7 +114,5 @@ class OpenDataMarineWeather:
         return 0
 
     def save(self, df: pd.DataFrame):
-        csv_buffer = StringIO()
-        df.to_csv(csv_buffer, index=False)
         manager = S3Manager(bucket_name=self.bucket_name)
-        manager.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=self.save_key)
+        manager.save_df_to_csv(df=df, key=self.save_key)

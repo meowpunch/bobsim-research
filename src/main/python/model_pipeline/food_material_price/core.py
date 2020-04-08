@@ -21,16 +21,14 @@ class PricePredictModelPipeline:
 
     @staticmethod
     def customized_rmse(y, y_pred):
-        error = y - y_pred
+        errors = y - y_pred
 
-        def penalize(x):
-            if x > 0:
-                # if y > y_pred, penalize 10%
-                return x * 1.1
-            else:
-                return x
+        def penalize(err):
+            # if y > y_pred, penalize 10%
+            out = err * 1.1 if err > 0 else err
+            return out
 
-        X = np.vectorize(penalize)(error)
+        X = np.vectorize(penalize)(errors)
         return np.sqrt(np.square(X).mean())
 
     @staticmethod
@@ -61,9 +59,6 @@ class PricePredictModelPipeline:
         test = df[df["date"].dt.date >= standard_date]
         return train, test
 
-    def metric(self):
-        pass
-
     def process(self, date: str, data_process: bool):
         """
         :return: exit code
@@ -84,24 +79,11 @@ class PricePredictModelPipeline:
             searcher.fit()
             self.logger.info("tuned params are {params}".format(params=searcher.best_params_))
 
-            # through inverse function, get metric (customized rmse)
-            # TODO: decompose
-            self.analyze()
+            # analyze metric and coef(beta)
             pred_y = searcher.predict(X=test_x)
-            (mean, std) = load_from_s3(bucket_name=self.bucket_name,
-                                       key="food_material_price_predict_model/price_transformer.pkl")
-            pd.set_option('display.max_rows', 100)
-            pd.set_option('display.max_columns', 100)
-            self.logger.info((mean, std))
-            score = self.customized_rmse(test_y * std + mean, pred_y * std + mean)
-            self.logger.info("coef:\n{coef}".format(
-                coef=pd.Series(searcher.best_estimator_.coef_, index=train_x.columns)
-            ))
-            self.logger.info("customized RMSE is {score}".format(score=score))
-            self.save(df=pd.Series(searcher.best_estimator_.coef_, index=train_x.columns).to_frame().T,
-                      key="food_material_price_predict_model/coef.csv")
+            self.analyze(test_y, pred_y, searcher)
 
-            # save model
+            # save
             searcher.save(
                 bucket_name=self.bucket_name,
                 key="food_material_price_predict_model/model.pkl"
@@ -111,11 +93,17 @@ class PricePredictModelPipeline:
             self.logger.critical(e, exc_info=True)
             return 1
 
-    def save(self, df: pd.DataFrame, key):
-        csv_buffer = StringIO()
-        df.to_csv(csv_buffer, index=False)
-        manager = S3Manager(bucket_name=self.bucket_name)
-        manager.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=key)
+    def analyze(self, test_y, pred_y, searcher):
+        # through inverse function, get metric (customized rmse)
+        (mean, std) = load_from_s3(bucket_name=self.bucket_name,
+                                   key="food_material_price_predict_model/price_transformer.pkl")
+        score = self.customized_rmse(test_y * std + mean, pred_y * std + mean)
+        self.logger.info("coef:\n{coef}".format(coef=searcher.coef_df))
+        self.logger.info("customized RMSE is {score}".format(score=score))
 
-    def analyze(self):
-        pass
+        # save coef
+        self.save(df=searcher.coef_df)
+
+    def save(self, df):
+        manager = S3Manager(bucket_name=self.bucket_name)
+        manager.save_df_to_csv(df=df, key="food_material_price_predict_model/coef.csv")
