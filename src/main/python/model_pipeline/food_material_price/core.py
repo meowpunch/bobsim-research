@@ -7,7 +7,7 @@ from model.elastic_net import ElasticNetSearcher
 from model.linear_regression import LinearRegressionModel
 from util.build_dataset import build_process_fmp
 from util.logging import init_logger
-from util.s3_manager.manager import S3Manager
+from util.s3_manager.manage import S3Manager
 from util.transform import load_from_s3
 
 

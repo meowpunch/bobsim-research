@@ -30,3 +30,22 @@
 2020-04-08 23:35:52:core:<INFO> missing values: 
  None
 2020-04-08 23:35:52:manager:<INFO> 1 files is loaded from public_data/open_data_raw_material_price/process/csv/201908.csv in s3 'production-bobsim'
+2020-04-09 00:34:22:manager:<INFO> 1 files is loaded from public_data/open_data_raw_material_price/origin/csv/201908.csv in s3 'production-bobsim'
+2020-04-09 00:34:22:core:<INFO> missing values: 
+ None
+2020-04-09 00:34:23:manager:<INFO> 1 files is loaded from public_data/open_data_raw_material_price/process/csv/201908.csv in s3 'production-bobsim'
+2020-04-09 00:35:13:manage:<INFO> 1 files is loaded from public_data/open_data_raw_material_price/origin/csv/201908.csv in s3 'production-bobsim'
+2020-04-09 00:35:13:core:<INFO> missing values: 
+ None
+2020-04-09 00:35:14:manage:<INFO> 1 files is loaded from public_data/open_data_raw_material_price/process/csv/201908.csv in s3 'production-bobsim'
+2020-04-09 00:36:49:manage:<INFO> success to save 'food_material_price_predict_model/image/log_price_hist.png' in s3 'production-bobsim'
+2020-04-09 00:49:09:manager:<INFO> 1 files is loaded from public_data/open_data_raw_material_price/origin/csv/201908.csv in s3 'production-bobsim'
+2020-04-09 00:49:10:core:<INFO> missing values: 
+ None
+2020-04-09 00:49:13:manager:<INFO> 1 files is loaded from public_data/open_data_terrestrial_weather/origin/csv/2014-2020.csv in s3 'production-bobsim'
+2020-04-09 00:49:14:manager:<INFO> 1 files is loaded from public_data/open_data_marine_weather/origin/csv/2014-2020.csv in s3 'production-bobsim'
+2020-04-09 00:53:34:manager:<INFO> 1 files is loaded from public_data/open_data_raw_material_price/origin/csv/201908.csv in s3 'production-bobsim'
+2020-04-09 00:53:34:core:<INFO> missing values: 
+ None
+2020-04-09 00:53:38:manager:<INFO> 1 files is loaded from public_data/open_data_terrestrial_weather/origin/csv/2014-2020.csv in s3 'production-bobsim'
+2020-04-09 00:53:39:manager:<INFO> 1 files is loaded from public_data/open_data_marine_weather/origin/csv/2014-2020.csv in s3 'production-bobsim'

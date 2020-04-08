@@ -9,7 +9,7 @@ from data_pipeline.dtype import dtype
 from data_pipeline.translate import translation
 from util.handle_null import NullHandler
 from util.logging import init_logger
-from util.s3_manager.manager import S3Manager
+from util.s3_manager.manage import S3Manager
 
 
 class OpenDataTerrestrialWeather:
@@ -84,7 +84,7 @@ class OpenDataTerrestrialWeather:
 
     @staticmethod
     def transform(df: pd.DataFrame):
-        columns_with_log = ['t_temper_avg', 't_temper_high', 't_wind_spd_max', 't_wind_spd_avg']
+        columns_with_log = ['t_daily_preci', 't_temper_avg', 't_temper_high']
 
         return pd.concat([
             df.drop(columns=columns_with_log), np.log1p(df[columns_with_log])

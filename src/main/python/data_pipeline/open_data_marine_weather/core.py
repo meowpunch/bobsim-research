@@ -9,7 +9,7 @@ from data_pipeline.dtype import dtype
 from data_pipeline.translate import translation
 from util.handle_null import NullHandler
 from util.logging import init_logger
-from util.s3_manager.manager import S3Manager
+from util.s3_manager.manage import S3Manager
 
 
 class OpenDataMarineWeather:
@@ -83,10 +83,9 @@ class OpenDataMarineWeather:
         drop_and_zero = self.groupby_date(nh.process())
         return pd.concat([drop_and_zero, linear], axis=1)
 
-    def transform(self, df):
-        columns_with_log = [
-            'm_wave_p_high', "m_sign_wave_h_high", "m_max_wave_h_avg", "m_sign_wave_h_avg", "m_max_wave_h_high"
-        ]
+    @staticmethod
+    def transform(df):
+        columns_with_log = ["m_wave_p_high", "m_wind_spd_avg"]
 
         return pd.concat([
             df.drop(columns=columns_with_log), np.log1p(df[columns_with_log])

@@ -8,7 +8,7 @@ from sklearn.metrics import make_scorer, mean_squared_error
 from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 
 from util.logging import init_logger
-from util.s3_manager.manager import S3Manager
+from util.s3_manager.manage import S3Manager
 
 
 class ElasticNetModel:

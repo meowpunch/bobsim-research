@@ -20,6 +20,7 @@ def plot(data: list):
 
     plt.show()
 
+
 def draw_hist(s, name: str = None):
     if isinstance(s, pd.Series):
         plt.title('{name} histogram'.format(name=s.name))

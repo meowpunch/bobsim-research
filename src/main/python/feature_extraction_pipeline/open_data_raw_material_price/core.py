@@ -1,7 +1,7 @@
 from pandas import get_dummies
 
 from util.logging import init_logger
-from util.s3_manager.manager import S3Manager
+from util.s3_manager.manage import S3Manager
 from util.transform import CustomTransformer
 
 
