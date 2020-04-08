@@ -1,0 +1,38 @@
+2020-04-08 13:32:27:main:<INFO> force to do data pipeline for raw material price
+2020-04-08 13:32:30:manager:<INFO> 1 files is loaded from public_data/open_data_raw_material_price/origin/csv/201908.csv in s3 'production-bobsim'
+2020-04-08 13:32:31:core:<INFO> missing values: 
+ None
+2020-04-08 13:32:31:core:<INFO> (1986.6407720757634, 2562.3161774838754)
+2020-04-08 13:32:31:manager:<INFO> data is saved to 'food_material_price_predict_model/price_transformer.pkl' in s3 'production-bobsim'
+2020-04-08 13:32:32:manager:<INFO> data is saved to 'public_data/open_data_raw_material_price/process/csv/201908.csv' in s3 'production-bobsim'
+2020-04-08 13:32:32:core:<INFO> success to process raw material price
+2020-04-08 13:32:32:manager:<INFO> 1 files is loaded from public_data/open_data_raw_material_price/process/csv/201908.csv in s3 'production-bobsim'
+2020-04-08 13:32:33:main:<INFO> force to do data pipeline for terrestrial weather
+2020-04-08 13:32:35:manager:<INFO> 1 files is loaded from public_data/open_data_terrestrial_weather/origin/csv/2014-2020.csv in s3 'production-bobsim'
+2020-04-08 13:32:36:manager:<INFO> data is saved to 'public_data/open_data_terrestrial_weather/process/csv/201908.csv' in s3 'production-bobsim'
+2020-04-08 13:32:36:core:<INFO> success to process terrestrial weather
+2020-04-08 13:32:36:manager:<INFO> 1 files is loaded from public_data/open_data_terrestrial_weather/process/csv/201908.csv in s3 'production-bobsim'
+2020-04-08 13:32:36:main:<INFO> force to do data pipeline for marine weather
+2020-04-08 13:32:36:manager:<INFO> 1 files is loaded from public_data/open_data_marine_weather/origin/csv/2014-2020.csv in s3 'production-bobsim'
+2020-04-08 13:32:37:manager:<INFO> data is saved to 'public_data/open_data_marine_weather/process/csv/201908.csv' in s3 'production-bobsim'
+2020-04-08 13:32:37:core:<INFO> success to process marine weather
+2020-04-08 13:32:37:manager:<INFO> 1 files is loaded from public_data/open_data_marine_weather/process/csv/201908.csv in s3 'production-bobsim'
+2020-04-08 13:33:13:core:<INFO> tuned params are {'alpha': 1e-05, 'l1_ratio': 0.9, 'max_iter': 5}
+2020-04-08 13:33:14:core:<INFO> coef:
+                                    0
+unit                        -0.005720
+item_name_갈치류갈치은갈치냉동         0.981973
+item_name_갈치류갈치은갈치생선         1.005253
+item_name_감자감자수미수미          -0.828130
+item_name_건가공(포)류건오징어오징어포일반  1.505273
+...                               ...
+m_max_wave_h_avg            -0.001921
+m_sign_wave_h_avg           -0.000311
+m_max_wave_h_high            0.000496
+m_wave_p_avg                 0.005392
+m_wave_p_high                0.015086
+
+[148 rows x 1 columns]
+2020-04-08 13:33:14:core:<INFO> customized RMSE is 567.8629600371418
+2020-04-08 13:33:14:manager:<INFO> data is saved to 'food_material_price_predict_model/coef.csv' in s3 'production-bobsim'
+2020-04-08 13:33:14:manager:<INFO> data is saved to 'food_material_price_predict_model/model.pkl' in s3 'production-bobsim'

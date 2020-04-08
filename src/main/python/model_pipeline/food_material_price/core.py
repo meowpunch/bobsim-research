@@ -25,7 +25,7 @@ class PricePredictModelPipeline:
 
         def penalize(err):
             # if y > y_pred, penalize 10%
-            out = err * 11 if err > 0 else err
+            out = err * 1.1 if err > 0 else err
             return out
         X = np.vectorize(penalize)(errors)
         return np.sqrt(np.square(X).mean())
@@ -96,17 +96,17 @@ class PricePredictModelPipeline:
             self.logger.critical(e, exc_info=True)
             return 1
 
-    def save(self, df: pd.DataFrame, key):
-        csv_buffer = StringIO()
-        df.to_csv(csv_buffer, index=False)
-        manager = S3Manager(bucket_name=self.bucket_name)
-        manager.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=key)
-
     def analyze(self, test_y, pred_y, searcher):
         (mean, std) = load_from_s3(bucket_name=self.bucket_name,
                                    key="food_material_price_predict_model/price_transformer.pkl")
-        score = self.customized_rmse(test_y, pred_y)
+        score = self.customized_rmse(test_y*std+mean, pred_y*std+mean)
         self.logger.info("coef:\n{coef}".format(coef=searcher.coef_df))
         self.logger.info("customized RMSE is {score}".format(score=score))
-        self.save(df=searcher.coef_df, key="food_material_price_predict_model/coef.csv")
+
+        # save coef
+        self.save(df=searcher.coef_df)
+
+    def save(self, df):
+        manager = S3Manager(bucket_name=self.bucket_name)
+        manager.save_df_to_csv(df=df, key="food_material_price_predict_model/coef.csv")
 

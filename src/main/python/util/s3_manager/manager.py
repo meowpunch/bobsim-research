@@ -74,4 +74,9 @@ class S3Manager:
                 dir=key, bucket_name=self.bucket_name
             ))
 
+    def save_df_to_csv(self, df: pd.DataFrame, key:str):
+        csv_buffer = StringIO()
+        df.to_csv(csv_buffer, index=False)
+        self.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=key)
+
 

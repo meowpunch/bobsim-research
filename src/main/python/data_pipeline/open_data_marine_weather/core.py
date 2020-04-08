@@ -107,7 +107,7 @@ class OpenDataMarineWeather:
         try:
             cleaned = self.clean(self.input_df)
             transformed = self.transform(cleaned)
-            self.save(cleaned)
+            self.save(transformed)
         except Exception as e:
             # TODO: consider that it can repeat to save one more time
             self.logger.critical(e, exc_info=True)
@@ -117,7 +117,5 @@ class OpenDataMarineWeather:
         return 0
 
     def save(self, df: pd.DataFrame):
-        csv_buffer = StringIO()
-        df.to_csv(csv_buffer, index=False)
         manager = S3Manager(bucket_name=self.bucket_name)
-        manager.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=self.save_key)
+        manager.save_df_to_csv(df=df, key=self.save_key)
