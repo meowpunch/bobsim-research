@@ -72,12 +72,11 @@ class OpenDataRawMaterialPrice:
         :return: transformed pd DataFrame
         """
         p = df["price"]
-        mean = p.mean()
-        std = p.std()
-
+        mean, std = p.mean(), p.std()
+        self.logger.info((mean, std))
         save_to_s3(transformer=(mean, std), bucket_name=self.bucket_name,
                    key="food_material_price_predict_model/price_transformer.pkl")
-        return df.assign(price=p.apply(lambda x: (x-mean)/std))
+        return df.assign(price=p.apply(lambda x: (x - mean) / std))
 
     @staticmethod
     def combine_categories(df: pd.DataFrame):
@@ -86,11 +85,11 @@ class OpenDataRawMaterialPrice:
         :return: combined pd DataFrame
         """
         return df.assign(
-            item_name=lambda
-                x: x.standard_item_name + x.survey_price_item_name + x.standard_breed_name + x.survey_price_type_name
+            item_name=lambda x: x.standard_item_name + x.survey_price_item_name + x.standard_breed_name + x.survey_price_type_name
         ).drop(
             columns=["standard_item_name", "survey_price_item_name", "standard_breed_name", "survey_price_type_name"],
-            axis=1)
+            axis=1
+        )
 
     @staticmethod
     def convert_by_unit(df: pd.DataFrame):
@@ -140,7 +139,7 @@ class OpenDataRawMaterialPrice:
             transformed = self.transform(cleaned)
             # decomposed = self.decompose_date(transformed)
 
-            self.save(transformed)
+            self.save(cleaned)
         except Exception as e:
             # TODO: consider that it can repeat to save one more time
             self.logger.critical(e, exc_info=True)
