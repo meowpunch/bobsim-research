@@ -6,7 +6,7 @@ def main():
         bucket_name="production-bobsim",
         logger_name="food_material_price_pipeline"
     )
-    model_pipeline.process(date="201908", pipe_data=True)
+    model_pipeline.process(date="201908", pipe_data=False)
 
 
 if __name__ == '__main__':
