@@ -83,10 +83,7 @@ class OpenDataTerrestrialWeather:
         return pd.concat([drop_and_zero, linear], axis=1)
 
     def transform(self, df):
-        columns_with_log = [
-            't_temper_lowest', 't_temper_high', 't_rel_hmd_min',
-            't_rel_hmd_avg', 't_dur_preci', 't_daily_preci'
-        ]
+        columns_with_log = ['t_temper_avg', 't_temper_high', 't_wind_spd_max', 't_wind_spd_avg']
 
         return pd.concat([
             df.drop(columns=columns_with_log), np.log1p(df[columns_with_log])

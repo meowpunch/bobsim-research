@@ -85,10 +85,7 @@ class OpenDataMarineWeather:
 
     def transform(self, df):
         columns_with_log = [
-            "m_wind_spd_avg", "m_atm_press_avg", "m_rel_hmd_avg",
-            "m_temper_avg", "m_water_temper_avg", "m_max_wave_h_avg",
-            "m_sign_wave_h_avg", "m_max_wave_h_high",
-            'm_wave_p_avg', 'm_wave_p_high'
+            'm_wave_p_high', "m_sign_wave_h_high", "m_max_wave_h_avg", "m_sign_wave_h_avg", "m_max_wave_h_high"
         ]
 
         return pd.concat([

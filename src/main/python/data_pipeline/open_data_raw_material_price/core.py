@@ -83,7 +83,8 @@ class OpenDataRawMaterialPrice:
         :return: combined pd DataFrame
         """
         return df.assign(
-            item_name=lambda x: x.standard_item_name + x.survey_price_item_name + x.standard_breed_name + x.survey_price_type_name
+            item_name=lambda
+                x: x.standard_item_name + x.survey_price_item_name + x.standard_breed_name + x.survey_price_type_name
         ).drop(
             columns=["standard_item_name", "survey_price_item_name", "standard_breed_name", "survey_price_type_name"],
             axis=1
@@ -97,7 +98,8 @@ class OpenDataRawMaterialPrice:
         """
         return df.assign(unit=lambda r: r.unit_name.map(
             lambda x: get_unit(x)
-        )).assign(price=lambda x: x.price / x.unit).drop("unit_name", axis=1)
+            # TODO: not unit but stardard unit name
+        )).assign(price=lambda x: x.price / x.unit).drop(columns=["unit_name", "unit"], axis=1)
 
     def filter(self, df):
         """
@@ -109,11 +111,11 @@ class OpenDataRawMaterialPrice:
         retail = df[df["class"] == "소비자가격"].drop("class", axis=1)
 
         # combine 4 categories into one
-        combined = self.combine_categories(retail)
+        # combined = self.combine_categories(retail)
 
         # prices divided by 'material grade'(grade) will be used on average.
-        aggregated = combined.drop("grade", axis=1).groupby(
-            ["date", "region", "unit_name", "item_name"]
+        aggregated = retail.drop("grade", axis=1).groupby(
+            ["date", "region", "unit_name", "standard_item_name"]  # "item_name"]
         ).mean().reset_index()
 
         # convert prices in standard unit
