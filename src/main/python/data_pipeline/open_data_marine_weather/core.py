@@ -105,7 +105,7 @@ class OpenDataMarineWeather:
             cleaned = self.clean(self.input_df)
             transformed = self.transform(cleaned)
             self.save(transformed)
-        except Exception as e:
+        except IOError as e:
             # TODO: consider that it can repeat to save one more time
             self.logger.critical(e, exc_info=True)
             return 1

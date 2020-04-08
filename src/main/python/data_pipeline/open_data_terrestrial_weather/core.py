@@ -82,7 +82,8 @@ class OpenDataTerrestrialWeather:
 
         return pd.concat([drop_and_zero, linear], axis=1)
 
-    def transform(self, df):
+    @staticmethod
+    def transform(df: pd.DataFrame):
         columns_with_log = ['t_temper_avg', 't_temper_high', 't_wind_spd_max', 't_wind_spd_avg']
 
         return pd.concat([
@@ -101,8 +102,10 @@ class OpenDataTerrestrialWeather:
         try:
             cleaned = self.clean(self.input_df)
             transformed = self.transform(cleaned)
+            # decomposed = self.decompose_precipitation(transformed)
+
             self.save(transformed)
-        except Exception as e:
+        except IOError as e:
             # TODO: consider that it can repeat to save one more time
             self.logger.critical(e, exc_info=True)
             return 1
@@ -113,3 +116,14 @@ class OpenDataTerrestrialWeather:
     def save(self, df: pd.DataFrame):
         manager = S3Manager(bucket_name=self.bucket_name)
         manager.save_df_to_csv(df=df, key=self.save_key)
+
+    @staticmethod
+    def decompose_precipitation(df: pd.DataFrame):
+        """
+            This makes column presence or absence of precipitation
+            During one month, the average national precipitation is greater than zero.
+            So, This is meaningful if you do not groupby region for the national average.
+        """
+        return df.assign(
+            t_preci_presence=lambda x: 0 if x.t_dur_preci is 0 and x.t_daily_preci is 0 else 1
+        )

@@ -30,9 +30,9 @@ def load_from_s3(bucket_name, key):
     with tempfile.TemporaryFile() as fp:
         S3Manager(bucket_name=bucket_name).s3_bucket.download_fileobj(Fileobj=fp, Key=key)
         fp.seek(0)
-        column_transformer = load(fp)
+        transformer = load(fp)
         fp.close()
-    return column_transformer
+    return transformer
 
 
 class CustomTransformer(ColumnTransformer):
