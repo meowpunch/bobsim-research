@@ -112,7 +112,7 @@ class PricePredictModelPipeline:
             # save
             searcher.save_model(
                 bucket_name=self.bucket_name,
-                key="food_material_price_predict_model/model.pkl"
+                key="food_material_price_predict_model/model/model.pkl"
             )
         except Exception as e:
             # TODO: consider that it can repeat to save one more time
