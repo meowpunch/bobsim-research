@@ -10,7 +10,7 @@ from sklearn.preprocessing import OneHotEncoder, FunctionTransformer, StandardSc
 
 from util.logging import init_logger
 from util.reduce import combine_list
-from util.s3_manager.manager import S3Manager
+from util.s3_manager.manage import S3Manager
 
 
 # TODO: not working, make available

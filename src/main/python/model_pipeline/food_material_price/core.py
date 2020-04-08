@@ -3,17 +3,17 @@ from io import StringIO
 import numpy as np
 import pandas as pd
 
-from model.elastic_net import ElasticNetSearcher
+from model.elastic_net import ElasticNetSearcher, ElasticNetModel
 from model.linear_regression import LinearRegressionModel
-from util.build_dataset import build_process_fmp
+from util.build_dataset import build_process_fmp, build_master
 from util.logging import init_logger
-from util.s3_manager.manager import S3Manager
+from util.s3_manager.manage import S3Manager
 from util.transform import load_from_s3
 
 
 class PricePredictModelPipeline:
 
-    def __init__(self, bucket_name: str):
+    def __init__(self, bucket_name: str, logger_name: str):
         self.logger = init_logger()
 
         # s3
@@ -59,13 +59,39 @@ class PricePredictModelPipeline:
         test = df[df["date"].dt.date >= standard_date]
         return train, test
 
-    def process(self, date: str, data_process: bool):
+    def untuned_process(self, date: str, pipe_data: bool):
+        """
+            TODO: for research
+        """
+        # build dataset
+        dataset = build_master(
+            dataset="process_fmp", bucket_name=self.bucket_name,
+            date=date, pipe_data=pipe_data
+        )
+
+        # set train, test dataset
+        train, test = self.set_train_test(dataset)
+        train_x, train_y = self.split_xy(train)
+        test_x, test_y = self.split_xy(test)
+
+        # hyperparameter tuning
+        model = ElasticNetModel(x_train=train_x, y_train=train_y)
+        model.fit()
+
+        # analyze metric and coef(beta)
+        pred_y = model.predict(X=test_x)
+        self.analyze(test_y, pred_y, model)
+
+    def process(self, date: str, pipe_data: bool):
         """
         :return: exit code
         """
         try:
             # build dataset
-            dataset = build_process_fmp(date=date, process=data_process)
+            dataset = build_master(
+                dataset="process_fmp", bucket_name=self.bucket_name,
+                date=date, pipe_data=pipe_data
+            )
 
             # set train, test dataset
             train, test = self.set_train_test(dataset)
@@ -84,7 +110,7 @@ class PricePredictModelPipeline:
             self.analyze(test_y, pred_y, searcher)
 
             # save
-            searcher.save(
+            searcher.save_model(
                 bucket_name=self.bucket_name,
                 key="food_material_price_predict_model/model.pkl"
             )
@@ -94,18 +120,15 @@ class PricePredictModelPipeline:
             return 1
 
     def analyze(self, test_y, pred_y, searcher):
-        # through inverse function, get metric (customized rmse)
-        (mean, std) = S3Manager(
-            bucket_name=self.bucket_name
-        ).load_dump(key="food_material_price_predict_model/price_(mean,std).pkl")
+        # load mean, std and inverse price
+        mean, std = S3Manager(bucket_name=self.bucket_name).load_dump(
+            key="food_material_price_predict_model/price_(mean,std).pkl"
+        )
 
+        # get metric & coef
         score = self.customized_rmse(test_y * std + mean, pred_y * std + mean)
         self.logger.info("coef:\n{coef}".format(coef=searcher.coef_df))
         self.logger.info("customized RMSE is {score}".format(score=score))
 
         # save coef
-        self.save(df=searcher.coef_df)
-
-    def save(self, df):
-        manager = S3Manager(bucket_name=self.bucket_name)
-        manager.save_df_to_csv(df=df, key="food_material_price_predict_model/coef.csv")
+        searcher.save_coef(bucket_name=self.bucket_name, key="food_material_price_predict_model/beta.csv")

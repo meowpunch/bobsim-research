@@ -8,37 +8,44 @@ from sklearn.metrics import make_scorer, mean_squared_error
 from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 
 from util.logging import init_logger
-from util.s3_manager.manager import S3Manager
+from util.s3_manager.manage import S3Manager
 
 
 class ElasticNetModel:
     """
         tested
     """
+    def __init__(self, x_train, y_train, param=None):
+        if param is None:
+            self.model = ElasticNet()
+        else:
+            self.model = ElasticNet(param)
 
-    def __init__(self, x_train, y_train):
-        self.model = ElasticNet(
-            alpha=0, l1_ratio=0.0, max_iter=5
-        )
         self.x_train = x_train
         self.y_train = y_train
 
     def fit(self):
         self.model.fit(self.x_train, self.y_train)
 
-    def predict(self, x_test):
-        return self.model.predict(x_test)
+    def predict(self, X):
+        return self.model.predict(X=X)
 
     def score(self):
         return self.model.score(self.x_train, self.y_train)
 
-    def save(self, bucket_name, key):
-        with tempfile.TemporaryFile() as fp:
-            dump(self.model, fp)
-            fp.seek(0)
-            manager = S3Manager(bucket_name=bucket_name)
-            manager.save_object(body=fp.read(), key=key)
-            fp.close()
+    def save_model(self, bucket_name, key):
+        manager = S3Manager(bucket_name=bucket_name)
+        manager.save_dump(self.model, key=key)
+
+    @property
+    def coef_df(self):
+        """
+        :return: pd DataFrame
+        """
+        return pd.Series(self.model.coef_, index=self.x_train.columns).rename("coef").reset_index()
+
+    def save_coef(self, bucket_name, key):
+        S3Manager(bucket_name=bucket_name).save_df_to_csv(self.coef_df, key=key)
 
 
 class ElasticNetSearcher(GridSearchCV):
@@ -85,17 +92,16 @@ class ElasticNetSearcher(GridSearchCV):
         ))
         self.logger.info("customized RMSE is {score}".format(score=score))
 
+    def save_model(self, bucket_name, key):
+        # save best elastic net
+        S3Manager(bucket_name=bucket_name).save_dump(self.best_estimator_, key=key)
+
     @property
     def coef_df(self):
         """
         :return: pd DataFrame
         """
-        return pd.Series(self.best_estimator_.coef_, index=self.x_train.columns).to_frame()
+        return pd.Series(self.best_estimator_.coef_, index=self.x_train.columns).rename("coef").reset_index()
 
-    def save(self, bucket_name, key):
-        # save best elastic net
-        with tempfile.TemporaryFile() as fp:
-            dump(self.best_estimator_, fp)
-            fp.seek(0)
-            S3Manager(bucket_name=bucket_name).save_object(body=fp.read(), key=key)
-            fp.close()
+    def save_coef(self, bucket_name, key):
+        S3Manager(bucket_name=bucket_name).save_df_to_csv(self.coef_df, key=key)

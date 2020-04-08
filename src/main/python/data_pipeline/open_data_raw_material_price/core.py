@@ -5,18 +5,18 @@ from data_pipeline.translate import translation
 from data_pipeline.unit import get_unit
 from util.handle_null import NullHandler
 from util.logging import init_logger
-from util.s3_manager.manager import S3Manager
+from util.s3_manager.manage import S3Manager
 from util.visualize import draw_hist
 
 
 class OpenDataRawMaterialPrice:
 
-    def __init__(self, date: str):
+    def __init__(self, bucket_name: str, date: str):
         self.logger = init_logger()
 
         # s3
         # TODO: bucket_name -> parameterized
-        self.s3_manager = S3Manager(bucket_name="production-bobsim")
+        self.s3_manager = S3Manager(bucket_name=bucket_name)
         self.load_key = "public_data/open_data_raw_material_price/origin/csv/{filename}.csv".format(
             filename=date
         )
@@ -63,7 +63,7 @@ class OpenDataRawMaterialPrice:
     def standardize(self, s: pd.Series):
         mean, std = s.mean(), s.std()
         self.logger.info("{name}'s mean: {m}, std: {s}".format(name=s.name, m=mean, s=std))
-        stdized = s.apply(lambda x: (x - mean) / std)
+        stdized = s.apply(lambda x: (x - mean) / std).rename("stdized_price")
         return stdized, mean, std
 
     def save_hist(self, s: pd.Series, key):
