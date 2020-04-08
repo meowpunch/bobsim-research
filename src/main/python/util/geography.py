@@ -1,9 +1,16 @@
-def map_geography(region):
+import pandas as pd
+
+
+def compose_geography(s: pd.Series):
+    return s.apply(lambda x: belong_to(x))
+
+
+def belong_to(region):
     for key in geography.keys():
         if region in key:
             return geography[key]
-        else:
-            raise ValueError("no match geography")
+
+    raise ValueError("no match geography")
 
 
 geography = {
