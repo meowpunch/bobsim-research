@@ -1,8 +1,11 @@
-from functools import reduce
-from io import StringIO
+import tempfile
+from io import StringIO, BytesIO
 
 import boto3
+import matplotlib.pyplot as plt
+import seaborn as sns
 import pandas as pd
+from joblib import dump, load
 
 from util.logging import init_logger
 
@@ -68,15 +71,45 @@ class S3Manager:
 
         if len(self.fetch_objs_list(prefix=key)) is not 1:
             # if there is no saved file in s3, raise exception
-            raise Exception("SaveError")
+            raise IOError("SaveError")
         else:
-            self.logger.info("data is saved to '{dir}' in s3 '{bucket_name}'".format(
-                dir=key, bucket_name=self.bucket_name
+            self.logger.info("success to save '{key}' in s3 '{bucket_name}'".format(
+                key=key, bucket_name=self.bucket_name
             ))
 
-    def save_df_to_csv(self, df: pd.DataFrame, key:str):
+    def save_df_to_csv(self, df: pd.DataFrame, key: str):
         csv_buffer = StringIO()
         df.to_csv(csv_buffer, index=False)
         self.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=key)
 
+    def save_series_to_png(self):
+        img_data = BytesIO()
+        plt.savefig(img_data, format='png')
+        img_data.seek(0)
+        self.s3_bucket.put_object(Body=img_data, ContentType='image/png', Key=KEY)
+        self.save_object(body=img_data, )
+        img_data.close()
+
+    def save_dump(self, x, key: str):
+        with tempfile.TemporaryFile() as fp:
+            dump(x, fp)
+            fp.seek(0)
+            self.save_object(body=fp.read(), key=key)
+            fp.close()
+
+    def load_dump(self, key: str):
+        with tempfile.TemporaryFile() as fp:
+            self.s3_bucket.download_fileobj(Fileobj=fp, Key=key)
+            fp.seek(0)
+            x = load(fp)
+            fp.close()
+        return x
+
+    def save_plt_to_png(self, key):
+        img_data = BytesIO()
+        plt.savefig(img_data, format='png')
+        img_data.seek(0)
+
+        self.save_object(body=img_data, key=key)
+        plt.figure()
 

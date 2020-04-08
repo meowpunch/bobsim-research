@@ -6,8 +6,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-from util.build_dataset import build_master
-
 
 def plot(data: list):
     print("in plot, the number of data set ", len(data))
@@ -22,16 +20,17 @@ def plot(data: list):
 
     plt.show()
 
-
-def show_hist(series_list, name: str):
-    # for jupyter notebook
-    plt.title('{name} histogram'.format(name=name))
-    return list(map(lambda ser: sns.distplot(ser.rename(name)), series_list))
+def draw_hist(s, name: str = None):
+    if isinstance(s, pd.Series):
+        plt.title('{name} histogram'.format(name=s.name))
+        sns.distplot(s)
+    else:
+        # for jupyter notebook
+        plt.title('{name} histogram'.format(name=name))
+        return list(map(lambda series: sns.distplot(series), s))
 
 
 def main():
-    filter_origin_df = build_master(dataset="filter_origin_fmp", date="201908")
-    clean_origin_df = build_master(dataset="clean_origin_fmp", date="201908")
     pass
 
 

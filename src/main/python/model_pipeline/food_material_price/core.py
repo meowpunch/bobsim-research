@@ -95,8 +95,10 @@ class PricePredictModelPipeline:
 
     def analyze(self, test_y, pred_y, searcher):
         # through inverse function, get metric (customized rmse)
-        (mean, std) = load_from_s3(bucket_name=self.bucket_name,
-                                   key="food_material_price_predict_model/price_transformer.pkl")
+        (mean, std) = S3Manager(
+            bucket_name=self.bucket_name
+        ).load_dump(key="food_material_price_predict_model/price_(mean,std).pkl")
+
         score = self.customized_rmse(test_y * std + mean, pred_y * std + mean)
         self.logger.info("coef:\n{coef}".format(coef=searcher.coef_df))
         self.logger.info("customized RMSE is {score}".format(score=score))

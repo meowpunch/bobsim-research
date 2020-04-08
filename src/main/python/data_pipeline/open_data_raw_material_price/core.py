@@ -1,5 +1,3 @@
-from io import StringIO
-
 import pandas as pd
 
 from data_pipeline.dtype import dtype
@@ -8,7 +6,7 @@ from data_pipeline.unit import get_unit
 from util.handle_null import NullHandler
 from util.logging import init_logger
 from util.s3_manager.manager import S3Manager
-from util.transform import save_to_s3
+from util.visualize import draw_hist
 
 
 class OpenDataRawMaterialPrice:
@@ -17,7 +15,8 @@ class OpenDataRawMaterialPrice:
         self.logger = init_logger()
 
         # s3
-        self.bucket_name = "production-bobsim"
+        # TODO: bucket_name -> parameterized
+        self.s3_manager = S3Manager(bucket_name="production-bobsim")
         self.load_key = "public_data/open_data_raw_material_price/origin/csv/{filename}.csv".format(
             filename=date
         )
@@ -37,16 +36,14 @@ class OpenDataRawMaterialPrice:
         :return: pd DataFrame
         """
         # fetch
-        manager = S3Manager(bucket_name=self.bucket_name)
-        df = manager.fetch_objects(key=self.load_key)
+        df = self.s3_manager.fetch_objects(key=self.load_key)
 
         # TODO: no use index to get first element.
         # validate (filter by column and check types)
         return df[0][self.dtypes.keys()].astype(dtype=self.dtypes).rename(columns=self.translate, inplace=False)
 
     def save(self, df: pd.DataFrame):
-        manager = S3Manager(bucket_name=self.bucket_name)
-        manager.save_df_to_csv(df=df, key=self.save_key)
+        self.s3_manager.save_df_to_csv(df=df, key=self.save_key)
 
     def clean(self, df: pd.DataFrame):
         """
@@ -63,18 +60,30 @@ class OpenDataRawMaterialPrice:
         else:
             return df.dropna(axis=0)
 
+    def standardize(self, s: pd.Series):
+        mean, std = s.mean(), s.std()
+        self.logger.info("{name}'s mean: {m}, std: {s}".format(name=s.name, m=mean, s=std))
+        stdized = s.apply(lambda x: (x - mean) / std)
+        return stdized, mean, std
+
+    def save_hist(self, s: pd.Series, key):
+        draw_hist(s)
+        self.s3_manager.save_plt_to_png(key=key)
+
     def transform(self, df: pd.DataFrame):
         """
             get skew by numeric columns and log by skew
         :param df: cleaned pd DataFrame
         :return: transformed pd DataFrame
         """
-        p = df["price"]
-        mean, std = p.mean(), p.std()
-        self.logger.info((mean, std))
-        save_to_s3(transformer=(mean, std), bucket_name=self.bucket_name,
-                   key="food_material_price_predict_model/price_transformer.pkl")
-        return df.assign(price=p.apply(lambda x: (x - mean) / std))
+        origin_price = df["price"]
+        self.save_hist(origin_price, key="food_material_price_predict_model/image/origin_price_hist.png")
+
+        stdized_price, mean, std = self.standardize(origin_price)
+        self.save_hist(stdized_price, key="food_material_price_predict_model/image/stdized_price_hist.png")
+
+        self.s3_manager.save_dump(x=(mean, std), key="food_material_price_predict_model/price_(mean,std).pkl")
+        return df.assign(price=stdized_price)
 
     @staticmethod
     def combine_categories(df: pd.DataFrame):
@@ -140,7 +149,7 @@ class OpenDataRawMaterialPrice:
             # decomposed = self.decompose_date(transformed)
 
             self.save(transformed)
-        except Exception as e:
+        except IOError as e:
             # TODO: consider that it can repeat to save one more time
             self.logger.critical(e, exc_info=True)
             return 1
