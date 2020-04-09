@@ -15,11 +15,11 @@ class ElasticNetModel:
     """
         tested
     """
-    def __init__(self, x_train, y_train, param=None):
-        if param is None:
+    def __init__(self, x_train, y_train, params=None):
+        if params is None:
             self.model = ElasticNet()
         else:
-            self.model = ElasticNet(param)
+            self.model = ElasticNet(**params)
 
         self.x_train = x_train
         self.y_train = y_train
