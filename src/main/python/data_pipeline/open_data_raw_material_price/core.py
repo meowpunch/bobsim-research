@@ -1,6 +1,6 @@
 import pandas as pd
 
-from data_pipeline.dtype import dtype
+from data_pipeline.dtype import dtype, reduction_dtype
 from data_pipeline.translate import translation
 from data_pipeline.unit import get_unit
 from util.handle_null import NullHandler
@@ -14,17 +14,19 @@ class OpenDataRawMaterialPrice:
     def __init__(self, bucket_name: str, date: str):
         self.logger = init_logger()
 
+        self.date = date
+
         # s3
         # TODO: bucket_name -> parameterized
         self.s3_manager = S3Manager(bucket_name=bucket_name)
         self.load_key = "public_data/open_data_raw_material_price/origin/csv/{filename}.csv".format(
-            filename=date
+            filename=self.date
         )
         self.save_key = "public_data/open_data_raw_material_price/process/csv/{filename}.csv".format(
-            filename=date
+            filename=self.date
         )
 
-        self.dtypes = dtype["raw_material_price"]
+        self.dtypes = reduction_dtype["raw_material_price"]
         self.translate = translation["raw_material_price"]
 
         # load filtered df
@@ -77,12 +79,17 @@ class OpenDataRawMaterialPrice:
         :return: transformed pd DataFrame
         """
         origin_price = df["price"]
-        self.save_hist(origin_price, key="food_material_price_predict_model/image/origin_price_hist.png")
+        self.save_hist(
+            origin_price, key="food_material_price_predict_model/image/origin_price_hist_{d}.png".format(d=self.date)
+        )
 
         stdized_price, mean, std = self.standardize(origin_price)
-        self.save_hist(stdized_price, key="food_material_price_predict_model/image/stdized_price_hist.png")
+        self.save_hist(
+            stdized_price, key="food_material_price_predict_model/image/stdized_price_hist_{d}.png".format(d=self.date)
+        )
 
-        self.s3_manager.save_dump(x=(mean, std), key="food_material_price_predict_model/price_(mean,std).pkl")
+        self.s3_manager.save_dump(
+            x=(mean, std), key="food_material_price_predict_model/price_(mean,std)_{date}.pkl".format(date=self.date))
         return df.assign(price=stdized_price)
 
     @staticmethod

@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import skew
 
-from data_pipeline.dtype import dtype
+from data_pipeline.dtype import dtype, reduction_dtype
 from data_pipeline.translate import translation
 from util.handle_null import NullHandler
 from util.logging import init_logger
@@ -31,16 +31,24 @@ class OpenDataMarineWeather:
         )
 
         # type
-        self.dtypes = dtype["marine_weather"]
+        self.dtypes = reduction_dtype["marine_weather"]
         self.translate = translation["marine_weather"]
 
         # fillna
+        """        
         self.columns_with_linear = [
             "m_wind_spd_avg", "m_atm_press_avg", "m_rel_hmd_avg",
             "m_temper_avg", "m_water_temper_avg", "m_max_wave_h_avg",
             "m_sign_wave_h_avg", "m_sign_wave_h_high", "m_max_wave_h_high"
         ]
         self.columns_with_zero = ['m_wave_p_avg', 'm_wave_p_high']
+        """
+        self.columns_with_linear = [
+            "m_atm_press_avg", "m_rel_hmd_avg",
+            "m_temper_avg", "m_water_temper_avg", "m_max_wave_h_avg",
+            "m_max_wave_h_high"
+        ]
+        self.columns_with_zero = ['m_wave_p_avg']
         self.columns_with_drop = ['date']
 
         # load filtered df and take certain term
@@ -102,8 +110,8 @@ class OpenDataMarineWeather:
         """
         try:
             cleaned = self.clean(self.input_df)
-            transformed = self.transform(cleaned)
-            self.save(transformed)
+            # transformed = self.transform(cleaned)
+            self.save(cleaned)
         except IOError as e:
             # TODO: consider that it can repeat to save one more time
             self.logger.critical(e, exc_info=True)

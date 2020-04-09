@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import skew
 
-from data_pipeline.dtype import dtype
+from data_pipeline.dtype import dtype, reduction_dtype
 from data_pipeline.translate import translation
 from util.handle_null import NullHandler
 from util.logging import init_logger
@@ -31,13 +31,17 @@ class OpenDataTerrestrialWeather:
         )
 
         # type
-        self.dtypes = dtype["terrestrial_weather"]
+        self.dtypes = reduction_dtype["terrestrial_weather"]
         self.translate = translation["terrestrial_weather"]
 
         # fillna
+        """
         self.columns_with_linear = ['t_temper_avg', 't_temper_lowest', 't_temper_high', 't_wind_spd_max',
                                     't_wind_spd_avg', 't_rel_hmd_min', 't_rel_hmd_avg']
         self.columns_with_zero = ['t_dur_preci', 't_daily_preci']
+        """
+        self.columns_with_linear = ['t_temper_lowest', 't_rel_hmd_min']
+        self.columns_with_zero = ['t_daily_preci']
         self.columns_with_drop = ["date"]
 
         # load filtered df and take certain term
@@ -84,7 +88,8 @@ class OpenDataTerrestrialWeather:
 
     @staticmethod
     def transform(df: pd.DataFrame):
-        columns_with_log = ['t_daily_preci', 't_temper_avg', 't_temper_high']
+        # columns_with_log = ['t_daily_preci', 't_temper_avg', 't_temper_high']
+        columns_with_log = ['t_daily_preci']
 
         return pd.concat([
             df.drop(columns=columns_with_log), np.log1p(df[columns_with_log])
