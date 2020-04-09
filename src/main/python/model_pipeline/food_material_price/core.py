@@ -13,8 +13,10 @@ from util.transform import load_from_s3
 
 class PricePredictModelPipeline:
 
-    def __init__(self, bucket_name: str, logger_name: str):
+    def __init__(self, bucket_name: str, logger_name: str, date: str):
         self.logger = init_logger()
+
+        self.date = date
 
         # s3
         self.bucket_name = bucket_name
@@ -82,7 +84,7 @@ class PricePredictModelPipeline:
         pred_y = model.predict(X=test_x)
         self.analyze(test_y, pred_y, model)
 
-    def process(self, date: str, pipe_data: bool):
+    def process(self, pipe_data: bool):
         """
         :return: exit code
         """
@@ -90,7 +92,7 @@ class PricePredictModelPipeline:
             # build dataset
             dataset = build_master(
                 dataset="process_fmp", bucket_name=self.bucket_name,
-                date=date, pipe_data=pipe_data
+                date=self.date, pipe_data=pipe_data
             )
 
             # set train, test dataset
@@ -122,7 +124,7 @@ class PricePredictModelPipeline:
     def analyze(self, test_y, pred_y, searcher):
         # load mean, std and inverse price
         mean, std = S3Manager(bucket_name=self.bucket_name).load_dump(
-            key="food_material_price_predict_model/price_(mean,std).pkl"
+            key="food_material_price_predict_model/price_(mean,std)_{date}.pkl".format(date=self.date)
         )
 
         # get metric & coef
@@ -131,4 +133,5 @@ class PricePredictModelPipeline:
         self.logger.info("customized RMSE is {score}".format(score=score))
 
         # save coef
-        searcher.save_coef(bucket_name=self.bucket_name, key="food_material_price_predict_model/beta.csv")
+        searcher.save_coef(bucket_name=self.bucket_name,
+                           key="food_material_price_predict_model/beta_{date}.csv".format(date=self.date))

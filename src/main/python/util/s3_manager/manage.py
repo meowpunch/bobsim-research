@@ -82,14 +82,6 @@ class S3Manager:
         df.to_csv(csv_buffer, index=False)
         self.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=key)
 
-    def save_series_to_png(self):
-        img_data = BytesIO()
-        plt.savefig(img_data, format='png')
-        img_data.seek(0)
-        self.s3_bucket.put_object(Body=img_data, ContentType='image/png', Key=KEY)
-        self.save_object(body=img_data, )
-        img_data.close()
-
     def save_dump(self, x, key: str):
         with tempfile.TemporaryFile() as fp:
             dump(x, fp)
