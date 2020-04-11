@@ -4,11 +4,13 @@ from functools import reduce
 import pandas as pd
 
 from util.logging import init_logger
-from util.s3_manager.manager import S3Manager
+from util.s3_manager.manage import S3Manager
 
 
 class NullHandler:
     def __init__(self, strategy=None, df=None):
+        self.logger = init_logger()
+
         self.input_df = df
         self.strategy = strategy
 
@@ -30,6 +32,19 @@ class NullHandler:
     @staticmethod
     def fillna_with_drop(df: pd.DataFrame):
         return df.dropna(axis=0)
+
+    @staticmethod
+    def missing_values(df: pd.DataFrame):
+        # TODO: specify
+        df_null = df.isna().sum()
+        if df_null.sum() > 0:
+            filtered = df_null[df_null.map(lambda x: x > 0)]
+            # self.logger.info("missing values: \n {}".format(filtered))
+            return filtered
+        else:
+            # self.logger.info("no missing value at raw material price")
+            return None
+
 
     def get_columns_list(self):
         # TODO: in order not to scan df twice, combine this method with fillnan

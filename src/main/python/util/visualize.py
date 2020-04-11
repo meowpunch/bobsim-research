@@ -1,12 +1,13 @@
 """
     TODO: may be structure Visualizer class in order to visualize only one time.
 """
+import sys
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-from util.build_dataset import build_master
+from util.logging import init_logger
 
 
 def plot(data: list):
@@ -23,15 +24,28 @@ def plot(data: list):
     plt.show()
 
 
-def show_hist(series_list, name: str):
-    # for jupyter notebook
-    plt.title('{name} histogram'.format(name=name))
-    return list(map(lambda ser: sns.distplot(ser.rename(name)), series_list))
+def draw_hist(s, h_type: str = "dist", name: str = None):
+    h_method = {
+        "dist": sns.distplot,
+        "count": sns.countplot,
+    }
+    try:
+        method = h_method[h_type]
+    except KeyError:
+        # TODO: handle exception
+        init_logger().critical("histogram type '{h_type}' is not supported".format(h_type=h_type))
+        sys.exit()
+
+    if isinstance(s, pd.Series):
+        plt.title('{name} histogram'.format(name=s.name))
+        method(s)
+    else:
+        # for jupyter notebook
+        plt.title('{name} histogram'.format(name=name))
+        return list(map(lambda series: method(series), s))
 
 
 def main():
-    filter_origin_df = build_master(dataset="filter_origin_fmp", date="201908")
-    clean_origin_df = build_master(dataset="clean_origin_fmp", date="201908")
     pass
 
 

@@ -1,19 +1,21 @@
-import pandas as pd
-import numpy as np
+from io import StringIO
 
-from feature_extraction_pipeline.open_data_marine_weather.main import MarineWeatherExtractionPipeline
-from feature_extraction_pipeline.open_data_raw_material_price.main import RawMaterialPriceExtractionPipeline
-from feature_extraction_pipeline.open_data_terrestrial_weather.main import TerrestrialWeatherExtractionPipeline
-from model.elastic_net import ElasticNetSearcher
+import numpy as np
+import pandas as pd
+
+from model.elastic_net import ElasticNetSearcher, ElasticNetModel
 from model.linear_regression import LinearRegressionModel
-from util.build_dataset import build_process_fmp
+from util.build_dataset import build_process_fmp, build_master
 from util.logging import init_logger
+from util.s3_manager.manage import S3Manager
+from util.transform import load_from_s3
 
 
 class PricePredictModelPipeline:
 
-    def __init__(self, bucket_name: str, date: str):
+    def __init__(self, bucket_name: str, logger_name: str, date: str):
         self.logger = init_logger()
+
         self.date = date
 
         # s3
@@ -21,15 +23,14 @@ class PricePredictModelPipeline:
 
     @staticmethod
     def customized_rmse(y, y_pred):
-        error = y - y_pred
+        errors = y - y_pred
 
-        def penalize(x):
-            if x > 0:
-                # if y > y_pred, penalize 10%
-                return x * 1.1
-            else:
-                return x
-        X = np.vectorize(penalize)(error)
+        def penalize(err):
+            # if y > y_pred, penalize 10%
+            out = err * 1.1 if err > 0 else err
+            return out
+
+        X = np.vectorize(penalize)(errors)
         return np.sqrt(np.square(X).mean())
 
     @staticmethod
@@ -60,13 +61,39 @@ class PricePredictModelPipeline:
         test = df[df["date"].dt.date >= standard_date]
         return train, test
 
-    def process(self):
+    def untuned_process(self, date: str, pipe_data: bool):
+        """
+            TODO: for research
+        """
+        # build dataset
+        dataset = build_master(
+            dataset="process_fmp", bucket_name=self.bucket_name,
+            date=date, pipe_data=pipe_data
+        )
+
+        # set train, test dataset
+        train, test = self.set_train_test(dataset)
+        train_x, train_y = self.split_xy(train)
+        test_x, test_y = self.split_xy(test)
+
+        # hyperparameter tuning
+        model = ElasticNetModel(x_train=train_x, y_train=train_y)
+        model.fit()
+
+        # analyze metric and coef(beta)
+        pred_y = model.predict(X=test_x)
+        self.analyze(test_y, pred_y, model)
+
+    def process(self, pipe_data: bool):
         """
         :return: exit code
         """
         try:
             # build dataset
-            dataset = build_process_fmp(date=self.date)
+            dataset = build_master(
+                dataset="process_fmp", bucket_name=self.bucket_name,
+                date=self.date, pipe_data=pipe_data
+            )
 
             # set train, test dataset
             train, test = self.set_train_test(dataset)
@@ -78,24 +105,33 @@ class PricePredictModelPipeline:
                 x_train=train_x, y_train=train_y, score=self.customized_rmse
             )
             searcher.fit()
-            self.logger.info("tuned params are {params}".format(params=searcher.get_best_params()))
+            self.logger.info("tuned params are {params}".format(params=searcher.best_params_))
 
-            # through inverse function, get metric (customized rmse)
-            pred_y = searcher.predict(test_x)
-            score = self.customized_rmse(test_y, pred_y)
-            self.logger.info("coef:\n{coef}".format(
-                coef=pd.Series(searcher.searcher.best_estimator_.coef_, index=train_x.columns)
-            ))
-            self.logger.info("customized RMSE is {score}".format(score=score))
+            # analyze metric and coef(beta)
+            pred_y = searcher.predict(X=test_x)
+            self.analyze(test_y, pred_y, searcher)
 
-            # save model
-            searcher.save(
+            # save
+            searcher.save_model(
                 bucket_name=self.bucket_name,
-                key="food_material_price_predict_model/model.pkl"
+                key="food_material_price_predict_model/model/model.pkl"
             )
         except Exception as e:
             # TODO: consider that it can repeat to save one more time
             self.logger.critical(e, exc_info=True)
             return 1
 
+    def analyze(self, test_y, pred_y, searcher):
+        # load mean, std and inverse price
+        mean, std = S3Manager(bucket_name=self.bucket_name).load_dump(
+            key="food_material_price_predict_model/price_(mean,std)_{date}.pkl".format(date=self.date)
+        )
 
+        # get metric & coef
+        score = self.customized_rmse(test_y * std + mean, pred_y * std + mean)
+        self.logger.info("coef:\n{coef}".format(coef=searcher.coef_df))
+        self.logger.info("customized RMSE is {score}".format(score=score))
+
+        # save coef
+        searcher.save_coef(bucket_name=self.bucket_name,
+                           key="food_material_price_predict_model/beta_{date}.csv".format(date=self.date))

@@ -5,23 +5,23 @@ import numpy as np
 import pandas as pd
 from scipy.stats import skew
 
-from data_pipeline.dtype import dtype
+from data_pipeline.dtype import dtype, reduction_dtype
 from data_pipeline.translate import translation
 from util.handle_null import NullHandler
 from util.logging import init_logger
-from util.s3_manager.manager import S3Manager
+from util.s3_manager.manage import S3Manager
 
 
 class OpenDataTerrestrialWeather:
 
-    def __init__(self, date: str):
+    def __init__(self, bucket_name: str, date: str):
         self.logger = init_logger()
 
         # TODO: how to handle datetime?
         self.term = datetime.strptime(date, "%Y%m")
 
         # s3
-        self.bucket_name = "production-bobsim"
+        self.bucket_name = bucket_name
         self.file_name = "2014-2020.csv"
         self.load_key = "public_data/open_data_terrestrial_weather/origin/csv/{filename}".format(
             filename=self.file_name
@@ -31,21 +31,18 @@ class OpenDataTerrestrialWeather:
         )
 
         # type
-        self.dtypes = dtype["terrestrial_weather"]
+        self.dtypes = reduction_dtype["terrestrial_weather"]
         self.translate = translation["terrestrial_weather"]
 
         # fillna
-        self.columns_with_linear = ['t_temper_avg', 't_temper_lowest', 't_temper_highest', 't_wind_speed_max',
-                                    't_wind_speed_avg', 't_rel_humid_min', 't_rel_humid_avg']
-        self.columns_with_zero = ['t_duration_precipitation', 't_daily_precipitation']
+        """
+        self.columns_with_linear = ['t_temper_avg', 't_temper_lowest', 't_temper_high', 't_wind_spd_max',
+                                    't_wind_spd_avg', 't_rel_hmd_min', 't_rel_hmd_avg']
+        self.columns_with_zero = ['t_dur_preci', 't_daily_preci']
+        """
+        self.columns_with_linear = ['t_temper_lowest', 't_rel_hmd_min']
+        self.columns_with_zero = ['t_daily_preci']
         self.columns_with_drop = ["date"]
-
-
-        # log transformation
-        self.columns_with_log = [
-            't_temper_lowest', 't_temper_highest', 't_rel_humid_min',
-            't_rel_humid_avg', 't_duration_precipitation', 't_daily_precipitation'
-        ]
 
         # load filtered df and take certain term
         df = self.load()
@@ -64,12 +61,6 @@ class OpenDataTerrestrialWeather:
         # TODO: no use index to get first element.
         # filter by column and check types
         return df[0][self.dtypes.keys()].astype(dtype=self.dtypes).rename(columns=self.translate, inplace=False)
-
-    def save(self, df: pd.DataFrame):
-        csv_buffer = StringIO()
-        df.to_csv(csv_buffer, index=False)
-        manager = S3Manager(bucket_name=self.bucket_name)
-        manager.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=self.save_key)
 
     @staticmethod
     def groupby_date(df: pd.DataFrame):
@@ -95,25 +86,14 @@ class OpenDataTerrestrialWeather:
 
         return pd.concat([drop_and_zero, linear], axis=1)
 
-    def transform_by_skew(self, df: pd.DataFrame):
-        """
-            get skew by numeric columns and log by skew
-        :param df: cleaned pd DataFrame
-        :return: transformed pd DataFrame
-        """
-        # numerical values remain
-        filtered = df.dtypes[df.dtypes != "datetime64[ns]"].index
+    @staticmethod
+    def transform(df: pd.DataFrame):
+        # columns_with_log = ['t_daily_preci', 't_temper_avg', 't_temper_high']
+        columns_with_log = ['t_daily_preci']
 
-        # get skew
-        skew_features = df[filtered].apply(lambda x: skew(x))
-
-        # log by skew
-        # TODO: define threshold not just '1'
-        skew_features_top = skew_features[skew_features > 1]
-
-        return pd.concat(
-            [df.drop(columns=self.columns_with_log), np.log1p(df[self.columns_with_log])], axis=1
-        )
+        return pd.concat([
+            df.drop(columns=columns_with_log), np.log1p(df[columns_with_log])
+        ], axis=1)
 
     def process(self):
         """
@@ -126,12 +106,29 @@ class OpenDataTerrestrialWeather:
         """
         try:
             cleaned = self.clean(self.input_df)
-            # transformed = self.transform_by_skew(cleaned)
-            self.save(cleaned)
-        except Exception as e:
+            transformed = self.transform(cleaned)
+            # decomposed = self.decompose_precipitation(transformed)
+
+            self.save(transformed)
+        except IOError as e:
             # TODO: consider that it can repeat to save one more time
             self.logger.critical(e, exc_info=True)
             return 1
 
-        self.logger.info("success to process")
+        self.logger.info("success to process terrestrial weather")
         return 0
+
+    def save(self, df: pd.DataFrame):
+        manager = S3Manager(bucket_name=self.bucket_name)
+        manager.save_df_to_csv(df=df, key=self.save_key)
+
+    @staticmethod
+    def decompose_precipitation(df: pd.DataFrame):
+        """
+            This makes column presence or absence of precipitation
+            During one month, the average national precipitation is greater than zero.
+            So, This is meaningful if you do not groupby region for the national average.
+        """
+        return df.assign(
+            t_preci_presence=lambda x: 0 if x.t_dur_preci is 0 and x.t_daily_preci is 0 else 1
+        )
