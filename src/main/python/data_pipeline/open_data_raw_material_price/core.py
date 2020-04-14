@@ -1,5 +1,6 @@
 import pandas as pd
 
+from analysis.filter_sparse import get_sparse_list, filter_sparse
 from data_pipeline.dtype import dtype, reduction_dtype
 from data_pipeline.translate import translation
 from data_pipeline.unit import get_unit
@@ -126,17 +127,22 @@ class OpenDataRawMaterialPrice:
         # only retail price
         retail = df[df["class"] == "소비자가격"].drop("class", axis=1)
 
+        convert = self.convert_by_unit(retail)
+        sparse_list = get_sparse_list(df=convert, column="standard_item_name",
+                                      number=48)
+        replaced_df = filter_sparse(df=convert, column="standard_item_name",
+                                    sparse_list=sparse_list)
 
         # combine 4 categories into one
         # combined = self.combine_categories(retail)
 
         # prices divided by 'material grade'(grade) will be used on average.
-        aggregated = retail.drop("grade", axis=1).groupby(
-            ["date", "region", "unit_name", "standard_item_name"]  # "item_name"]
+        aggregated = replaced_df.drop(["grade", "unit_name"], axis=1).groupby(
+            ["date", "region", "standard_item_name"]  # "item_name"]
         ).mean().reset_index()
 
         # convert prices in standard unit
-        return self.convert_by_unit(aggregated)
+        return aggregated
 
     def process(self):
         """
@@ -154,6 +160,7 @@ class OpenDataRawMaterialPrice:
             filtered = self.filter(self.input_df)
             cleaned = self.clean(filtered)
             transformed = self.transform(cleaned)
+
             # decomposed = self.decompose_date(transformed)
 
             self.save(transformed)

@@ -95,6 +95,7 @@ class PricePredictModelPipeline:
                 date=self.date, pipe_data=pipe_data
             )
 
+
             # set train, test dataset
             train, test = self.set_train_test(dataset)
             train_x, train_y = self.split_xy(train)
