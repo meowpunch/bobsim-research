@@ -26,7 +26,7 @@ class OpenDataRawMaterialPrice:
             filename=self.date
         )
 
-        self.dtypes = reduction_dtype["raw_material_price"]
+        self.dtypes = dtype["raw_material_price"]
         self.translate = translation["raw_material_price"]
 
         # load filtered df
@@ -125,6 +125,7 @@ class OpenDataRawMaterialPrice:
         """
         # only retail price
         retail = df[df["class"] == "소비자가격"].drop("class", axis=1)
+
 
         # combine 4 categories into one
         # combined = self.combine_categories(retail)
