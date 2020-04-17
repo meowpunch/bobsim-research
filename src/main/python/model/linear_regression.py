@@ -29,7 +29,7 @@ class LinearRegressionModel:
         """
         :return: pd DataFrame
         """
-        return pd.Series(self.model.coef_, index=self.x_train.columns).rename("coef").reset_index()
+        return pd.Series(self.model.coef_).reset_index()  # , index=self.x_train.columns).rename("coef").reset_index()
 
     def save_coef(self, bucket_name, key):
         S3Manager(bucket_name=bucket_name).save_df_to_csv(self.coef_df, key=key)
