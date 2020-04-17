@@ -8,7 +8,7 @@ def get_sparse_list(df: pd.DataFrame, column: str, number: int):
 
 
 def filter_sparse(df: pd.DataFrame, column: str, sparse_list: list, to_word: str = "others"):
-    filter_df = df[~df[column].isin(sparse_list)].drop_duplicates()
-    filter_list = filter_df.to_list()
+    filter_list = list(set(list(df[column].unique())) - set(sparse_list))
     return df.replace(filter_list, to_word)
+
 
