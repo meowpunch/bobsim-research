@@ -30,7 +30,7 @@ class PricePredictModelPipeline:
 
         def penalize(err):
             # if y > y_pred, penalize 10%
-            out = err * 1.1 if err > 0 else err
+            out = err * 2 if err > 0 else err
             return out
 
         X = np.vectorize(penalize)(errors)
@@ -55,16 +55,16 @@ class PricePredictModelPipeline:
         # hyperparameter tuning
         model = ElasticNetModel(
             x_train=train_x, y_train=train_y,
-            params={'alpha': 0.0001, 'l1_ratio': 0.9, 'max_iter': 5}
+            params={'alpha': 0, 'l1_ratio': 0.0, 'max_iter': 10}  # {'alpha': 0.0001, 'l1_ratio': 0.9, 'max_iter': 5}
         )
         model.fit()
         self.beta(model)
-
+        model.model.intercept_ = model.model.intercept_ + 300
         # analyze metric and coef(beta)
         pred_y = model.predict(X=test_x)
-        r_test, r_pred = self.inverse_price(test_y), self.inverse_price(pred_y)
-        score = self.metric(r_test, r_pred)
-        err = self.error_distribution(r_test, r_pred)
+        # r_test, r_pred = self.inverse_price(test_y), self.inverse_price(pred_y)
+        score = self.metric(test_y, pred_y)
+        err = self.error_distribution(test_y, pred_y)
 
         return score, err
 
@@ -84,6 +84,7 @@ class PricePredictModelPipeline:
         model = ElasticNetModel(x_train=train_x, y_train=train_y)
         model.fit()
         self.beta(model)
+        model.save_coef(bucket_name=self.bucket_name, key="food_material_price_predict_model/linear_coef.csv")
 
         # analyze metric and coef(beta)
         pred_y = model.predict(X=test_x)
@@ -116,6 +117,7 @@ class PricePredictModelPipeline:
             pred_y = searcher.predict(X=test_x)
             score = self.metric(test_y, pred_y)
             self.beta(searcher)
+            self.error_distribution(test_y, pred_y)
 
             # save
             searcher.save_model(

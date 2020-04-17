@@ -15,6 +15,7 @@ class ElasticNetModel:
     """
         tested
     """
+
     def __init__(self, x_train, y_train, params=None):
         if params is None:
             self.model = ElasticNet()
@@ -42,7 +43,10 @@ class ElasticNetModel:
         """
         :return: pd DataFrame
         """
-        return pd.Series(self.model.coef_, index=self.x_train.columns).rename("coef").reset_index()
+        return pd.Series(
+            data=np.append(self.model.coef_, self.model.intercept_),
+            index=self.x_train.columns.tolist() + ["intercept"],
+        ).rename("beta").reset_index().rename(columns={"index": "column"})
 
     def save_coef(self, bucket_name, key):
         S3Manager(bucket_name=bucket_name).save_df_to_csv(self.coef_df, key=key)
@@ -101,7 +105,10 @@ class ElasticNetSearcher(GridSearchCV):
         """
         :return: pd DataFrame
         """
-        return pd.Series(self.best_estimator_.coef_, index=self.x_train.columns).rename("coef").reset_index()
+        l = self.x_train.columns.tolist() + ["intercept"]
+        print(l)
+        return pd.Series(np.append(self.best_estimator_.coef_, self.best_estimator_.intercept_), index=l).rename(
+            "coef").reset_index()
 
     def save_coef(self, bucket_name, key):
         S3Manager(bucket_name=bucket_name).save_df_to_csv(self.coef_df, key=key)

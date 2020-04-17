@@ -155,7 +155,7 @@ class OpenDataRawMaterialPrice:
             transformed = self.transform(cleaned)
             # decomposed = self.decompose_date(transformed)
 
-            self.save(transformed)
+            self.save(cleaned)
         except IOError as e:
             # TODO: consider that it can repeat to save one more time
             self.logger.critical(e, exc_info=True)
