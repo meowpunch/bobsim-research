@@ -135,7 +135,7 @@ class OpenDataRawMaterialPrice:
 
         # combine 4 categories into one
         # combined = self.combine_categories(retail)
-        print(replaced_df)
+
         # prices divided by 'material grade'(grade) will be used on average.
         aggregated = replaced_df.drop(["grade"], axis=1).groupby(
             ["date", "region", "standard_item_name"]  # "item_name"]
@@ -159,11 +159,11 @@ class OpenDataRawMaterialPrice:
         try:
             filtered = self.filter(self.input_df)
             cleaned = self.clean(filtered)
-            transformed = self.transform(cleaned)
+            # transformed = self.transform(cleaned)
 
             # decomposed = self.decompose_date(transformed)
 
-            self.save(transformed)
+            self.save(cleaned)
         except IOError as e:
             # TODO: consider that it can repeat to save one more time
             self.logger.critical(e, exc_info=True)

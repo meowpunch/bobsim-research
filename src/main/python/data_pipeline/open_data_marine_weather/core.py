@@ -49,7 +49,7 @@ class OpenDataMarineWeather:
             "m_max_wave_h_high"
         ]
         """
-        self.columns_with_zero = ['m_wave_p_avg']
+        # self.columns_with_zero = ['m_wave_p_avg']
         self.columns_with_drop = ['date']
 
         # load filtered df and take certain term
