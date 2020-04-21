@@ -38,8 +38,8 @@ class ElasticNetModel:
     def predict(self, X):
         return self.model.predict(X=X)
 
-    def estimate_metric(self, metric, y, predictions):
-        self.metric = metric(y, predictions)
+    def estimate_metric(self, scorer, y, predictions):
+        self.metric = scorer(y, predictions)
         return self.metric
 
     def score(self):
@@ -56,8 +56,8 @@ class ElasticNetModel:
         ).rename("beta").reset_index().rename(columns={"index": "column"})
 
     def save(self, prefix):
-        self.save_metric(key="{prefix}/metric.pkl".format(prefix=prefix))
         self.save_coef(key="{prefix}/beta.csv".format(prefix=prefix))
+        self.save_metric(key="{prefix}/metric.pkl".format(prefix=prefix))
         self.save_model(key="{prefix}/model.pkl".format(prefix=prefix))
 
     def save_coef(self, key):
@@ -84,13 +84,15 @@ class ElasticNetSearcher(GridSearchCV):
         if grid_params is None:
             grid_params = {
                 "max_iter": [1, 5, 10],
-                "alpha": [0, 0.00001, 0.0001, 0.001, 0.01, 0.1, 1, 10, 100],
+                "alpha": [0, 0.0001, 0.001, 0.01, 0.1, 1, 10, 100],
                 "l1_ratio": np.arange(0.0, 1.0, 0.1)
             }
 
         self.x_train = x_train
         self.y_train = y_train
         self.scorer = score
+
+        self.error = None  # pd.Series
         self.metric = None
 
         # s3
@@ -120,13 +122,25 @@ class ElasticNetSearcher(GridSearchCV):
             index=self.x_train.columns.tolist() + ["intercept"],
         ).rename("beta").reset_index().rename(columns={"index": "column"})
 
-    def estimate_metric(self, y, predictions):
-        self.save_error_distribution(y=y, predictions=predictions)
-        self.metric = self.scorer(y=y, y_pred=predictions)
+    def estimate_metric(self, y_true, y_pred):
+        self.error = pd.Series(y_true - y_pred).rename("error")
+        self.metric = self.scorer(y_true=y_true, y_pred=y_pred)
         return self.metric
 
+    def save(self, prefix):
+        """
+
+        :param prefix: dir
+        :return:
+        """
+        self.save_params(key="{prefix}/model/params.pkl".format(prefix=prefix))
+        self.save_coef(key="{prefix}/model/beta.pkl".format(prefix=prefix))
+        self.save_metric(key="{prefix}/model/metric.pkl".format(prefix=prefix))
+        self.save_error_distribution(prefix=prefix)
+        self.save_model(key="{prefix}/model/model.pkl".format(prefix=prefix))
+
     def save_params(self, key):
-        self.logger.info("tuned params:\n{params}".format(params=self.best_params_))
+        self.logger.info("tuned params: {params}".format(params=self.best_params_))
         self.s3_manager.save_dump(x=self.best_params_, key=key)
 
     def save_coef(self, key):
@@ -141,16 +155,15 @@ class ElasticNetSearcher(GridSearchCV):
         # save best elastic net
         self.s3_manager.save_dump(self.best_estimator_, key=key)
 
-    def save_error_distribution(self, y, predictions):
-        err = pd.Series(y - predictions).rename("error")
-        draw_hist(err)
+    def save_error_distribution(self, prefix):
+        draw_hist(self.error)
         self.s3_manager.save_plt_to_png(
-            key="food_material_price_predict_model/image/error_distribution_{date}.png".format(date=self.date)
+            key="{prefix}/image/error_distribution.png".format(prefix=prefix)
         )
 
-        ratio = hit_ratio_error(err)
+        ratio = hit_ratio_error(self.error)
         self.s3_manager.save_plt_to_png(
-            key="food_material_price_predict_model/image/hit_ratio_error_{date}.png".format(date=self.date)
+            key="{prefix}/image/hit_ratio_error.png".format(prefix=prefix)
         )
         return ratio
 

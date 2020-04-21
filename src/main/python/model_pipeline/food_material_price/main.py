@@ -10,7 +10,10 @@ def main():
         logger_name="food_material_price_pipeline",
         date="201908"
     )
-    model_pipeline.process(process_type="research", pipe_data=False)
+    model_pipeline.process(
+        process_type="research",
+        pipe_data=True
+    )
 
 
 if __name__ == '__main__':

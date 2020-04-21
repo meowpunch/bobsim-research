@@ -4,8 +4,7 @@ from io import StringIO
 import numpy as np
 import pandas as pd
 
-from analysis.food_material_price.research import split_xy, customized_rmse, search_process, error_distribution, \
-    inverse_price
+from analysis.food_material_price.research import split_xy, customized_rmse, search_process
 from analysis.hit_ratio_error import hit_ratio_error
 from analysis.train_test_volume import set_train_test
 from model.elastic_net import ElasticNetSearcher, ElasticNetModel
@@ -24,6 +23,7 @@ class PricePredictModelPipeline:
     def __init__(self, bucket_name: str, logger_name: str, date: str):
         self.logger = init_logger()
         self.date = date
+        # TODO: now -> term of dataset
         self.now = datetime.datetime.now().strftime("%m%Y")
 
         # s3
@@ -51,7 +51,13 @@ class PricePredictModelPipeline:
             search_process(
                 dataset=self.build_dataset(pipe_data=pipe_data),
                 bucket_name=self.bucket_name,
-                date=self.date
+                date=self.date,
+                term=self.now,
+                grid_params={
+                    "max_iter": [1, 5, 10],
+                    "alpha": [0, 0.00001, 0.0001, 0.001, 0.01, 0.1, 1, 10, 100],
+                    "l1_ratio": np.arange(0.0, 1.0, 0.1)
+                }
             )
         else:
             raise NotImplementedError
@@ -90,7 +96,7 @@ class PricePredictModelPipeline:
         # predict & metric
         pred_y = model.predict(X=test_x)
         # r_test, r_pred = inverse_price(test_y), inverse_price(pred_y)
-        metric = model.estimate_metric(metric=customized_rmse, y=test_y, predictions=pred_y)
+        metric = model.estimate_metric(scorer=customized_rmse, y=test_y, predictions=pred_y)
 
         # save
         # TODO self.now -> date set term, e.g. 010420 - 120420
