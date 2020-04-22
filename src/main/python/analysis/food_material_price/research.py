@@ -66,7 +66,7 @@ def customized_rmse(y_true, y_pred):
 
     def penalize(err):
         # if y > y_pred, penalize 10%
-        return err * 100 if err > 0 else err
+        return err * 2 if err > 0 else err
 
     return np.sqrt(np.square(np.vectorize(penalize)(errors)).mean())
 

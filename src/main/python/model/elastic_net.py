@@ -60,6 +60,10 @@ class ElasticNetModel:
         ).rename("beta").reset_index().rename(columns={"index": "column"})
 
     def save(self, prefix):
+        """
+            save beta coef, metric, distribution, model
+        :param prefix: dir
+        """
         self.save_coef(key="{prefix}/beta.csv".format(prefix=prefix))
         self.save_metric(key="{prefix}/metric.pkl".format(prefix=prefix))
         self.save_error_distribution(prefix=prefix)
@@ -146,9 +150,8 @@ class ElasticNetSearcher(GridSearchCV):
 
     def save(self, prefix):
         """
-
+            save tuned params, beta coef, metric, distribution, model
         :param prefix: dir
-        :return:
         """
         self.save_params(key="{prefix}/params.pkl".format(prefix=prefix))
         self.save_coef(key="{prefix}/beta.pkl".format(prefix=prefix))
