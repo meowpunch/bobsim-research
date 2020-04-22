@@ -6,6 +6,7 @@ from data_pipeline.unit import get_unit
 from util.handle_null import NullHandler
 from util.logging import init_logger
 from util.s3_manager.manage import S3Manager
+from util.sparse import filter_sparse
 from util.visualize import draw_hist
 
 
@@ -26,7 +27,7 @@ class OpenDataRawMaterialPrice:
             filename=self.date
         )
 
-        self.dtypes = reduction_dtype["raw_material_price"]
+        self.dtypes = dtype["raw_material_price"]
         self.translate = translation["raw_material_price"]
 
         # load filtered df
@@ -126,16 +127,23 @@ class OpenDataRawMaterialPrice:
         # only retail price
         retail = df[df["class"] == "소비자가격"].drop("class", axis=1)
 
+        # convert prices in standard unit
+        convert = self.convert_by_unit(retail)
+
+        # change sparse item name to 'others'
+        # TODO: solve the problem saving std_list in main of 'analysis/sparse_process.py'
+        std_list = self.s3_manager.load_dump(key="food_material_price_predict_model/constants/std_list.pkl")
+        replaced = convert.assign(
+            standard_item_name=filter_sparse(column=convert["standard_item_name"], std_list=std_list)
+        )
+
         # combine 4 categories into one
         # combined = self.combine_categories(retail)
 
         # prices divided by 'material grade'(grade) will be used on average.
-        aggregated = retail.drop("grade", axis=1).groupby(
-            ["date", "region", "unit_name", "standard_item_name"]  # "item_name"]
+        return replaced.drop(["grade"], axis=1).groupby(
+            ["date", "region", "standard_item_name"]  # "item_name"]
         ).mean().reset_index()
-
-        # convert prices in standard unit
-        return self.convert_by_unit(aggregated)
 
     def process(self):
         """
@@ -152,10 +160,11 @@ class OpenDataRawMaterialPrice:
         try:
             filtered = self.filter(self.input_df)
             cleaned = self.clean(filtered)
-            transformed = self.transform(cleaned)
+            # transformed = self.transform(cleaned)
+
             # decomposed = self.decompose_date(transformed)
 
-            self.save(transformed)
+            self.save(cleaned)
         except IOError as e:
             # TODO: consider that it can repeat to save one more time
             self.logger.critical(e, exc_info=True)

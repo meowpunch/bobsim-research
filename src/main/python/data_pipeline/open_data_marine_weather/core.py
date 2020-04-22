@@ -31,11 +31,11 @@ class OpenDataMarineWeather:
         )
 
         # type
-        self.dtypes = reduction_dtype["marine_weather"]
+        self.dtypes = dtype["marine_weather"]
         self.translate = translation["marine_weather"]
 
         # fillna
-        """        
+
         self.columns_with_linear = [
             "m_wind_spd_avg", "m_atm_press_avg", "m_rel_hmd_avg",
             "m_temper_avg", "m_water_temper_avg", "m_max_wave_h_avg",
@@ -48,7 +48,8 @@ class OpenDataMarineWeather:
             "m_temper_avg", "m_water_temper_avg", "m_max_wave_h_avg",
             "m_max_wave_h_high"
         ]
-        self.columns_with_zero = ['m_wave_p_avg']
+        """
+        # self.columns_with_zero = ['m_wave_p_avg']
         self.columns_with_drop = ['date']
 
         # load filtered df and take certain term

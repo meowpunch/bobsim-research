@@ -31,17 +31,18 @@ class OpenDataTerrestrialWeather:
         )
 
         # type
-        self.dtypes = reduction_dtype["terrestrial_weather"]
+        self.dtypes = dtype["terrestrial_weather"]
         self.translate = translation["terrestrial_weather"]
 
         # fillna
-        """
+
         self.columns_with_linear = ['t_temper_avg', 't_temper_lowest', 't_temper_high', 't_wind_spd_max',
                                     't_wind_spd_avg', 't_rel_hmd_min', 't_rel_hmd_avg']
         self.columns_with_zero = ['t_dur_preci', 't_daily_preci']
         """
         self.columns_with_linear = ['t_temper_lowest', 't_rel_hmd_min']
         self.columns_with_zero = ['t_daily_preci']
+        """
         self.columns_with_drop = ["date"]
 
         # load filtered df and take certain term

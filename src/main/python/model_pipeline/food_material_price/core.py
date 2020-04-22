@@ -1,137 +1,99 @@
-from io import StringIO
+import datetime
 
 import numpy as np
-import pandas as pd
 
-from model.elastic_net import ElasticNetSearcher, ElasticNetModel
-from model.linear_regression import LinearRegressionModel
-from util.build_dataset import build_process_fmp, build_master
+from analysis.food_material_price.research import split_xy, customized_rmse, search_process
+from analysis.train_test_volume import set_train_test
+from model.elastic_net import ElasticNetModel
+from util.build_dataset import build_master
 from util.logging import init_logger
 from util.s3_manager.manage import S3Manager
-from util.transform import load_from_s3
+
+border = '-' * 50
 
 
 class PricePredictModelPipeline:
 
     def __init__(self, bucket_name: str, logger_name: str, date: str):
         self.logger = init_logger()
-
         self.date = date
+        # TODO: now -> term of dataset
+        self.term = datetime.datetime.now().strftime("%m%Y")
 
         # s3
         self.bucket_name = bucket_name
 
-    @staticmethod
-    def customized_rmse(y, y_pred):
-        errors = y - y_pred
-
-        def penalize(err):
-            # if y > y_pred, penalize 10%
-            out = err * 1.1 if err > 0 else err
-            return out
-
-        X = np.vectorize(penalize)(errors)
-        return np.sqrt(np.square(X).mean())
-
-    @staticmethod
-    def split_xy(df: pd.DataFrame):
-        return df.drop(columns=["price", "date"]), df["price"]
-
-    def get_score(self, train, test):
-        x_train, y_train = self.split_xy(train)
-        x_test, y_test = self.split_xy(test)
-
-        regr = LinearRegressionModel(x_train, y_train)
-        regr.fit()
-        y_pred = regr.predict(x_test)
-        return self.customized_rmse(np.expm1(y_test), np.expm1(y_pred))
-
-    def set_train_test(self, df: pd.DataFrame):
-        """
-            TODO: search grid to find proper train test volume
-        :param df: dataset
-        :return: train Xy, test Xy
-        """
-        predict_days = 7
-        # TODO: it should be processed in data_pipeline
-        reversed_time = df["date"].drop_duplicates().sort_values(ascending=False).tolist()
-        standard_date = reversed_time[predict_days]
-
-        train = df[df["date"].dt.date < standard_date]
-        test = df[df["date"].dt.date >= standard_date]
-        return train, test
-
-    def untuned_process(self, date: str, pipe_data: bool):
-        """
-            TODO: for research
-        """
+    def build_dataset(self, pipe_data: bool):
         # build dataset
         dataset = build_master(
             dataset="process_fmp", bucket_name=self.bucket_name,
-            date=date, pipe_data=pipe_data
+            date=self.date, pipe_data=pipe_data
         )
 
         # set train, test dataset
-        train, test = self.set_train_test(dataset)
-        train_x, train_y = self.split_xy(train)
-        test_x, test_y = self.split_xy(test)
+        train, test = set_train_test(dataset)
+        train_x, train_y = split_xy(train)
+        test_x, test_y = split_xy(test)
+        return train_x, train_y, test_x, test_y
 
-        # hyperparameter tuning
-        model = ElasticNetModel(x_train=train_x, y_train=train_y)
-        model.fit()
+    def section(self, p_type, pipe_data: bool):
+        self.logger.info("{b}{p_type}{b}".format(b=border,p_type=p_type))
+        if p_type is "production":
+            self.tuned_process(
+                dataset=self.build_dataset(pipe_data=pipe_data)
+            )
+        elif p_type is "research":
+            search_process(
+                dataset=self.build_dataset(pipe_data=pipe_data),
+                bucket_name=self.bucket_name, term=self.term,
+                grid_params={
+                    "max_iter": [1, 5, 10],
+                    "alpha": [0, 0.00001, 0.0001, 0.001, 0.01, 0.1, 1, 10, 100],
+                    "l1_ratio": np.arange(0.0, 1.0, 0.1)
+                }
+            )
+        else:
+            raise NotImplementedError
 
-        # analyze metric and coef(beta)
-        pred_y = model.predict(X=test_x)
-        self.analyze(test_y, pred_y, model)
-
-    def process(self, pipe_data: bool):
-        """
-        :return: exit code
-        """
+    def process(self, process_type: str, pipe_data: bool):
         try:
-            # build dataset
-            dataset = build_master(
-                dataset="process_fmp", bucket_name=self.bucket_name,
-                date=self.date, pipe_data=pipe_data
-            )
-
-            # set train, test dataset
-            train, test = self.set_train_test(dataset)
-            train_x, train_y = self.split_xy(train)
-            test_x, test_y = self.split_xy(test)
-
-            # hyperparameter tuning
-            searcher = ElasticNetSearcher(
-                x_train=train_x, y_train=train_y, score=self.customized_rmse
-            )
-            searcher.fit()
-            self.logger.info("tuned params are {params}".format(params=searcher.best_params_))
-
-            # analyze metric and coef(beta)
-            pred_y = searcher.predict(X=test_x)
-            self.analyze(test_y, pred_y, searcher)
-
-            # save
-            searcher.save_model(
-                bucket_name=self.bucket_name,
-                key="food_material_price_predict_model/model/model.pkl"
-            )
+            self.section(p_type=process_type, pipe_data=pipe_data)
+        except NotImplementedError:
+            self.logger.critical("'{p_type}' is not supported".format(p_type=process_type), exc_info=True)
+            return 1
         except Exception as e:
             # TODO: consider that it can repeat to save one more time
             self.logger.critical(e, exc_info=True)
             return 1
+        return 0
 
-    def analyze(self, test_y, pred_y, searcher):
-        # load mean, std and inverse price
-        mean, std = S3Manager(bucket_name=self.bucket_name).load_dump(
-            key="food_material_price_predict_model/price_(mean,std)_{date}.pkl".format(date=self.date)
+    def tuned_process(self, dataset):
+        """
+            tuned ElasticNet for production
+        :param dataset: merged 3 dataset (raw material price, terrestrial weather, marine weather)
+        :return: metric (customized rmse)
+        """
+        train_x, train_y, test_x, test_y = dataset
+
+        # init model & fit
+        model = ElasticNetModel(
+            bucket_name=self.bucket_name,
+            x_train=train_x, y_train=train_y,
+            params=S3Manager(bucket_name=self.bucket_name).load_dump(
+                key="food_material_price_predict_model/research/tuned_params.pkl"
+            )
         )
+        model.fit()
 
-        # get metric & coef
-        score = self.customized_rmse(test_y * std + mean, pred_y * std + mean)
-        self.logger.info("coef:\n{coef}".format(coef=searcher.coef_df))
-        self.logger.info("customized RMSE is {score}".format(score=score))
+        # adjust intercept for conservative prediction
+        model.model.intercept_ = model.model.intercept_ + 300
 
-        # save coef
-        searcher.save_coef(bucket_name=self.bucket_name,
-                           key="food_material_price_predict_model/beta_{date}.csv".format(date=self.date))
+        # predict & metric
+        pred_y = model.predict(X=test_x)
+        # r_test, r_pred = inverse_price(test_y), inverse_price(pred_y)
+        metric = model.estimate_metric(scorer=customized_rmse, y=test_y, predictions=pred_y)
+
+        # save
+        # TODO self.now -> date set term, e.g. 010420 - 120420
+        model.save(prefix="food_material_price_predict_model/{term}".format(term=self.term))
+        return metric

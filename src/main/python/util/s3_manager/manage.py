@@ -95,6 +95,7 @@ class S3Manager:
             fp.seek(0)
             x = load(fp)
             fp.close()
+        self.logger.info("success to download from '{key}'".format(key=key))
         return x
 
     def save_plt_to_png(self, key):
