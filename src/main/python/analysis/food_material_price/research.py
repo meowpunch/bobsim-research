@@ -62,6 +62,7 @@ def untuned_process(dataset, bucket_name):
 
 
 def customized_rmse(y_true, y_pred):
+    # TODO: apply this to objective function of model
     errors = y_true - y_pred
 
     def penalize(err):
