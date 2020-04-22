@@ -12,7 +12,7 @@ def main():
     )
     model_pipeline.process(
         process_type="research",
-        pipe_data=True
+        pipe_data=False
     )
 
 

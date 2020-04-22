@@ -1,19 +1,13 @@
 import datetime
-from io import StringIO
 
 import numpy as np
-import pandas as pd
 
 from analysis.food_material_price.research import split_xy, customized_rmse, search_process
-from analysis.hit_ratio_error import hit_ratio_error
 from analysis.train_test_volume import set_train_test
-from model.elastic_net import ElasticNetSearcher, ElasticNetModel
-from model.linear_regression import LinearRegressionModel
-from util.build_dataset import build_process_fmp, build_master
+from model.elastic_net import ElasticNetModel
+from util.build_dataset import build_master
 from util.logging import init_logger
 from util.s3_manager.manage import S3Manager
-from util.transform import load_from_s3
-from util.visualize import draw_hist
 
 border = '-' * 50
 
@@ -24,7 +18,7 @@ class PricePredictModelPipeline:
         self.logger = init_logger()
         self.date = date
         # TODO: now -> term of dataset
-        self.now = datetime.datetime.now().strftime("%m%Y")
+        self.term = datetime.datetime.now().strftime("%m%Y")
 
         # s3
         self.bucket_name = bucket_name
@@ -43,16 +37,15 @@ class PricePredictModelPipeline:
         return train_x, train_y, test_x, test_y
 
     def section(self, p_type, pipe_data: bool):
-        if p_type is "prod":
+        self.logger.info("{b}{p_type}{b}".format(b=border,p_type=p_type))
+        if p_type is "production":
             self.tuned_process(
                 dataset=self.build_dataset(pipe_data=pipe_data)
             )
         elif p_type is "research":
             search_process(
                 dataset=self.build_dataset(pipe_data=pipe_data),
-                bucket_name=self.bucket_name,
-                date=self.date,
-                term=self.now,
+                bucket_name=self.bucket_name, term=self.term,
                 grid_params={
                     "max_iter": [1, 5, 10],
                     "alpha": [0, 0.00001, 0.0001, 0.001, 0.01, 0.1, 1, 10, 100],
@@ -66,7 +59,7 @@ class PricePredictModelPipeline:
         try:
             self.section(p_type=process_type, pipe_data=pipe_data)
         except NotImplementedError:
-            self.logger.critical("not supported", exc_info=True)
+            self.logger.critical("'{p_type}' is not supported".format(p_type=process_type), exc_info=True)
             return 1
         except Exception as e:
             # TODO: consider that it can repeat to save one more time
@@ -77,8 +70,8 @@ class PricePredictModelPipeline:
     def tuned_process(self, dataset):
         """
             tuned ElasticNet for production
-        :param dataset: method for build dataset
-        :return: customized rmse
+        :param dataset: merged 3 dataset (raw material price, terrestrial weather, marine weather)
+        :return: metric (customized rmse)
         """
         train_x, train_y, test_x, test_y = dataset
 
@@ -86,7 +79,9 @@ class PricePredictModelPipeline:
         model = ElasticNetModel(
             bucket_name=self.bucket_name,
             x_train=train_x, y_train=train_y,
-            params={'alpha': 0, 'l1_ratio': 0.0, 'max_iter': 10}  # {'alpha': 0.0001, 'l1_ratio': 0.9, 'max_iter': 5}
+            params=S3Manager(bucket_name=self.bucket_name).load_dump(
+                key="food_material_price_predict_model/research/tuned_params.pkl"
+            )
         )
         model.fit()
 
@@ -100,5 +95,5 @@ class PricePredictModelPipeline:
 
         # save
         # TODO self.now -> date set term, e.g. 010420 - 120420
-        model.save(prefix="food_material_price_predict_model/model/{term}".format(term=self.now))
+        model.save(prefix="food_material_price_predict_model/{term}".format(term=self.term))
         return metric

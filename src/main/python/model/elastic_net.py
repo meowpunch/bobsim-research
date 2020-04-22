@@ -17,20 +17,23 @@ class ElasticNetModel:
     """
         ElasticNet
     """
+
     def __init__(self, bucket_name: str, x_train, y_train, params=None):
+        # logger
+        self.logger = init_logger()
+
+        # s3
+        self.s3_manager = S3Manager(bucket_name=bucket_name)
+
         if params is None:
             self.model = ElasticNet()
         else:
             self.model = ElasticNet(**params)
 
         self.x_train, self.y_train = x_train, y_train
+
+        self.error = None
         self.metric = None
-
-        # logger
-        self.logger = init_logger()
-
-        # s3
-        self.s3_manager = S3Manager(bucket_name=bucket_name)
 
     def fit(self):
         self.model.fit(self.x_train, self.y_train)
@@ -39,7 +42,8 @@ class ElasticNetModel:
         return self.model.predict(X=X)
 
     def estimate_metric(self, scorer, y, predictions):
-        self.metric = scorer(y, predictions)
+        self.error = y - predictions
+        self.metric = scorer(y_true=y, y_pred=predictions)
         return self.metric
 
     def score(self):
@@ -58,6 +62,7 @@ class ElasticNetModel:
     def save(self, prefix):
         self.save_coef(key="{prefix}/beta.csv".format(prefix=prefix))
         self.save_metric(key="{prefix}/metric.pkl".format(prefix=prefix))
+        self.save_error_distribution(prefix=prefix)
         self.save_model(key="{prefix}/model.pkl".format(prefix=prefix))
 
     def save_coef(self, key):
@@ -70,6 +75,18 @@ class ElasticNetModel:
 
     def save_model(self, key):
         self.s3_manager.save_dump(self.model, key=key)
+
+    def save_error_distribution(self, prefix):
+        draw_hist(self.error)
+        self.s3_manager.save_plt_to_png(
+            key="{prefix}/image/error_distribution.png".format(prefix=prefix)
+        )
+
+        ratio = hit_ratio_error(self.error)
+        self.s3_manager.save_plt_to_png(
+            key="{prefix}/image/hit_ratio_error.png".format(prefix=prefix)
+        )
+        return ratio
 
 
 class ElasticNetSearcher(GridSearchCV):
@@ -133,11 +150,11 @@ class ElasticNetSearcher(GridSearchCV):
         :param prefix: dir
         :return:
         """
-        self.save_params(key="{prefix}/model/params.pkl".format(prefix=prefix))
-        self.save_coef(key="{prefix}/model/beta.pkl".format(prefix=prefix))
-        self.save_metric(key="{prefix}/model/metric.pkl".format(prefix=prefix))
+        self.save_params(key="{prefix}/params.pkl".format(prefix=prefix))
+        self.save_coef(key="{prefix}/beta.pkl".format(prefix=prefix))
+        self.save_metric(key="{prefix}/metric.pkl".format(prefix=prefix))
         self.save_error_distribution(prefix=prefix)
-        self.save_model(key="{prefix}/model/model.pkl".format(prefix=prefix))
+        self.save_model(key="{prefix}/model.pkl".format(prefix=prefix))
 
     def save_params(self, key):
         self.logger.info("tuned params: {params}".format(params=self.best_params_))
@@ -166,4 +183,3 @@ class ElasticNetSearcher(GridSearchCV):
             key="{prefix}/image/hit_ratio_error.png".format(prefix=prefix)
         )
         return ratio
-

@@ -1,16 +1,18 @@
-from analysis.hit_ratio_error import hit_ratio_error
-from model.elastic_net import ElasticNetModel, ElasticNetSearcher
 import numpy as np
 import pandas as pd
 
+from model.elastic_net import ElasticNetModel, ElasticNetSearcher
 from util.s3_manager.manage import S3Manager
-from util.visualize import draw_hist
 
 
-def search_process(dataset, bucket_name, date, term, grid_params):
+def search_process(dataset, bucket_name, term, grid_params):
     """
         ElasticNetSearcher for research
-    :return: exit code
+    :param dataset: merged 3 dataset (raw material price, terrestrial weather, marine weather)
+    :param bucket_name: s3 bucket name
+    :param term: term of researched dataset
+    :param grid_params: grid for searching best parameters
+    :return: metric (customized rmse)
     """
     train_x, train_y, test_x, test_y = dataset
 
@@ -29,7 +31,48 @@ def search_process(dataset, bucket_name, date, term, grid_params):
     # save
     # TODO self.now -> date set term, e.g. 010420 - 120420
     searcher.save(prefix="food_material_price_predict_model/research/{date}".format(date=term))
+    searcher.save_params(key="food_material_price_predict_model/research/tuned_params.pkl")
     return metric
+
+
+def untuned_process(dataset, bucket_name):
+    """
+        untuned ElasticNet(linear) for research
+    :param bucket_name: s3 bucket name
+    :param dataset: merged 3 dataset (raw material price, terrestrial weather, marine weather)
+    :return: metric
+    """
+    train_x, train_y, test_x, test_y = dataset
+
+    # hyperparameter tuning
+    model = ElasticNetModel(
+        bucket_name=bucket_name,
+        x_train=train_x, y_train=train_y
+    )
+    model.fit()
+
+    # predict & metric
+    pred_y = model.predict(X=test_x)
+    # r_test, r_pred = inverse_price(test_y), inverse_price(pred_y)
+    metric = model.estimate_metric(scorer=customized_rmse, y=test_y, predictions=pred_y)
+
+    # save
+    model.save(prefix="food_material_price_predict_model/research/linear")
+    return metric
+
+
+def customized_rmse(y_true, y_pred):
+    errors = y_true - y_pred
+
+    def penalize(err):
+        # if y > y_pred, penalize 10%
+        return err * 100 if err > 0 else err
+
+    return np.sqrt(np.square(np.vectorize(penalize)(errors)).mean())
+
+
+def split_xy(df: pd.DataFrame):
+    return df.drop(columns=["price", "date"]), df["price"]
 
 
 def inverse_price(self, price):
@@ -38,30 +81,3 @@ def inverse_price(self, price):
         key="food_material_price_predict_model/price_(mean,std)_{date}.pkl".format(date=self.date)
     )
     return price * std + mean
-
-
-def split_xy(df: pd.DataFrame):
-    return df.drop(columns=["price", "date"]), df["price"]
-
-
-def customized_rmse(y_true, y_pred):
-    errors = y_true - y_pred
-
-    def penalize(err):
-        # if y > y_pred, penalize 10%
-        return err * 2 if err > 0 else err
-    return np.sqrt(np.square(np.vectorize(penalize)(errors)).mean())
-
-
-def untuned_process(dataset):
-    train_x, train_y, test_x, test_y = dataset
-
-    # hyperparameter tuning
-    model = ElasticNetModel(x_train=train_x, y_train=train_y)
-    model.fit()
-    self.beta(model)
-    model.save_coef(bucket_name=self.bucket_name, key="food_material_price_predict_model/linear_coef.csv")
-
-    # analyze metric and coef(beta)
-    pred_y = model.predict(X=test_x)
-    return self.metric(test_y, pred_y)
