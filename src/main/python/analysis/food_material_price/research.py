@@ -1,8 +1,17 @@
+import datetime
+import functools
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from sklearn.linear_model import ElasticNet
 
 from model.elastic_net import ElasticNetModel, ElasticNetSearcher
 from util.s3_manager.manage import S3Manager
+
+"""
+    Grid search (hyperparameter tuning)
+    search for tuned parameters, best model, best coef, metric, error distribution
+"""
 
 
 def search_process(dataset, bucket_name, term, grid_params):
@@ -82,3 +91,127 @@ def inverse_price(self, price):
         key="food_material_price_predict_model/price_(mean,std)_{date}.pkl".format(date=self.date)
     )
     return price * std + mean
+
+
+"""
+    Metric by test size
+    find train test volume for timeseries dataset 
+"""
+
+
+def metric_by_test_size(df: pd.DataFrame, test_sizes=range(1, 10), train_size: int = 5,
+                      date=datetime.datetime.now().strftime("%m%Y")):
+    """
+            fix train size and adjust test size
+    :param df: pd.DataFrame
+    :param test_sizes: list of test sizes
+    :param train_size: 5 -> 5 days (one week, no weekend)
+    :param date: research date
+    :return:
+    """
+    # scoring
+    score_list = list(map(functools.partial(scoring, train_size=train_size, df=df), test_sizes))
+    ser = pd.Series(score_list, index=test_sizes)
+
+    # plot
+    series_plot(ser=ser, kind="bar", x_label="test size", y_label="customized RMSE",
+                title="train_size: {}".format(train_size))
+
+    # save
+    S3Manager(bucket_name="production-bobsim").save_plt_to_png(
+        key="food_material_price_predict_model/research/{date}/image/rmse_fixing_train_size_{train}.png".format(
+            date=date, train=train_size))
+
+
+def split_train_test(std_day, end_day, df: pd.DataFrame):
+    train = df[df["date"].dt.date <= std_day]
+    test = df[(std_day < df["date"].dt.date) & (df["date"].dt.date <= end_day)]
+    return train, test
+
+
+def split_dataset(test_size, train_size, df):
+    # split train/test & x/y
+    time_series = df["date"].drop_duplicates().tolist()
+    train, test = split_train_test(
+        std_day=time_series[train_size], end_day=time_series[test_size + train_size], df=df
+    )
+    x_train, y_train = split_xy(train)
+    x_test, y_test = split_xy(test)
+    return x_train, y_train, x_test, y_test
+
+
+def scoring(test_size, train_size, df):
+    x_train, y_train, x_test, y_test = split_dataset(test_size, train_size=train_size, df=df)
+
+    # load tuned param
+    params = S3Manager(bucket_name="production-bobsim").load_dump(
+        key="food_material_price_predict_model/research/tuned_params.pkl")
+
+    # fit & predict
+    regr = ElasticNet(**params)
+    regr.fit(x_train, y_train)
+    y_pred = regr.predict(x_test)
+
+    # metric
+    return customized_rmse(y_test, y_pred)
+
+
+def split_train_test2(str_day, std_day, df: pd.DataFrame):
+    train = df[(str_day <= df["date"].dt.date) & (df["date"].dt.date < std_day)]
+    test = df[df["date"].dt.date >= std_day]
+    return train, test
+
+
+def scoring2(train_size, test_size, df):
+    time_series = df["date"].drop_duplicates().tolist()
+    std_day = time_series[-1 * test_size]
+    str_day = time_series[-1 * (test_size + train_size)]
+    train, test = split_train_test2(str_day=str_day, std_day=std_day, df=df)
+
+    x_train, y_train = split_xy(train)
+    x_test, y_test = split_xy(test)
+
+    params = {'alpha': 0.0001, 'l1_ratio': 0.9, 'max_iter': 5}
+    regr = ElasticNet(**params)
+    regr.fit(x_train, y_train)
+    y_pred = regr.predict(x_test)
+
+    metric = customized_rmse(y_test, y_pred)
+    return metric
+
+
+def rmse_by_train_size(df: pd.DataFrame, train_sizes=range(1, 10), test_size: int = 5,
+                       date=datetime.datetime.now().strftime("%m%Y")):
+    """
+                fix test size and adjust train size (not used)
+        :param df: pd.DataFrame
+        :param train_sizes: list of train sizes
+        :param test_size: 5 -> 5 days (one week, no weekend)
+        :param date: research date
+        :return:
+    """
+    # scoring
+    score_list = list(map(functools.partial(scoring2, test_size=test_size, df=df), train_sizes))
+    ser = pd.Series(score_list, index=train_sizes)
+
+    # plot
+    series_plot(ser=ser, kind="bar", x_label="train size", y_label="customized RMSE",
+                title="test_size: {}".format(test_size))
+
+    # save
+    S3Manager(bucket_name="production-bobsim").save_plt_to_png(
+        key="food_material_price_predict_model/research/{date}/image/rmse_fixing_test_size_{test}.png".format(
+            date=date, test=test_size))
+
+
+def series_plot(ser: pd.Series, kind="bar", y_label="y", x_label="x", title="Untitled"):
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    ser_max, ser_min = ser.max(), ser.min()
+    delta = (ser_max - ser_min) * 0.1
+    ser.plot(kind=kind, ylim=(ser_min - delta, ser_max + delta), title=title)
+
+
+"""
+    Metric by other term
+"""

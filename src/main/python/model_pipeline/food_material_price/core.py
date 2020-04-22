@@ -3,7 +3,7 @@ import datetime
 import numpy as np
 
 from analysis.food_material_price.research import split_xy, customized_rmse, search_process
-from analysis.train_test_volume import set_train_test
+from analysis.train_test_volume import train_test_timeseries
 from model.elastic_net import ElasticNetModel
 from util.build_dataset import build_master
 from util.logging import init_logger
@@ -26,8 +26,8 @@ class PricePredictModelPipeline:
     def build_dataset(self, pipe_data: bool):
         """
             TODO: standard date given from data_pipeline
-        :param pipe_data:
-        :return:
+        :param pipe_data: process data_pipeline or not (True/False)
+        :return: split dataset
         """
         # TODO: it will be parameterized
         train_size, test_size = 5, 1
@@ -39,7 +39,7 @@ class PricePredictModelPipeline:
         )
 
         # set train, test dataset
-        train, test = set_train_test(
+        train, test = train_test_timeseries(
             df=dataset, train_size=train_size, test_size=test_size
         )
         self.logger.info("train/test: {train}/{test} day".format(train=train_size, test=test_size))

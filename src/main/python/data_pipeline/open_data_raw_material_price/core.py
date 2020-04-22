@@ -131,7 +131,7 @@ class OpenDataRawMaterialPrice:
         convert = self.convert_by_unit(retail)
 
         # change sparse item name to 'others'
-        # TODO: solve the problem saving std_list in main of 'analysis/sparse_process.py'
+        # TODO: solve the problem saving std_list in main of 'analysis/sparse_categories.py'
         std_list = self.s3_manager.load_dump(key="food_material_price_predict_model/constants/std_list.pkl")
         replaced = convert.assign(
             standard_item_name=filter_sparse(column=convert["standard_item_name"], std_list=std_list)

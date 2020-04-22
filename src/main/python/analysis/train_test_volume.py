@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-def set_train_test(df: pd.DataFrame, train_size=5, test_size=1):
+def train_test_timeseries(df: pd.DataFrame, train_size=5, test_size=1):
     """
         [- train_size -)[- test_size -)[- remains -
     :param test_size:
@@ -21,3 +21,6 @@ def set_train_test(df: pd.DataFrame, train_size=5, test_size=1):
         (df["date"].dt.date < time_series[train_size + test_size])
     test = df[condition]
     return train, test
+
+
+
