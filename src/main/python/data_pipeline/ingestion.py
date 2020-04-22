@@ -64,7 +64,6 @@ def origin_bucket_json():
     list(map(functools.partial(func,
                                path=destination_url,
                                prefix=prefix), file_list))
-    pass
 
 
 if __name__ == '__main__':
