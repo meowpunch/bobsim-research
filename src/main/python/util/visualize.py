@@ -49,6 +49,7 @@ def draw_hist(s, h_type: str = "dist", name: str = None):
     if isinstance(s, pd.Series):
         plt.title('{name} histogram'.format(name=s.name))
         method(s)
+        plt.show()
     else:
         # for jupyter notebook
         plt.title('{name} histogram'.format(name=name))

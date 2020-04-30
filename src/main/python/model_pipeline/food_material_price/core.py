@@ -23,15 +23,14 @@ class PricePredictModelPipeline:
         # s3
         self.bucket_name = bucket_name
 
-    def build_dataset(self, pipe_data: bool):
+    def build_dataset(self, train_size=5, test_size=1, pipe_data: bool = False):
         """
             TODO: standard date given from data_pipeline
+        :param train_size: term of train dataset
+        :param test_size: term of test dataset
         :param pipe_data: process data_pipeline or not (True/False)
         :return: split dataset
         """
-        # TODO: it will be parameterized
-        train_size, test_size = 5, 1
-
         # build dataset
         dataset = build_master(
             dataset="process_fmp", bucket_name=self.bucket_name,
@@ -42,7 +41,7 @@ class PricePredictModelPipeline:
         train, test = train_test_timeseries(
             df=dataset, train_size=train_size, test_size=test_size
         )
-        self.logger.info("train/test: {train}/{test} day".format(train=train_size, test=test_size))
+        self.logger.info("train/test: {train}/{test}".format(train=train_size, test=test_size))
         train_x, train_y = split_xy(train)
         test_x, test_y = split_xy(test)
         return train_x, train_y, test_x, test_y
@@ -70,7 +69,9 @@ class PricePredictModelPipeline:
         try:
             self.section(p_type=process_type, pipe_data=pipe_data)
         except NotImplementedError:
-            self.logger.critical("'{p_type}' is not supported. choose one of ['research','production']".format(p_type=process_type), exc_info=True)
+            self.logger.critical(
+                "'{p_type}' is not supported. choose one of ['research','production']".format(p_type=process_type),
+                exc_info=True)
             return 1
         except Exception as e:
             # TODO: consider that it can repeat to save one more time
