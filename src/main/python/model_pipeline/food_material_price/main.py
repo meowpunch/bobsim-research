@@ -3,7 +3,7 @@ from model_pipeline.food_material_price.core import PricePredictModelPipeline
 
 def main():
     """
-        tuned_process, untuned_process, search_process
+        process_type: only support for "production", "research"
     """
     model_pipeline = PricePredictModelPipeline(
         bucket_name="production-bobsim",
@@ -11,7 +11,7 @@ def main():
         date="201908"
     )
     model_pipeline.process(
-        process_type="research",
+        process_type="production",
         pipe_data=False
     )
 

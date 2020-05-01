@@ -3,7 +3,7 @@ import datetime
 import numpy as np
 
 from analysis.food_material_price.research import split_xy, customized_rmse, search_process
-from analysis.train_test_volume import set_train_test
+from analysis.train_test_volume import train_test_timeseries
 from model.elastic_net import ElasticNetModel
 from util.build_dataset import build_master
 from util.logging import init_logger
@@ -23,7 +23,14 @@ class PricePredictModelPipeline:
         # s3
         self.bucket_name = bucket_name
 
-    def build_dataset(self, pipe_data: bool):
+    def build_dataset(self, train_size=5, test_size=1, pipe_data: bool = False):
+        """
+            TODO: standard date given from data_pipeline
+        :param train_size: term of train dataset
+        :param test_size: term of test dataset
+        :param pipe_data: process data_pipeline or not (True/False)
+        :return: split dataset
+        """
         # build dataset
         dataset = build_master(
             dataset="process_fmp", bucket_name=self.bucket_name,
@@ -31,13 +38,16 @@ class PricePredictModelPipeline:
         )
 
         # set train, test dataset
-        train, test = set_train_test(dataset)
+        train, test = train_test_timeseries(
+            df=dataset, train_size=train_size, test_size=test_size
+        )
+        self.logger.info("train/test: {train}/{test}".format(train=train_size, test=test_size))
         train_x, train_y = split_xy(train)
         test_x, test_y = split_xy(test)
         return train_x, train_y, test_x, test_y
 
     def section(self, p_type, pipe_data: bool):
-        self.logger.info("{b}{p_type}{b}".format(b=border,p_type=p_type))
+        self.logger.info("{b}{p_type}{b}".format(b=border, p_type=p_type))
         if p_type is "production":
             self.tuned_process(
                 dataset=self.build_dataset(pipe_data=pipe_data)
@@ -59,7 +69,9 @@ class PricePredictModelPipeline:
         try:
             self.section(p_type=process_type, pipe_data=pipe_data)
         except NotImplementedError:
-            self.logger.critical("'{p_type}' is not supported".format(p_type=process_type), exc_info=True)
+            self.logger.critical(
+                "'{p_type}' is not supported. choose one of ['research','production']".format(p_type=process_type),
+                exc_info=True)
             return 1
         except Exception as e:
             # TODO: consider that it can repeat to save one more time

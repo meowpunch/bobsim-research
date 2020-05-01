@@ -9,7 +9,7 @@ from scipy.stats import skew
 
 # transformer
 from util.build_dataset import build_origin_fmp
-from util.pandas import get_numeric_df
+from util.get_df import get_numeric_df
 
 
 def log_transform(X):
