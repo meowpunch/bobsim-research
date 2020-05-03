@@ -10,7 +10,7 @@ import datetime
 """
 def main():
     date = '20200420'
-    service_key = 'rdmH5XR5ycW9emHC9D56bNydZrvc6546Z0fxlqCdCPc4RpWZ99GMoGoRIKRabGJKz2WFcTwN9ekSTfCvzzhiYA=='
+    service_key = ''
     url='http://apis.data.go.kr/B552895/openapi/service/OrgPriceExaminService/getExaminPriceList?\
     ServiceKey='+service_key+'&type=json&pageNo=1&numOfRows=10&examinDe='+date+'&examinCd=6&prdlstCd=223'
 
@@ -49,7 +49,7 @@ def main():
     df_csv = df_items.to_csv('json.csv', encoding='utf-8-sig')
     print(items)
 
-    # TODO : save df_csv
+    # TODO : save df_csv to s3
 
 
 if __name__ == '__main__':
