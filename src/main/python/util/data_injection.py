@@ -6,9 +6,10 @@ import pandas as pd
 from pandas.io.json import json_normalize
 import requests
 import datetime
-
+from functools import reduce
 
 #-*- coding:utf-8 -*-
+
 from util.s3 import save_to_s3
 from util.s3_manager.manage import S3Manager
 
@@ -38,25 +39,45 @@ class data_injection():
         # manager = S3Manager(bucket_name="production-bobsim")
 
     def call_price(self):
-        args_str = ""
-
-        for k, v in self.args.items():
-            args_str += '%s=%s' % (k, v)
-
-        res = requests.get(
-            'http://211.237.50.150:7080/openapi/7c785c42110451cba1eeb8b572111a4c48b98cba8d49c92fdb801607727df47c/json/Grid_20151128000000000315_1/1/5?{arg}'.format(arg=args_str))
-        print('http://211.237.50.150:7080/openapi/7c785c42110451cba1eeb8b572111a4c48b98cba8d49c92fdb801607727df47c/json/Grid_20151128000000000315_1/1/5?{arg}'.format(arg=args_str))
-        print(args_str)
-        data = res.json()
-        items = data["Grid_20151128000000000315_1"]["row"]
-        print(items)
-        df_items = pd.DataFrame(items)
-        df_items.drop(["ROW_NUM"], axis=1, inplace=True)
-        print(df_items)
+        # args_str = ""
+        #
+        # for k, v in self.args.items():
+        #     args_str += '%s=%s' % (k, v)
+        #
+        # res = requests.get(
+        #     'http://211.237.50.150:7080/openapi/7c785c42110451cba1eeb8b572111a4c48b98cba8d49c92fdb801607727df47c/json/Grid_20151128000000000315_1/1/5?{arg}'.format(arg=args_str))
+        # print('http://211.237.50.150:7080/openapi/7c785c42110451cba1eeb8b572111a4c48b98cba8d49c92fdb801607727df47c/json/Grid_20151128000000000315_1/1/5?{arg}'.format(arg=args_str))
+        # print(args_str)
+        # data = res.json()
+        # items = data["Grid_20151128000000000315_1"]["row"]
+        # print(items)
+        # df_items = pd.DataFrame(items)
+        # df_items.drop(["ROW_NUM"], axis=1, inplace=True)
+        # print(df_items)
         # TODO: remove #
-        load_key = "public_data/open_data_raw_material_price/origin/csv/{filename}.csv".format(filename="202005040") #self.today)
-        manager = S3Manager(bucket_name="production-bobsim")
-        manager.save_df_to_csv(df=df_items, key=load_key)
+        # load_key = "public_data/open_data_raw_material_price/origin/csv/{filename}.csv".format(filename="202005040") #self.today)
+        # manager = S3Manager(bucket_name="production-bobsim")
+        # manager.save_df_to_csv(df=df_items, key=load_key)
+
+        def func(x: int):
+            a = {
+                'EXAMIN_DE' : "20200504", #self.today,
+                "&EXAMIN_PRDLST_CODE": x
+            }
+            args_str = ""
+            for k, v in a.items():
+                args_str += '%s=%s' % (k, v)
+            res = requests.get('http://211.237.50.150:7080/openapi/7c785c42110451cba1eeb8b572111a4c48b98cba8d49c92fdb801607727df47c/json/Grid_20151128000000000315_1/1/5?{arg}'.format(arg=args_str))
+            data = res.json()
+            print(data)
+            # if len(data['Grid_20151128000000000315_1']['row']) is not 0:
+            items = data["Grid_20151128000000000315_1"]["row"]
+            return pd.DataFrame(items)
+
+        df_list = list(map(lambda x: func(x), self.code_list))
+        print(df_list)
+        # full_df = reduce(lambda x, y: pd.concat(x, y), df_list)
+        # print(full_df)
 
         # df_csv = df_items.to_csv('json.csv', encoding='utf-8-sig')
 
