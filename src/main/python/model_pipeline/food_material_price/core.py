@@ -48,13 +48,13 @@ class PricePredictModelPipeline:
 
     def section(self, p_type, pipe_data: bool):
         self.logger.info("{b}{p_type}{b}".format(b=border, p_type=p_type))
-        if p_type is "production":
+        if p_type == 'production':
             self.tuned_process(
-                dataset=self.build_dataset(pipe_data=pipe_data)
+                dataset=self.build_dataset(train_size=10, test_size=3, pipe_data=pipe_data)
             )
-        elif p_type is "research":
+        elif p_type == 'research':
             search_process(
-                dataset=self.build_dataset(pipe_data=pipe_data),
+                dataset=self.build_dataset(train_size=10, test_size=3, pipe_data=pipe_data),
                 bucket_name=self.bucket_name, term=self.term,
                 grid_params={
                     "max_iter": [1, 5, 10],
@@ -98,7 +98,7 @@ class PricePredictModelPipeline:
         model.fit()
 
         # adjust intercept for conservative prediction
-        model.model.intercept_ = model.model.intercept_ + 300
+        model.model.intercept_ = model.model.intercept_ + 150
 
         # predict & metric
         pred_y = model.predict(X=test_x)

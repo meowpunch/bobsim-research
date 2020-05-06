@@ -1,7 +1,9 @@
+import sys
+
 from model_pipeline.food_material_price.core import PricePredictModelPipeline
 
 
-def main():
+def main(arg):
     """
         process_type: only support for "production", "research"
     """
@@ -11,10 +13,10 @@ def main():
         date="201908"
     )
     model_pipeline.process(
-        process_type="production",
-        pipe_data=False
+        process_type=arg[1],
+        pipe_data=arg[2]
     )
 
 
 if __name__ == '__main__':
-    main()
+    main(arg=sys.argv)
