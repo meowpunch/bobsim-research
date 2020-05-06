@@ -76,8 +76,21 @@ class data_injection():
 
         df_list = list(map(lambda x: func(x), self.code_list))
         print(df_list)
-        # full_df = reduce(lambda x, y: pd.concat(x, y), df_list)
-        # print(full_df)
+
+        def concat(x, y):
+            if x.empty:
+                return x
+            elif y.empty:
+                return x
+            else:
+                return pd.concat([x, y])
+
+        full_df = reduce(lambda x, y: concat(x, y), df_list)
+        full_df.drop(["ROW_NUM"], axis=1, inplace=True)
+        print(full_df)
+        load_key = "public_data/open_data_raw_material_price/origin/csv/{filename}.csv".format(filename="20205040") #self.today)
+        manager = S3Manager(bucket_name="production-bobsim")
+        manager.save_df_to_csv(df=full_df, key=load_key)
 
         # df_csv = df_items.to_csv('json.csv', encoding='utf-8-sig')
 
