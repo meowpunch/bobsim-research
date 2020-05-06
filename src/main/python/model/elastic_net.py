@@ -42,7 +42,7 @@ class ElasticNetModel:
         return self.model.predict(X=X)
 
     def estimate_metric(self, scorer, y, predictions):
-        self.error = y - predictions
+        self.error = pd.Series(y - predictions, name="error")
         self.metric = scorer(y_true=y, y_pred=predictions)
         return self.metric
 
@@ -144,7 +144,7 @@ class ElasticNetSearcher(GridSearchCV):
         ).rename("beta").reset_index().rename(columns={"index": "column"})
 
     def estimate_metric(self, y_true, y_pred):
-        self.error = pd.Series(y_true - y_pred).rename("error")
+        self.error = pd.Series(y_true - y_pred, name="error")
         self.metric = self.scorer(y_true=y_true, y_pred=y_pred)
         return self.metric
 
