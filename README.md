@@ -6,6 +6,7 @@ By recommending recipes based on food ingredients with notification that the she
 1. [Price Predict Model](https://www.notion.so/Brief-ENG-cf5b60d46cc1433db1264bdde8f977bf)
 
 Implemented
+
 2. [Virtual Simulation](https://github.com/meowpunch/production-bobsim-python) 
 
 Not implemented
