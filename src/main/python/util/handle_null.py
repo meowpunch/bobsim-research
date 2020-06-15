@@ -94,7 +94,7 @@ def load(filename="2014-2020"):
     :return: pd DataFrame
     """
     manager = S3Manager(bucket_name="production-bobsim")
-    df = manager.fetch_objects(
+    df = manager.fetch_df_from_csv(
         key="public_data/open_data_terrestrial_weather/origin/csv/{filename}.csv".format(filename=filename)
     )
 
