@@ -15,10 +15,10 @@ Not Started
 
 Not Started
 ### Sub
-1. Recipe Crawler
+1. [Recipe Crawler](https://github.com/meowpunch/production-bobsim-python)
 
 In Progress
 
-2. S3 Manager
+2. [S3 Manager](https://github.com/meowpunch/production-bobsim-python)
 
 Implemented
