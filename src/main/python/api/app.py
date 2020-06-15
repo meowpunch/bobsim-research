@@ -11,7 +11,7 @@ def main():
     def mange_recipe():
         """
             Crawl -> Map -> Store
-        :return:
+        :return: list of exit_code about each recipe
         """
         exit_code = MangeCrawler().process()
         # TODO: map (recipe to json)
