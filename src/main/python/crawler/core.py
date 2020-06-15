@@ -15,6 +15,9 @@ class RecipeCrawler:
         self.key = key
 
         self.chrome_path = "C:/chromedriver"
+        options = webdriver.ChromeOptions()
+        options.add_argument('headless')
+
         self.driver = webdriver.Chrome(self.chrome_path)
         self.driver.implicitly_wait(3)
 
