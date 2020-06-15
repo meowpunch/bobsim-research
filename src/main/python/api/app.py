@@ -1,7 +1,7 @@
-import pandas as pd
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify
 
-from crawler.core import RecipeCrawler, MangeCrawler, HaemukCrawler
+from crawler.core import MangeCrawler, HaemukCrawler
+from util.s3_manager.manage import S3Manager
 
 
 def main():
@@ -16,21 +16,29 @@ def main():
                 <strong>haemuk</strong>: /crawl_recipe/haemuk [GET}"
 
     @app.route('/crawl_recipe/mange', methods=['GET'])
-    def mange_recipe():
+    def crawl_mange():
         """
-            Crawl -> Map -> Store
-        :return: list of exit_code about each recipe
+        :return: jsonified recipe
         """
-        result = MangeCrawler().process()
+        result = MangeCrawler(
+            base_url="https://www.10000recipe.com/recipe/recipe_num",
+            candidate_num=range(6828809, 6828811),
+            field=['title', 'description', 'views', 'time', 'person', 'difficulty',
+                   'items', 'steps', 'caution', 'writer', 'comments', 'tag'],
+            bucket_name="production-bobsim",
+            key="crawled_recipe/mange"
+        ).process()
         return jsonify(result)
         # exit_code = MangeCrawler().process()
-        # # TODO: map (recipe to json)
-        # # TODO: store
-        #
         # return str(exit_code)
 
+    @app.route('/recipe/haemuk', methods=['GET'])
+    def get_mange_recipes():
+        recipes = S3Manager("production-bobsim").fetch_jsons(key="crawled_recipe/mange")
+        return jsonify(recipes)
+
     @app.route('/crawl_recipe/haemuk', methods=['GET'])
-    def haemuk_recipe():
+    def crawl_haemuk():
         """
             Crawl -> Map -> Store
         :return:

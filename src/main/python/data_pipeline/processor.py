@@ -41,7 +41,7 @@ class Processor:
         :return: list of pd DataFrame (origin)
         """
         manager = S3Manager(bucket_name=self.bucket_name)
-        df_list = manager.fetch_objects(key=self.s3_key)
+        df_list = manager.fetch_df_from_csv(key=self.s3_key)
 
         self.logger.info("{num} files is loaded".format(num=len(df_list)))
         self.logger.info("load df from origin bucket")
