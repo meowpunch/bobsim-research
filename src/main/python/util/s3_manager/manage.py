@@ -45,7 +45,7 @@ class S3Manager:
 
         def convert(c_type):
             return{
-                "df_from_csv": lambda obj: pd.Dataframe(StringIO(obj.get()['Body'].read().decode('euc-kr')), header=0),
+                "df_from_csv": lambda obj: pd.read_csv(StringIO(obj.get()['Body'].read().decode('euc-kr')), header=0),
                 "dict_from_json": lambda obj: json.loads(obj.get()['Body'].read().decode('utf-8'))
             }[c_type]
 
