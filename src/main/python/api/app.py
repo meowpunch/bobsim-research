@@ -52,8 +52,7 @@ def main():
             result = HaemukCrawler(
                 base_url="https://www.haemukja.com/recipes",
                 candidate_num=range(int(str_num), int(end_num)),
-                field=['title', 'description', 'views', 'time', 'person', 'difficulty',
-                       'items', 'steps', 'caution', 'writer', 'comments', 'tag'],
+                field=['title', 'calories'],
                 bucket_name="production-bobsim",
                 key="crawled_recipe/{s}".format(s=source)
             ).process()

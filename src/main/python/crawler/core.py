@@ -103,6 +103,8 @@ class RecipeCrawler:
             return key, self.select_element(key)
         except NoSuchElementException:
             self.logger.debug("No Element about '{k}'".format(k=key), exc_info=False)
+            if key == "title":
+                raise UnexpectedAlertPresentException
             return key, None
         except KeyError:
             raise NotImplementedError
@@ -176,19 +178,7 @@ class HaemukCrawler(RecipeCrawler):
         )
 
     def select_element(self, key):
-        pass
-        # return {
-        #     "title": lambda d: d.find_element_by_tag_name("h3").text,
-        #     "description": lambda d: d.find_element_by_class_name("view2_summary_in").text,
-        #     "views": lambda d: d.find_element_by_class_name("hit").text,
-        #     "time": lambda d: d.find_element_by_class_name("view2_summary_info2").text,
-        #     "person": lambda d: d.find_element_by_class_name("view2_summary_info1").text,
-        #     "difficulty": lambda d: d.find_element_by_class_name("view2_summary_info3").text,
-        #     "items": lambda d: d.find_element_by_class_name("ready_ingre3").text.split("\n"),
-        #     "steps": lambda d: None,
-        #     "caution": lambda d: d.find_element_by_class_name("view_step_tip").text,
-        #     "writer": lambda d: d.find_element_by_class_name("profile_cont").text.split("\n"),
-        #     # TODO: count star of reviews
-        #     "comments": lambda d: d.find_element_by_class_name("view_reply").text.split("\n"),
-        #     "tag": lambda d: d.find_element_by_class_name("view_tag").text.split("#"),
-        # }[key](self.driver)
+        return {
+            "title": lambda d: d.find_element_by_class_name("top").find_element_by_tag_name("h1").text,
+            "calories": lambda d: d.find_element_by_class_name("nutrition").text.split("\n"),
+        }[key](self.driver)
