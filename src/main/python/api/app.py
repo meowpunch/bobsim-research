@@ -1,28 +1,35 @@
 import pandas as pd
 from flask import Flask, request, jsonify
 
-from crawler.core import Crawler, RecipeCrawler
+from crawler.core import RecipeCrawler, MangeCrawler, HaemukCrawler
 
 
 def main():
     app = Flask(__name__)
 
-    @app.route('/crawl_recipe', methods=['GET'])
-    def crawl_recipe():
+    @app.route('/crawl_recipe/mange', methods=['GET'])
+    def mange_recipe():
         """
             Crawl -> Map -> Store
-
-            - url: crawl recipe data in url
-            해먹남녀: https://haemukja.com/recipes/
-            만개의 레시피: http://www.10000recipe.com/recipe/
-
         :return:
         """
-        recipe = RecipeCrawler(url="https://haemukja.com/recipes/").process()
+        exit_code = MangeCrawler().process()
         # TODO: map (recipe to json)
         # TODO: store
 
-        return 'hello bobsim!'
+        return str(exit_code)
+
+    @app.route('/crawl_recipe/haemuk', methods=['GET'])
+    def haemuk_recipe():
+        """
+            Crawl -> Map -> Store
+        :return:
+        """
+        recipe = HaemukCrawler().process()
+        # TODO: map (recipe to json)
+        # TODO: store
+
+        return 'hello haemuk!'
 
     app.run(host='0.0.0.0', port=9000, debug=True)
 
