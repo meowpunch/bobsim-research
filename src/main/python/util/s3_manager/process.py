@@ -8,7 +8,7 @@ def main():
     manager = S3Manager(
         bucket_name="production-bobsim",
     )
-    df_list = manager.fetch_objects(key="")
+    df_list = manager.fetch_df_from_csv(key="")
     print(df_list)
 
 
