@@ -139,6 +139,7 @@ class MangeCrawler(RecipeCrawler):
             "title": lambda d: d.find_element_by_tag_name("h3").text,
             "description": lambda d: d.find_element_by_class_name("view2_summary_in").text,
             "views": lambda d: d.find_element_by_class_name("hit").text,
+            "scrap": lambda d: d.find_element_by_class_name("button_list").find_element_by_class_name("st2").text,
             "time": lambda d: d.find_element_by_class_name("view2_summary_info2").text,
             "person": lambda d: d.find_element_by_class_name("view2_summary_info1").text,
             "difficulty": lambda d: d.find_element_by_class_name("view2_summary_info3").text,
@@ -175,6 +176,7 @@ class HaemukCrawler(RecipeCrawler):
         )
 
     def select_element(self, key):
+        pass
         # return {
         #     "title": lambda d: d.find_element_by_tag_name("h3").text,
         #     "description": lambda d: d.find_element_by_class_name("view2_summary_in").text,
