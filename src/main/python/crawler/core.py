@@ -4,11 +4,13 @@ from selenium import webdriver
 from selenium.common.exceptions import UnexpectedAlertPresentException, NoSuchElementException
 
 from util.logging import init_logger
+from util.s3_manager.manage import S3Manager
 
 
 class RecipeCrawler:
     def __init__(self, base_url, candidate_num):
         self.logger = init_logger()
+        self.s3_manager = S3Manager(bucket_name="production-bobsim")
 
         self.chrome_path = "C:/chromedriver"
         self.driver = webdriver.Chrome(self.chrome_path)
@@ -29,16 +31,18 @@ class RecipeCrawler:
     def crawl_recipe(self, recipe_num):
         """
             1. connection
-            2. get recipe
-            3. convert to json
-            4. save
+            2. get recipe:dict
+            4. save_to_json
         :return: recipe(Success) or False(Fail)
         """
         try:
             self.connection(recipe_num=recipe_num)
             self.driver.implicitly_wait(3)
+
             recipe = self.get_recipe()
             self.logger.info(recipe)
+
+            self.save(recipe=recipe, recipe_num=recipe_num)
             return recipe
 
         except HTTPError as e:
@@ -66,8 +70,14 @@ class RecipeCrawler:
         self.driver.get(target_url)
         self.logger.debug("success to connect with '{url}'".format(url=target_url))
 
+    def save(self, recipe: dict, recipe_num=6847470):
+        self.s3_manager.save_dict_to_json(data=recipe, key="crawled_recipe/{num}.json".format(num=recipe_num))
+
     def get_recipe(self):
-        pass
+        """
+            return type should be dict when overridden
+        """
+        raise NotImplementedError
 
 
 class MangeCrawler(RecipeCrawler):
@@ -88,21 +98,11 @@ class MangeCrawler(RecipeCrawler):
             candidate_num=range(6828809, 6828811),
         )
 
-    def select_element(self, key):
-        return {
-            "title": lambda d: d.find_element_by_tag_name("h3").text,
-            "description": lambda d: d.find_element_by_class_name("view2_summary_in").text,
-            "views": lambda d: d.find_element_by_class_name("hit").text,
-            "time": lambda d: d.find_element_by_class_name("view2_summary_info2").text,
-            "person": lambda d: d.find_element_by_class_name("view2_summary_info1").text,
-            "difficulty": lambda d: d.find_element_by_class_name("view2_summary_info3").text,
-            "items": lambda d: d.find_element_by_class_name("ready_ingre3").text.split('\n'),
-            "steps": lambda d: None,
-            "caution": lambda d: d.find_element_by_class_name("view_step_tip").text,
-            "writer": lambda d: d.find_element_by_class_name("profile_cont").text.split('\n'),
-            "comments": lambda d: d.find_element_by_class_name("view_reply").text,
-            "tag": lambda d: d.find_element_by_class_name("view_tag").text.split("#"),
-        }[key](self.driver)
+    def get_recipe(self):
+        """
+        :return: recipe: dict
+        """
+        return dict(map(self.make_tuple, self.field))
 
     def make_tuple(self, key):
         """
@@ -118,11 +118,25 @@ class MangeCrawler(RecipeCrawler):
         except KeyError:
             raise NotImplementedError
 
-    def get_recipe(self):
-        """
-        :return: recipe: dict
-        """
-        return dict(map(self.make_tuple, self.field))
+    def select_element(self, key):
+        return {
+            "title": lambda d: d.find_element_by_tag_name("h3").text,
+            "description": lambda d: d.find_element_by_class_name("view2_summary_in").text,
+            "views": lambda d: d.find_element_by_class_name("hit").text,
+            "time": lambda d: d.find_element_by_class_name("view2_summary_info2").text,
+            "person": lambda d: d.find_element_by_class_name("view2_summary_info1").text,
+            "difficulty": lambda d: d.find_element_by_class_name("view2_summary_info3").text,
+            "items": lambda d: d.find_element_by_class_name("ready_ingre3").text.split('\n'),
+            "steps": lambda d: None,
+            "caution": lambda d: d.find_element_by_class_name("view_step_tip").text,
+            "writer": lambda d: d.find_element_by_class_name("profile_cont").text.split('\n'),
+            # TODO: count star of reviews
+            "comments": lambda d: d.find_element_by_class_name("view_reply").text,
+            "tag": lambda d: d.find_element_by_class_name("view_tag").text.split("#"),
+        }[key](self.driver)
+
+    def save(self, recipe: dict, recipe_num=6847470):
+        self.s3_manager.save_dict_to_json(data=recipe, key="crawled_recipe/mange/{num}.json".format(num=recipe_num))
 
 
 class HaemukCrawler(RecipeCrawler):
