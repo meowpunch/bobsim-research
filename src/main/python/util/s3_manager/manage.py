@@ -1,3 +1,4 @@
+import json
 import tempfile
 from io import StringIO, BytesIO
 
@@ -75,6 +76,10 @@ class S3Manager:
             self.logger.info("success to save '{key}' in s3 '{bucket_name}'".format(
                 key=key, bucket_name=self.bucket_name
             ))
+
+    def save_dict_to_json(self, data: dict, key: str):
+        serialized_data = json.dumps(data, ensure_ascii=False)
+        self.save_object(key=key, body=serialized_data)
 
     def save_df_to_csv(self, df: pd.DataFrame, key: str):
         csv_buffer = StringIO()
