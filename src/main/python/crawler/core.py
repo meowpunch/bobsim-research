@@ -34,7 +34,7 @@ class RecipeCrawler:
         result = map(lambda n: (n, self.crawl_recipe(recipe_num=n)), self.candidate_num)
         recipes = dict(filter(lambda r: False not in r, result))
         self.save(
-            recipe=recipes,
+            recipes=recipes,
             file_name="{str}-{end}".format(str=self.candidate_num[0], end=self.candidate_num[-1])
         )
 
@@ -81,9 +81,9 @@ class RecipeCrawler:
         self.driver.get(target_url)
         self.logger.debug("success to connect with '{url}'".format(url=target_url))
 
-    def save(self, recipe: dict, file_name):
+    def save(self, recipes: dict, file_name):
         self.s3_manager.save_dict_to_json(
-            data=recipe,
+            data=recipes,
             key="{prefix}/{key}.json".format(prefix=self.key, key=file_name)
         )
 
@@ -103,6 +103,8 @@ class RecipeCrawler:
             return key, self.select_element(key)
         except NoSuchElementException:
             self.logger.debug("No Element about '{k}'".format(k=key), exc_info=False)
+            if key == "title":
+                raise UnexpectedAlertPresentException
             return key, None
         except KeyError:
             raise NotImplementedError
@@ -139,6 +141,7 @@ class MangeCrawler(RecipeCrawler):
             "title": lambda d: d.find_element_by_tag_name("h3").text,
             "description": lambda d: d.find_element_by_class_name("view2_summary_in").text,
             "views": lambda d: d.find_element_by_class_name("hit").text,
+            "scrap": lambda d: d.find_element_by_class_name("button_list").find_element_by_class_name("st2").text,
             "time": lambda d: d.find_element_by_class_name("view2_summary_info2").text,
             "person": lambda d: d.find_element_by_class_name("view2_summary_info1").text,
             "difficulty": lambda d: d.find_element_by_class_name("view2_summary_info3").text,
@@ -175,18 +178,7 @@ class HaemukCrawler(RecipeCrawler):
         )
 
     def select_element(self, key):
-        # return {
-        #     "title": lambda d: d.find_element_by_tag_name("h3").text,
-        #     "description": lambda d: d.find_element_by_class_name("view2_summary_in").text,
-        #     "views": lambda d: d.find_element_by_class_name("hit").text,
-        #     "time": lambda d: d.find_element_by_class_name("view2_summary_info2").text,
-        #     "person": lambda d: d.find_element_by_class_name("view2_summary_info1").text,
-        #     "difficulty": lambda d: d.find_element_by_class_name("view2_summary_info3").text,
-        #     "items": lambda d: d.find_element_by_class_name("ready_ingre3").text.split("\n"),
-        #     "steps": lambda d: None,
-        #     "caution": lambda d: d.find_element_by_class_name("view_step_tip").text,
-        #     "writer": lambda d: d.find_element_by_class_name("profile_cont").text.split("\n"),
-        #     # TODO: count star of reviews
-        #     "comments": lambda d: d.find_element_by_class_name("view_reply").text.split("\n"),
-        #     "tag": lambda d: d.find_element_by_class_name("view_tag").text.split("#"),
-        # }[key](self.driver)
+        return {
+            "title": lambda d: d.find_element_by_class_name("top").find_element_by_tag_name("h1").text,
+            "calories": lambda d: d.find_element_by_class_name("nutrition").text.split("\n"),
+        }[key](self.driver)
