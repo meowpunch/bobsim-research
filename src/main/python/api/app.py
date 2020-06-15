@@ -13,11 +13,11 @@ def main():
             Crawl -> Map -> Store
         :return:
         """
-        recipe = MangeCrawler().process
+        exit_code = MangeCrawler().process()
         # TODO: map (recipe to json)
         # TODO: store
 
-        return 'hello mange!'
+        return str(exit_code)
 
     @app.route('/crawl_recipe/haemuk', methods=['GET'])
     def haemuk_recipe():
