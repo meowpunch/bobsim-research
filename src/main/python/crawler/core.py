@@ -6,11 +6,16 @@ import urllib.request
 from selenium import webdriver
 
 from util.logging import init_logger
+import crawler.selector as selector
 
 
 class RecipeCrawler:
     def __init__(self):
-        pass
+        self.logger = init_logger()
+
+        self.chrome_path = "C:/chromedriver"
+        self.driver = webdriver.Chrome(self.chrome_path)
+        self.driver.implicitly_wait(3)
 
     def connection(self):
         pass
@@ -20,13 +25,19 @@ class RecipeCrawler:
 
 
 class MangeCrawler(RecipeCrawler):
-    def __init__(self, url="https://www.10000recipe.com/recipe/"):
-        self.logger = init_logger()
+    def __init__(self):
+        """
+            https://www.10000recipe.com/recipe/recipe_num
+            recipe_num: about 6828805 ~ 6935000
 
-        self.chrome_path = "C:/chromedriver"
-        self.driver = webdriver.Chrome(self.chrome_path)
+            record:
+                            total_recipe
+                15.06.2020: 138,873
+        """
+        self.base_url = "https://www.10000recipe.com/recipe/"
+        self.candidate_num = range(6828805, 6828820)  # range(6828805, 6935000)
 
-        self.base_url = url
+        self.recipe_dict = selector.mange
         super().__init__()
 
     # @property
@@ -34,15 +45,27 @@ class MangeCrawler(RecipeCrawler):
     #     return webdriver.Chrome(self.chrome_path)
 
     def process(self):
+        result_code = list(map(lambda n: self.crawl_recipe(recipe_num=n), self.candidate_num))
+        success = sum(result_code)
+        fail = len(result_code) - success
+
+        self.logger.info("success: {s},  fail: {f}".format(s=success, f=fail))
+        self.driver.quit()
+        return result_code
+
+    def crawl_recipe(self, recipe_num):
         """
             1. connection
-            2. get html source
-        :return: recipe
+            2. get recipe
+            3. convert to json
+            4. save
+        :return: exit code
         """
         try:
-            self.connection()
-            self.driver.implicitly_wait(3)
+            self.connection(recipe_num=recipe_num)
+            # self.driver.implicitly_wait(3)
             recipe = self.get_recipe()
+            self.logger.info(recipe)
 
         except HTTPError as e:
             self.logger.exception(e, exc_info=True)
@@ -73,20 +96,18 @@ class MangeCrawler(RecipeCrawler):
 
     def get_recipe(self):
         """
-
         :return: recipe dictionary
         """
-        self.logger.info("start!")
+
         recipe_step = []
         recipe_title = self.driver.find_element_by_class_name("view2_summary").find_element_by_tag_name("h3").text
-        self.logger.info(recipe_title)
-        self.logger.info(recipe_title.text)
+        self.logger.info("title: {}".format(recipe_title))
         recipe_source = self.driver.find_element_by_class_name("ready_ingre3").text.split('\n')
         consumed_time = self.driver.find_element_by_class_name("view2_summary_info2").text
         proportion_of_food = self.driver.find_element_by_class_name("view2_summary_info1").text
         difficulty = self.driver.find_element_by_class_name("view2_summary_info3").text
-        recipe_tags = self.driver.find_element_by_class_name("view_tag").text.split("#")
-        recipe_tags.remove('')
+        # recipe_tags = self.driver.find_element_by_class_name("view_tag").text.split("#")
+        # recipe_tags.remove('')
         num = 1
 
         # while True:
@@ -104,9 +125,8 @@ class MangeCrawler(RecipeCrawler):
         recipe["소요시간"] = consumed_time
         recipe["난이도"] = difficulty
         recipe["양"] = proportion_of_food
-        recipe["태그"] = recipe_tags
-        print(recipe)
-        return True
+        # recipe["태그"] = recipe_tags
+        return recipe
 
 
 class HaemukCrawler:
@@ -114,4 +134,4 @@ class HaemukCrawler:
         pass
 
     def process(self):
-        pass
+        return False
