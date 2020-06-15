@@ -1,14 +1,18 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 
 from crawler.core import MangeCrawler, HaemukCrawler
+from util.logging import init_logger
 from util.s3_manager.manage import S3Manager
 
 
 def main():
+    logger = init_logger()
+
     app = Flask(__name__)
     app.config['JSON_AS_ASCII'] = False
     app.config['JSON_SORT_KEYS'] = False
 
+    # TODO: classify crawl recipe API service
     @app.route('/', methods=['GET'])
     def index():
         return "<h3>crawling service</h3>\
@@ -23,9 +27,19 @@ def main():
         """
         :return: jsonified recipe
         """
+        args = request.args
+        try:
+            str_num = args["str_num"]
+            end_num = args["end_num"]
+        except KeyError:
+            logger.warning("There is no parameter, 'str_num' or 'end_num'")
+            str_num = 6828808
+            end_num = 6828811
+
+        logger.info("let's crawl {s} ~ {e} recipes".format(s=str_num, e=end_num))
         result = MangeCrawler(
             base_url="https://www.10000recipe.com/recipe",
-            candidate_num=range(6828808, 6828811),
+            candidate_num=range(int(str_num), int(end_num)),
             field=['title', 'description', 'views', 'time', 'person', 'difficulty',
                    'items', 'steps', 'caution', 'writer', 'comments', 'tag'],
             bucket_name="production-bobsim",

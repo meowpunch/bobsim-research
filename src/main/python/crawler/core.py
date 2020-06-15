@@ -38,7 +38,7 @@ class RecipeCrawler:
             file_name="{str}-{end}".format(str=self.candidate_num[0], end=self.candidate_num[-1])
         )
 
-        self.logger.info("success to save {n} recipes".format(n=len(recipes))
+        self.logger.info("success to save {n} recipes".format(n=len(recipes)))
         self.driver.quit()
         return recipes
 
@@ -69,7 +69,7 @@ class RecipeCrawler:
             return False
 
         except UnexpectedAlertPresentException as e:
-            self.logger.exception(e, exc_info=True)
+            self.logger.exception(e, exc_info=False)
             return False
 
         except NotImplementedError as e:
@@ -132,7 +132,7 @@ class MangeCrawler(RecipeCrawler):
             # self.logger.info("({}, {})".format(key, self.select_element(key)))
             return key, self.select_element(key)
         except NoSuchElementException:
-            self.logger.info("No Element about '{k}'".format(k=key), exc_info=True)
+            self.logger.debug("No Element about '{k}'".format(k=key), exc_info=False)
             return key, None
         except KeyError:
             raise NotImplementedError
