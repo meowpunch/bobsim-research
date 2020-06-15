@@ -7,6 +7,12 @@ from crawler.core import RecipeCrawler, MangeCrawler, HaemukCrawler
 def main():
     app = Flask(__name__)
 
+    @app.route('/', methods=['GET'])
+    def index():
+        return "<h3>crawling service</h3>\
+                <strong>mange</strong>: /crawl_recipe/mange [GET}<br>\
+                <strong>haemuk</strong>: /crawl_recipe/haemuk [GET}"
+
     @app.route('/crawl_recipe/mange', methods=['GET'])
     def mange_recipe():
         """
