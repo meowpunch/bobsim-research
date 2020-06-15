@@ -24,19 +24,28 @@ class RecipeCrawler:
         self.field = field
 
     def process(self):
-        result_code = list(map(lambda n: self.crawl_recipe(recipe_num=n), self.candidate_num))
-        # success = sum(result_code)
-        # fail = len(result_code) - success
-        #
-        # self.logger.info("success: {s},  fail: {f}".format(s=success, f=fail))
+        """
+            1. crawl recipes
+            2. filter result
+            3. save
+            4. quit driver
+        :return: recipes: dict
+        """
+        result = map(lambda n: (n, self.crawl_recipe(recipe_num=n)), self.candidate_num)
+        recipes = dict(filter(lambda r: False not in r, result))
+        self.save(
+            recipe=recipes,
+            file_name="{str}-{end}".format(str=self.candidate_num[0], end=self.candidate_num[-1])
+        )
+
+        self.logger.info("success to save {n} recipes".format(n=len(recipes))
         self.driver.quit()
-        return result_code
+        return recipes
 
     def crawl_recipe(self, recipe_num):
         """
             1. connection
             2. get recipe:dict
-            4. save_to_json
         :return: recipe(Success) or False(Fail)
         """
         try:
@@ -45,8 +54,6 @@ class RecipeCrawler:
 
             recipe = self.get_recipe()
             self.logger.info(recipe)
-
-            self.save(recipe=recipe, recipe_num=recipe_num)
             return recipe
 
         except HTTPError as e:
@@ -70,13 +77,15 @@ class RecipeCrawler:
             return False
 
     def connection(self, recipe_num=6847470):
-        target_url = self.base_url + str(recipe_num)
+        target_url = "{base_url}/{num}".format(base_url=self.base_url, num=str(recipe_num))
         self.driver.get(target_url)
         self.logger.debug("success to connect with '{url}'".format(url=target_url))
 
-    def save(self, recipe: dict, recipe_num=6847470):
-        self.s3_manager.save_dict_to_json(data=recipe,
-                                          key="{prefix}/{num}.json".format(prefix=self.key, num=recipe_num))
+    def save(self, recipe: dict, file_name):
+        self.s3_manager.save_dict_to_json(
+            data=recipe,
+            key="{prefix}/{key}.json".format(prefix=self.key, key=file_name)
+        )
 
     def get_recipe(self):
         """
@@ -86,10 +95,10 @@ class RecipeCrawler:
 
 
 class MangeCrawler(RecipeCrawler):
-    def __init__(self, base_url="https://www.10000recipe.com/recipe/recipe_num", candidate_num=range(6828809, 6828811), field=None,
+    def __init__(self, base_url="https://www.10000recipe.com/recipe", candidate_num=range(6828809, 6828811), field=None,
                  bucket_name="production-bobsim", key="crawled_recipe/mange"):
         """
-            https://www.10000recipe.com/recipe/recipe_num
+            https://www.10000recipe.com/recipe/
             recipe_num: about 6828805 ~ 6935000
 
             record:
@@ -151,7 +160,7 @@ class HaemukCrawler(RecipeCrawler):
         """
         """
         super().__init__(
-            base_url="https://www.haemukja.com/recipes/",
+            base_url="https://www.haemukja.com/recipes",
             candidate_num=range(5000, 5001),
             recipe_dict=None
         )

@@ -12,8 +12,11 @@ def main():
     @app.route('/', methods=['GET'])
     def index():
         return "<h3>crawling service</h3>\
-                <strong>mange</strong>: /crawl_recipe/mange [GET}<br>\
-                <strong>haemuk</strong>: /crawl_recipe/haemuk [GET}"
+                <strong>mange</strong><br>\
+                [GET] : /crawl_recipe/mange <br>\
+                [GET] : /recipe/mange<br><br>\
+                <strong>haemuk</strong><br>\
+                [GET] : /crawl_recipe/haemuk<br>"
 
     @app.route('/crawl_recipe/mange', methods=['GET'])
     def crawl_mange():
@@ -21,8 +24,8 @@ def main():
         :return: jsonified recipe
         """
         result = MangeCrawler(
-            base_url="https://www.10000recipe.com/recipe/recipe_num",
-            candidate_num=range(6828809, 6828811),
+            base_url="https://www.10000recipe.com/recipe",
+            candidate_num=range(6828808, 6828811),
             field=['title', 'description', 'views', 'time', 'person', 'difficulty',
                    'items', 'steps', 'caution', 'writer', 'comments', 'tag'],
             bucket_name="production-bobsim",
@@ -32,7 +35,7 @@ def main():
         # exit_code = MangeCrawler().process()
         # return str(exit_code)
 
-    @app.route('/recipe/haemuk', methods=['GET'])
+    @app.route('/recipe/mange', methods=['GET'])
     def get_mange_recipes():
         recipes = S3Manager("production-bobsim").fetch_jsons(key="crawled_recipe/mange")
         return jsonify(recipes)
@@ -40,8 +43,7 @@ def main():
     @app.route('/crawl_recipe/haemuk', methods=['GET'])
     def crawl_haemuk():
         """
-            Crawl -> Map -> Store
-        :return:
+        :return: exit code
         """
         exit_code = HaemukCrawler().process()
         # TODO: map (recipe to json)
