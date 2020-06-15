@@ -18,7 +18,7 @@ class RecipeCrawler:
         options = webdriver.ChromeOptions()
         options.add_argument('headless')
 
-        self.driver = webdriver.Chrome(self.chrome_path)
+        self.driver = webdriver.Chrome(executable_path=self.chrome_path, chrome_options=options)
         self.driver.implicitly_wait(3)
 
         self.base_url = base_url
@@ -144,7 +144,7 @@ class MangeCrawler(RecipeCrawler):
             "title": lambda d: d.find_element_by_tag_name("h3").text,
             "description": lambda d: d.find_element_by_class_name("view2_summary_in").text,
             "views": lambda d: d.find_element_by_class_name("hit").text,
-            "scrap": lambda d: d.find_element_by_class_name("button_list").find_element_by_class_name("st2").text,
+            "scrap": lambda d: d.find_element_by_xpath('//*[@id="contents_area"]/div[2]/div[3]/a[1]/span').text,
             "time": lambda d: d.find_element_by_class_name("view2_summary_info2").text,
             "person": lambda d: d.find_element_by_class_name("view2_summary_info1").text,
             "difficulty": lambda d: d.find_element_by_class_name("view2_summary_info3").text,
