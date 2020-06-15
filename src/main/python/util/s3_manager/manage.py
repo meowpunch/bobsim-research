@@ -1,3 +1,4 @@
+import json
 import tempfile
 from io import StringIO, BytesIO
 
@@ -30,37 +31,41 @@ class S3Manager:
         """
         return list(self.s3_bucket.objects.filter(Prefix=prefix))
 
-    def fetch_objects(self, key):
+    def fetch_objects(self, key, conversion_type):
         """
             # TODO: consideration about one df OR empty list return
-        :param key: prefix
-        :return: list of pd DataFrames
+        :param key: directory in s3_bucket
+        :param conversion_type:
+                        "df_from_csv", "dict_from_json"
+        :return:
         """
         # filter
         objs_list = self.fetch_objs_list(prefix=key)
         filtered = list(filter(lambda x: x.size > 0, objs_list))
 
-        def to_df(x):
-            """
-                transform obj(x) to df
-            :param x: s3.ObjectSummery
-            :return: bool
-            """
-            ls = StringIO(x.get()['Body'].read().decode('euc-kr'))
-            tmp_df = pd.read_csv(ls, header=0)
-            return tmp_df
+        def convert(c_type):
+            return{
+                "df_from_csv": lambda obj: pd.read_csv(StringIO(obj.get()['Body'].read().decode('euc-kr')), header=0),
+                "dict_from_json": lambda obj: json.loads(obj.get()['Body'].read().decode('utf-8'))
+            }[c_type]
 
         f_num = len(filtered)
         if f_num > 0:
             # test partial filtered by index slicing
-            df_list = list(map(to_df, filtered))
+            data_list = list(map(convert(c_type=conversion_type), filtered))
 
             self.logger.info("{num} files is loaded from {dir} in s3 '{bucket_name}'".format(
                 num=f_num, dir=key, bucket_name=self.bucket_name))
-            return df_list
+            return data_list
         else:
             # TODO: error handling
             raise Exception("nothing to be loaded in '{dir}'".format(dir=key))
+
+    def fetch_dict_from_json(self, key):
+        return self.fetch_objects(key=key, conversion_type="dict_from_json")
+
+    def fetch_df_from_csv(self, key):
+        return self.fetch_objects(key=key, conversion_type="df_from_csv")
 
     def save_object(self, body, key):
         """
@@ -75,6 +80,10 @@ class S3Manager:
             self.logger.info("success to save '{key}' in s3 '{bucket_name}'".format(
                 key=key, bucket_name=self.bucket_name
             ))
+
+    def save_dict_to_json(self, data: dict, key: str):
+        serialized_data = json.dumps(data, ensure_ascii=False)
+        self.save_object(key=key, body=serialized_data)
 
     def save_df_to_csv(self, df: pd.DataFrame, key: str):
         csv_buffer = StringIO()

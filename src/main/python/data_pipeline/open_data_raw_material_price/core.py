@@ -39,7 +39,7 @@ class OpenDataRawMaterialPrice:
         :return: pd DataFrame
         """
         # fetch
-        df = self.s3_manager.fetch_objects(key=self.load_key)
+        df = self.s3_manager.fetch_df_from_csv(key=self.load_key)
 
         # TODO: no use index to get first element.
         # validate (filter by column and check types)

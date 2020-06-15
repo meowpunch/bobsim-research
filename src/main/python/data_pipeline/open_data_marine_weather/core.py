@@ -64,7 +64,7 @@ class OpenDataMarineWeather:
         :return: pd DataFrame
         """
         manager = S3Manager(bucket_name=self.bucket_name)
-        df = manager.fetch_objects(key=self.load_key)
+        df = manager.fetch_df_from_csv(key=self.load_key)
 
         # TODO: no use index to get first element.
         # filter by column and check types
