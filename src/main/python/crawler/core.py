@@ -11,7 +11,11 @@ import crawler.selector as selector
 
 class RecipeCrawler:
     def __init__(self):
-        pass
+        self.logger = init_logger()
+
+        self.chrome_path = "C:/chromedriver"
+        self.driver = webdriver.Chrome(self.chrome_path)
+        self.driver.implicitly_wait(3)
 
     def connection(self):
         pass
@@ -30,12 +34,6 @@ class MangeCrawler(RecipeCrawler):
                             total_recipe
                 15.06.2020: 138,873
         """
-        self.logger = init_logger()
-
-        self.chrome_path = "C:/chromedriver"
-        self.driver = webdriver.Chrome(self.chrome_path)
-        self.driver.implicitly_wait(3)
-
         self.base_url = "https://www.10000recipe.com/recipe/"
         self.candidate_num = range(6828805, 6828820)  # range(6828805, 6935000)
 
@@ -100,7 +98,7 @@ class MangeCrawler(RecipeCrawler):
         """
         :return: recipe dictionary
         """
-        self.logger.info("start!")
+
         recipe_step = []
         recipe_title = self.driver.find_element_by_class_name("view2_summary").find_element_by_tag_name("h3").text
         self.logger.info("title: {}".format(recipe_title))
@@ -108,8 +106,8 @@ class MangeCrawler(RecipeCrawler):
         consumed_time = self.driver.find_element_by_class_name("view2_summary_info2").text
         proportion_of_food = self.driver.find_element_by_class_name("view2_summary_info1").text
         difficulty = self.driver.find_element_by_class_name("view2_summary_info3").text
-        recipe_tags = self.driver.find_element_by_class_name("view_tag").text.split("#")
-        recipe_tags.remove('')
+        # recipe_tags = self.driver.find_element_by_class_name("view_tag").text.split("#")
+        # recipe_tags.remove('')
         num = 1
 
         # while True:
@@ -127,9 +125,8 @@ class MangeCrawler(RecipeCrawler):
         recipe["소요시간"] = consumed_time
         recipe["난이도"] = difficulty
         recipe["양"] = proportion_of_food
-        recipe["태그"] = recipe_tags
+        # recipe["태그"] = recipe_tags
         return recipe
-
 
 
 class HaemukCrawler:
@@ -137,4 +134,4 @@ class HaemukCrawler:
         pass
 
     def process(self):
-        pass
+        return False

@@ -25,11 +25,11 @@ def main():
             Crawl -> Map -> Store
         :return:
         """
-        recipe = HaemukCrawler().process()
+        exit_code = HaemukCrawler().process()
         # TODO: map (recipe to json)
         # TODO: store
 
-        return 'hello haemuk!'
+        return str(exit_code)
 
     app.run(host='0.0.0.0', port=9000, debug=True)
 
