@@ -38,7 +38,7 @@ class RecipeCrawler:
             file_name="{str}-{end}".format(str=self.candidate_num[0], end=self.candidate_num[-1])
         )
 
-        self.logger.info("success to save {n} recipes".format(n=len(recipes))
+        self.logger.info("success to save {n} recipes".format(n=len(recipes)))
         self.driver.quit()
         return recipes
 
@@ -69,7 +69,7 @@ class RecipeCrawler:
             return False
 
         except UnexpectedAlertPresentException as e:
-            self.logger.exception(e, exc_info=True)
+            self.logger.exception(e, exc_info=False)
             return False
 
         except NotImplementedError as e:
@@ -89,9 +89,26 @@ class RecipeCrawler:
 
     def get_recipe(self):
         """
-            return type should be dict when overridden
+        :return: recipe: dict
         """
-        raise NotImplementedError
+        return OrderedDict(map(self.make_tuple, self.field))
+
+    def make_tuple(self, key):
+        """
+        :param key: key
+        :return: (key, value)
+        """
+        try:
+            # self.logger.info("({}, {})".format(key, self.select_element(key)))
+            return key, self.select_element(key)
+        except NoSuchElementException:
+            self.logger.debug("No Element about '{k}'".format(k=key), exc_info=False)
+            return key, None
+        except KeyError:
+            raise NotImplementedError
+
+    def select_element(self, key):
+        pass
 
 
 class MangeCrawler(RecipeCrawler):
@@ -117,26 +134,6 @@ class MangeCrawler(RecipeCrawler):
             key=key
         )
 
-    def get_recipe(self):
-        """
-        :return: recipe: dict
-        """
-        return OrderedDict(map(self.make_tuple, self.field))
-
-    def make_tuple(self, key):
-        """
-        :param key: key
-        :return: (key, value)
-        """
-        try:
-            # self.logger.info("({}, {})".format(key, self.select_element(key)))
-            return key, self.select_element(key)
-        except NoSuchElementException:
-            self.logger.info("No Element about '{k}'".format(k=key), exc_info=True)
-            return key, None
-        except KeyError:
-            raise NotImplementedError
-
     def select_element(self, key):
         return {
             "title": lambda d: d.find_element_by_tag_name("h3").text,
@@ -156,17 +153,40 @@ class MangeCrawler(RecipeCrawler):
 
 
 class HaemukCrawler(RecipeCrawler):
-    def __init__(self):
+    def __init__(self, base_url="https://www.haemukja.com/recipes", candidate_num=range(5000, 5001), field=None,
+                 bucket_name="production_bobsim", key="crawled_recipe/haemuk"):
         """
+            https://www.haemukja.com/recipes
+            recipe_num: about ? ~ ?
+
+            record:
+                            total_recipe
+                15.06.2020: 5,386
         """
+        if field is None:
+            field = []
+
         super().__init__(
-            base_url="https://www.haemukja.com/recipes",
-            candidate_num=range(5000, 5001),
-            recipe_dict=None
+            base_url=base_url,
+            candidate_num=candidate_num,
+            field=field,
+            bucket_name=bucket_name,
+            key=key
         )
 
-    def get_recipe(self):
-        # TODO: test get_recipe by HANK
-        x = self.driver.find_element_by_class_name("top").find_element_by_tag_name("h1")
-        print(x)
-        print(x.text)
+    def select_element(self, key):
+        # return {
+        #     "title": lambda d: d.find_element_by_tag_name("h3").text,
+        #     "description": lambda d: d.find_element_by_class_name("view2_summary_in").text,
+        #     "views": lambda d: d.find_element_by_class_name("hit").text,
+        #     "time": lambda d: d.find_element_by_class_name("view2_summary_info2").text,
+        #     "person": lambda d: d.find_element_by_class_name("view2_summary_info1").text,
+        #     "difficulty": lambda d: d.find_element_by_class_name("view2_summary_info3").text,
+        #     "items": lambda d: d.find_element_by_class_name("ready_ingre3").text.split("\n"),
+        #     "steps": lambda d: None,
+        #     "caution": lambda d: d.find_element_by_class_name("view_step_tip").text,
+        #     "writer": lambda d: d.find_element_by_class_name("profile_cont").text.split("\n"),
+        #     # TODO: count star of reviews
+        #     "comments": lambda d: d.find_element_by_class_name("view_reply").text.split("\n"),
+        #     "tag": lambda d: d.find_element_by_class_name("view_tag").text.split("#"),
+        # }[key](self.driver)
