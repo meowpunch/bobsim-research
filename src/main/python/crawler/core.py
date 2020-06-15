@@ -6,7 +6,6 @@ import urllib.request
 from selenium import webdriver
 
 from util.logging import init_logger
-import crawler.selector as selector
 
 
 class RecipeCrawler:
@@ -90,8 +89,25 @@ class MangeCrawler(RecipeCrawler):
         super().__init__(
             base_url="https://www.10000recipe.com/recipe/",
             candidate_num=range(6828805, 6828820),
-            recipe_dict = selector.mange
+            recipe_dict=selector.mange
         )
+
+    def select_element(self):
+        return {
+            "title": self.driver.find_element_by_tag_name("h3").text,
+            "description": self.driver.find_element_by_class_name("view2_summary_in_m2").text,
+            "views": self.driver.find_element_by_class_name("hit font_num").text,
+            "time": self.driver.find_element_by_class_name("view2_summary_info2").text,
+            "person": self.driver.find_element_by_class_name("view2_summary_info1").text,
+            "difficulty": self.driver.find_element_by_class_name("view2_summary_info3").text,
+            "items": self.driver.find_element_by_class_name("ready_ingre3").text,  # .split('\n'),
+            "steps": None,
+            "caution": self.driver.find_element_by_class_name("view_step_tip").find,
+            "writer": None,
+            "comments": None,
+            "tag": None,
+        }
+
 
     def get_recipe(self):
         """
@@ -99,16 +115,16 @@ class MangeCrawler(RecipeCrawler):
         """
         # TODO: refactoring
 
-        recipe_step = []
-        recipe_title = self.driver.find_element_by_class_name("view2_summary").find_element_by_tag_name("h3").text
-        self.logger.info("title: {}".format(recipe_title))
-        recipe_source = self.driver.find_element_by_class_name("ready_ingre3").text.split('\n')
-        consumed_time = self.driver.find_element_by_class_name("view2_summary_info2").text
-        proportion_of_food = self.driver.find_element_by_class_name("view2_summary_info1").text
-        difficulty = self.driver.find_element_by_class_name("view2_summary_info3").text
+        # recipe_step = []
+        # recipe_title = self.driver.find_element_by_class_name("view2_summary").find_element_by_tag_name("h3").text
+        # self.logger.info("title: {}".format(recipe_title))
+        # recipe_source = self.driver.find_element_by_class_name("ready_ingre3").text.split('\n')
+        # consumed_time = self.driver.find_element_by_class_name("view2_summary_info2").text
+        # proportion_of_food = self.driver.find_element_by_class_name("view2_summary_info1").text
+        # difficulty = self.driver.find_element_by_class_name("view2_summary_info3").text
         # recipe_tags = self.driver.find_element_by_class_name("view_tag").text.split("#")
         # recipe_tags.remove('')
-        num = 1
+        # num = 1
 
         # while True:
         #     try:
@@ -118,13 +134,13 @@ class MangeCrawler(RecipeCrawler):
         #         break
         # img = self.driver.find_element_by_class_name('centeredcrop').find_element_by_id("main_thumbs").get_attribute("src")
         # urllib.request.urlretrieve(img, "./images/" + "test" + ".png")
-        recipe = OrderedDict()
-        recipe["제목"] = recipe_title
-        recipe["재료"] = recipe_source
-        recipe["조리방법"] = recipe_step
-        recipe["소요시간"] = consumed_time
-        recipe["난이도"] = difficulty
-        recipe["양"] = proportion_of_food
+        # recipe = OrderedDict()
+        # recipe["제목"] = recipe_title
+        # recipe["재료"] = recipe_source
+        # recipe["조리방법"] = recipe_step
+        # recipe["소요시간"] = consumed_time
+        # recipe["난이도"] = difficulty
+        # recipe["양"] = proportion_of_food
         # recipe["태그"] = recipe_tags
         return recipe
 
