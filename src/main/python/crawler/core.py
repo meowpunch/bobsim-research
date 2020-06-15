@@ -1,3 +1,7 @@
+from urllib.error import HTTPError
+from selenium.common.exceptions import UnexpectedAlertPresentException, NoSuchElementException
+import urllib.request
+
 from selenium import webdriver
 
 
@@ -24,18 +28,40 @@ class MangeCrawler(RecipeCrawler):
 
     def connection(self):
         self.driver.get(self.base_url)
+        return True
 
+    @property
     def process(self):
         """
             1. connection
             2. get html source
         :return:
         """
-        self.connection()
-        a = self.driver.find_elements_by_class_name("difficulty")
-        for e in a:
-            print(e.text)
-            e.click()
+        try:
+            self.connection()
+            a = self.driver.find_elements_by_class_name("difficulty")
+
+        except HTTPError as e:
+            # print(e.msg)
+            return False
+
+        except ValueError as e1:
+            # print(e1)
+            return False
+
+        except TypeError as e2:
+            # print(e2)
+            return False
+
+        except NoSuchElementException:
+            # print(e3.msg)
+            return False
+
+        except UnexpectedAlertPresentException:
+            # print(e3.msg)
+            return False
+
+        return True
 
 
 class HaemukCrawler:

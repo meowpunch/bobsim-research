@@ -13,7 +13,7 @@ def main():
             Crawl -> Map -> Store
         :return:
         """
-        recipe = MangeCrawler().process()
+        recipe = MangeCrawler().process
         # TODO: map (recipe to json)
         # TODO: store
 
