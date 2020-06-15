@@ -22,8 +22,8 @@ def main():
                 <strong>haemuk</strong><br>\
                 [GET] : /crawl_recipe/haemuk<br>"
 
-    @app.route('/crawl_recipe/mange', methods=['GET'])
-    def crawl_mange():
+    @app.route('/crawl_recipe/<source>', methods=['GET'])
+    def crawl_recipe(source):
         """
         :return: jsonified recipe
         """
@@ -36,34 +36,37 @@ def main():
             str_num = 6828808
             end_num = 6828811
 
-        logger.info("let's crawl {s} ~ {e} recipes".format(s=str_num, e=end_num))
-        result = MangeCrawler(
-            base_url="https://www.10000recipe.com/recipe",
-            candidate_num=range(int(str_num), int(end_num)),
-            field=['title', 'description', 'views', 'time', 'person', 'difficulty',
-                   'items', 'steps', 'caution', 'writer', 'comments', 'tag'],
-            bucket_name="production-bobsim",
-            key="crawled_recipe/mange"
-        ).process()
+        logger.info("let's crawl {str} ~ {end} {source} recipes".format(str=str_num, end=end_num, source=source))
+
+        if source is "mange":
+            result = MangeCrawler(
+                base_url="https://www.10000recipe.com/recipe",
+                candidate_num=range(int(str_num), int(end_num)),
+                field=['title', 'description', 'views', 'time', 'person', 'difficulty',
+                       'items', 'steps', 'caution', 'writer', 'comments', 'tag'],
+                bucket_name="production-bobsim",
+                key="crawled_recipe/{s}".format(s=source)
+            ).process()
+        elif source is "haemuk":
+            result = HaemukCrawler(
+                base_url="https://www.haemukja.com/recipes",
+                candidate_num=range(int(str_num), int(end_num)),
+                field=['title', 'description', 'views', 'time', 'person', 'difficulty',
+                       'items', 'steps', 'caution', 'writer', 'comments', 'tag'],
+                bucket_name="production-bobsim",
+                key="crawled_recipe/{s}".format(s=source)
+            ).process()
+        else:
+            raise NotImplementedError
+
         return jsonify(result)
         # exit_code = MangeCrawler().process()
         # return str(exit_code)
 
-    @app.route('/recipe/mange', methods=['GET'])
-    def get_mange_recipes():
-        recipes = S3Manager("production-bobsim").fetch_jsons(key="crawled_recipe/mange")
+    @app.route('/recipe/<source>', methods=['GET'])
+    def get_mange_recipes(source):
+        recipes = S3Manager("production-bobsim").fetch_jsons(key="crawled_recipe/{s}".format(s=source))
         return jsonify(recipes)
-
-    @app.route('/crawl_recipe/haemuk', methods=['GET'])
-    def crawl_haemuk():
-        """
-        :return: exit code
-        """
-        exit_code = HaemukCrawler().process()
-        # TODO: map (recipe to json)
-        # TODO: store
-
-        return str(exit_code)
 
     app.run(host='0.0.0.0', port=9000, debug=True)
 
