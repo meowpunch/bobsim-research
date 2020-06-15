@@ -34,7 +34,7 @@ class RecipeCrawler:
         result = map(lambda n: (n, self.crawl_recipe(recipe_num=n)), self.candidate_num)
         recipes = dict(filter(lambda r: False not in r, result))
         self.save(
-            recipe=recipes,
+            recipes=recipes,
             file_name="{str}-{end}".format(str=self.candidate_num[0], end=self.candidate_num[-1])
         )
 
@@ -81,9 +81,9 @@ class RecipeCrawler:
         self.driver.get(target_url)
         self.logger.debug("success to connect with '{url}'".format(url=target_url))
 
-    def save(self, recipe: dict, file_name):
+    def save(self, recipes: dict, file_name):
         self.s3_manager.save_dict_to_json(
-            data=recipe,
+            data=recipes,
             key="{prefix}/{key}.json".format(prefix=self.key, key=file_name)
         )
 

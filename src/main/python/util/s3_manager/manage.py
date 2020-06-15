@@ -61,7 +61,7 @@ class S3Manager:
             # TODO: error handling
             raise Exception("nothing to be loaded in '{dir}'".format(dir=key))
 
-    def fetch_jsons(self, key):
+    def fetch_dict_from_json(self, key):
         return self.fetch_objects(key=key, conversion_type="dict_from_json")
 
     def fetch_df_from_csv(self, key):

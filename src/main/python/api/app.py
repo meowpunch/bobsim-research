@@ -65,8 +65,8 @@ def main():
         # return str(exit_code)
 
     @app.route('/recipe/<source>', methods=['GET'])
-    def get_mange_recipes(source):
-        recipes = S3Manager("production-bobsim").fetch_jsons(key="crawled_recipe/{s}".format(s=source))
+    def get_recipes(source):
+        recipes = S3Manager("production-bobsim").fetch_dict_from_json(key="crawled_recipe/{s}".format(s=source))
         return jsonify(recipes)
 
     app.run(host='0.0.0.0', port=9000, debug=True)
