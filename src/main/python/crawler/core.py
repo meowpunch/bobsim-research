@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from urllib.error import HTTPError
 
 from selenium import webdriver
@@ -102,7 +103,7 @@ class MangeCrawler(RecipeCrawler):
         """
         :return: recipe: dict
         """
-        return dict(map(self.make_tuple, self.field))
+        return OrderedDict(map(self.make_tuple, self.field))
 
     def make_tuple(self, key):
         """
@@ -126,12 +127,12 @@ class MangeCrawler(RecipeCrawler):
             "time": lambda d: d.find_element_by_class_name("view2_summary_info2").text,
             "person": lambda d: d.find_element_by_class_name("view2_summary_info1").text,
             "difficulty": lambda d: d.find_element_by_class_name("view2_summary_info3").text,
-            "items": lambda d: d.find_element_by_class_name("ready_ingre3").text.split('\n'),
+            "items": lambda d: d.find_element_by_class_name("ready_ingre3").text.split("\n"),
             "steps": lambda d: None,
             "caution": lambda d: d.find_element_by_class_name("view_step_tip").text,
-            "writer": lambda d: d.find_element_by_class_name("profile_cont").text.split('\n'),
+            "writer": lambda d: d.find_element_by_class_name("profile_cont").text.split("\n"),
             # TODO: count star of reviews
-            "comments": lambda d: d.find_element_by_class_name("view_reply").text,
+            "comments": lambda d: d.find_element_by_class_name("view_reply").text.split("\n"),
             "tag": lambda d: d.find_element_by_class_name("view_tag").text.split("#"),
         }[key](self.driver)
 
