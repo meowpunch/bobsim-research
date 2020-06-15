@@ -9,8 +9,16 @@ Implemented
 
 2. [Virtual Simulation](https://github.com/meowpunch/production-bobsim-python) 
 
-Not implemented
+Not Started
 
 3. [Recipe Recommendation System](https://github.com/meowpunch/production-bobsim-python)
 
-Not Implemented
+Not Started
+### Sub
+1. Recipe Crawler
+
+In Progress
+
+2. S3 Manager
+
+Implemented
