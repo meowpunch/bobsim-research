@@ -10,39 +10,17 @@ import crawler.selector as selector
 
 
 class RecipeCrawler:
-    def __init__(self):
+    def __init__(self, base_url, candidate_num, recipe_dict):
         self.logger = init_logger()
 
         self.chrome_path = "C:/chromedriver"
         self.driver = webdriver.Chrome(self.chrome_path)
         self.driver.implicitly_wait(3)
 
-    def connection(self):
-        pass
+        self.base_url = base_url
+        self.candidate_num = candidate_num
 
-    def process(self):
-        pass
-
-
-class MangeCrawler(RecipeCrawler):
-    def __init__(self):
-        """
-            https://www.10000recipe.com/recipe/recipe_num
-            recipe_num: about 6828805 ~ 6935000
-
-            record:
-                            total_recipe
-                15.06.2020: 138,873
-        """
-        self.base_url = "https://www.10000recipe.com/recipe/"
-        self.candidate_num = range(6828805, 6828820)  # range(6828805, 6935000)
-
-        self.recipe_dict = selector.mange
-        super().__init__()
-
-    # @property
-    # def driver(self):
-    #     return webdriver.Chrome(self.chrome_path)
+        self.recipe_dict = recipe_dict
 
     def process(self):
         result_code = list(map(lambda n: self.crawl_recipe(recipe_num=n), self.candidate_num))
@@ -80,6 +58,7 @@ class MangeCrawler(RecipeCrawler):
             return False
 
         except NoSuchElementException as e3:
+            # TODO: NoSuchElementException Handling
             self.logger.exception(e3, exc_info=True)
             return False
 
@@ -95,9 +74,30 @@ class MangeCrawler(RecipeCrawler):
         self.logger.debug("success to connect with '{url}'".format(url=target_url))
 
     def get_recipe(self):
+        pass
+
+
+class MangeCrawler(RecipeCrawler):
+    def __init__(self):
+        """
+            https://www.10000recipe.com/recipe/recipe_num
+            recipe_num: about 6828805 ~ 6935000
+
+            record:
+                            total_recipe
+                15.06.2020: 138,873
+        """
+        super().__init__(
+            base_url="https://www.10000recipe.com/recipe/",
+            candidate_num=range(6828805, 6828820),
+            recipe_dict = selector.mange
+        )
+
+    def get_recipe(self):
         """
         :return: recipe dictionary
         """
+        # TODO: refactoring
 
         recipe_step = []
         recipe_title = self.driver.find_element_by_class_name("view2_summary").find_element_by_tag_name("h3").text
@@ -129,9 +129,18 @@ class MangeCrawler(RecipeCrawler):
         return recipe
 
 
-class HaemukCrawler:
+class HaemukCrawler(RecipeCrawler):
     def __init__(self):
-        pass
+        """
+        """
+        super().__init__(
+            base_url="https://www.haemukja.com/recipes/",
+            candidate_num=range(5000, 5001),
+            recipe_dict=None
+        )
 
-    def process(self):
-        return False
+    def get_recipe(self):
+        # TODO: test get_recipe by HANK
+        x = self.driver.find_element_by_class_name("top").find_element_by_tag_name("h1")
+        print(x)
+        print(x.text)
