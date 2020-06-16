@@ -12,6 +12,7 @@ from util.s3_manager.manage import S3Manager
 
 from selenium.webdriver import ActionChains
 
+
 class RecipeCrawler:
     def __init__(self, base_url, candidate_num, field, bucket_name, key):
         self.logger = init_logger()
@@ -60,6 +61,7 @@ class RecipeCrawler:
             self.driver.implicitly_wait(3)
 
             recipe = self.get_recipe()
+            # TODO: logging error (UnicodeEncodeError)
             self.logger.info(recipe)
             return recipe
 
@@ -195,22 +197,24 @@ class HaemukCrawler(RecipeCrawler):
         )
 
     def select_element(self, key):
-
         return {
             "title": lambda d: d.find_element_by_class_name("top").find_element_by_tag_name("h1").text,
             "calories": lambda d: d.find_element_by_class_name("info_basic").text.split("\n")[5],
-            "items": lambda d: dict(zip(d.find_element_by_class_name("lst_ingrd").text.split("\n")[::2] ,
+            "items": lambda d: dict(zip(d.find_element_by_class_name("lst_ingrd").text.split("\n")[::2],
                                         d.find_element_by_class_name("lst_ingrd").text.split("\n")[1::2])),
             "tags": lambda d: d.find_element_by_class_name("box_tag").text.split(" "),
-            "steps": lambda d: d.find_element_by_class_name("lst_step") .text.split("\n"),
+            "steps": lambda d: d.find_element_by_class_name("lst_step").text.split("\n"),
             "writer": lambda d: d.find_element_by_class_name("top").text.split("\n")[0],
-            "time" : lambda d: d.find_element_by_class_name("info_basic").find_element_by_tag_name("dd").text,
+            "time": lambda d: d.find_element_by_class_name("info_basic").find_element_by_tag_name("dd").text,
             "scrap": lambda d: d.find_element_by_class_name("info_basic").text.split("\n")[3],
-            "about_writer": lambda d: d.find_element_by_class_name("top").find_element_by_class_name("user").text.split("\n")[1],
-            "comment": lambda d: d.find_element_by_class_name("sec_comment").find_element_by_class_name("lst_comment").text.split("\n")[1::2],
-            "person" : lambda d: d.find_element_by_class_name("dropdown").text,
-            "xpath": lambda d: d.find_element_by_xpath('//*[@id="container"]/div[2]/div/div[1]/section[2]/section[1]/ol/li[2]/p').text
+            "about_writer": lambda d:
+            d.find_element_by_class_name("top").find_element_by_class_name("user").text.split("\n")[1],
+            "comment": lambda d: d.find_element_by_class_name("sec_comment").find_element_by_class_name(
+                "lst_comment").text.split("\n")[1::2],
+            "person": lambda d: d.find_element_by_class_name("dropdown").text,
+            "xpath": lambda d: d.find_element_by_xpath(
+                '//*[@id="container"]/div[2]/div/div[1]/section[2]/section[1]/ol/li[2]/p').text
         }[key](self.driver)
 
-    def search_in_list(self, lists , tags):
+    def search_in_list(self, lists, tags):
         return list(map(self.driver.find_elements_by_tag_name(tags), lists))
