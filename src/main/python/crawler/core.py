@@ -2,7 +2,10 @@ from collections import OrderedDict
 from urllib.error import HTTPError
 
 from selenium import webdriver
-from selenium.common.exceptions import UnexpectedAlertPresentException, NoSuchElementException
+from selenium.common.exceptions import UnexpectedAlertPresentException, NoSuchElementException, TimeoutException
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
 
 from util.logging import init_logger
 from util.s3_manager.manage import S3Manager
@@ -16,7 +19,10 @@ class RecipeCrawler:
         self.key = key
 
         self.chrome_path = "C:/chromedriver"
-        self.driver = webdriver.Chrome(self.chrome_path)
+        options = webdriver.ChromeOptions()
+        options.add_argument('headless')
+
+        self.driver = webdriver.Chrome(executable_path=self.chrome_path, chrome_options=options)
         self.driver.implicitly_wait(3)
 
         self.base_url = base_url
@@ -137,12 +143,22 @@ class MangeCrawler(RecipeCrawler):
             key=key
         )
 
+    @staticmethod
+    def get_scrap(driver):
+        try:
+            WebDriverWait(driver=driver, timeout=1).until(
+                EC.presence_of_element_located((By.XPATH, '//*[@id="contents_area"]/div[2]/div[3]/a[1]/span/b'))
+            )
+        except TimeoutException:
+            raise NoSuchElementException
+        return driver.find_element_by_xpath('//*[@id="contents_area"]/div[2]/div[3]/a[1]/span/b').text
+
     def select_element(self, key):
         return {
             "title": lambda d: d.find_element_by_tag_name("h3").text,
             "description": lambda d: d.find_element_by_class_name("view2_summary_in").text,
             "views": lambda d: d.find_element_by_class_name("hit").text,
-            "scrap": lambda d: d.find_element_by_class_name("button_list").find_element_by_class_name("st2").text,
+            "scrap": lambda d: self.get_scrap(d),
             "time": lambda d: d.find_element_by_class_name("view2_summary_info2").text,
             "person": lambda d: d.find_element_by_class_name("view2_summary_info1").text,
             "difficulty": lambda d: d.find_element_by_class_name("view2_summary_info3").text,
