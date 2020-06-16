@@ -53,7 +53,7 @@ def main():
                 base_url="https://www.haemukja.com/recipes",
                 candidate_num=range(int(str_num), int(end_num)),
                 field=['title', 'calories', 'items', "tags", "steps", "writer", "time", "scrap",
-                       "about_writer", "xpath", "comment", "person"],
+                       "about_writer", "comment", "person"],
                 bucket_name="production-bobsim",
                 key="crawled_recipe/{s}".format(s=source)
             ).process()
