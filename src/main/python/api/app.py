@@ -30,21 +30,18 @@ def main():
         """
         args = request.args
         try:
-            str_num = args["str_num"]
-            end_num = args["end_num"]
+            str_num, end_num = args["str_num"], args["end_num"]
         except KeyError:
             logger.warning("There is no parameter, 'str_num' or 'end_num'")
-            str_num = 6828808
-            end_num = 6828811
+            str_num, end_num = 6828808, 6828811
 
         logger.info("let's crawl {str} ~ {end} {source} recipes".format(str=str_num, end=end_num, source=source))
-
+        field = ['title', 'items', "time", "person", "tags", "img_url"]
         if source == "mange":
             result = MangeCrawler(
                 base_url="https://www.10000recipe.com/recipe",
                 candidate_num=range(int(str_num), int(end_num)),
-                field=['title', 'description', 'views', 'scrap', 'time', 'person', 'difficulty',
-                       'items', 'steps', 'caution', 'writer', 'comments', 'tag'],
+                field=field,
                 bucket_name="production-bobsim",
                 key="crawled_recipe/{s}".format(s=source)
             ).process()
@@ -52,8 +49,7 @@ def main():
             result = HaemukCrawler(
                 base_url="https://www.haemukja.com/recipes",
                 candidate_num=range(int(str_num), int(end_num)),
-                field=['title', 'calories', 'items', "tags", "steps", "writer", "time", "scrap",
-                       "about_writer", "comment", "person"],
+                field=field,
                 bucket_name="production-bobsim",
                 key="crawled_recipe/{s}".format(s=source)
             ).process()
