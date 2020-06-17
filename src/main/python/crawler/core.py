@@ -2,10 +2,7 @@ from collections import OrderedDict
 from urllib.error import HTTPError
 
 from selenium import webdriver
-from selenium.common.exceptions import UnexpectedAlertPresentException, NoSuchElementException, TimeoutException
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.wait import WebDriverWait
+from selenium.common.exceptions import UnexpectedAlertPresentException, NoSuchElementException
 
 from util.logging import init_logger
 from util.s3_manager.manage import S3Manager
@@ -169,7 +166,13 @@ class MangeCrawler(RecipeCrawler):
         return self.driver.find_element_by_tag_name("h3").text
 
     def get_time(self):
-        return self.driver.find_element_by_class_name("view2_summary_info2").text
+        text = self.driver.find_element_by_class_name("view2_summary_info2").text.split(" ")[0]
+        if "분" in text:
+            return int(text.replace("분", ""))
+        elif "시간" in text:
+            return int(text.replace("시간", ""))*60
+        else:
+            raise ValueError
 
     def get_person(self):
         return self.driver.find_element_by_class_name("view2_summary_info1").text
@@ -208,16 +211,36 @@ class HaemukCrawler(RecipeCrawler):
             key=key
         )
 
-    def select_element(self, key):
-        return {
-            "title": lambda d: d.find_element_by_class_name("top").find_element_by_tag_name("h1").text,
-            "items": lambda d: dict(zip(d.find_element_by_class_name("lst_ingrd").text.split("\n")[::2],
-                                        d.find_element_by_class_name("lst_ingrd").text.split("\n")[1::2])),
-            "tags": lambda d: d.find_element_by_class_name("box_tag").text.split(" "),
-            "time": lambda d: d.find_element_by_class_name("info_basic").find_element_by_tag_name("dd").text,
-            "person": lambda d: d.find_element_by_class_name("dropdown").text,
-            "img_url": lambda d: None
-        }[key](self.driver)
+    def get_title(self):
+        text = self.driver.find_element_by_xpath(
+            '//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[1]/h1'
+        ).text
+        if "\n" in text:
+            return text.split('\n')[0]
+        else:
+            return text
+
+    def get_items(self):
+        return dict(zip(self.driver.find_element_by_class_name("lst_ingrd").text.split("\n")[::2],
+                        self.driver.find_element_by_class_name("lst_ingrd").text.split("\n")[1::2]))
+
+    def get_tags(self):
+        return self.driver.find_element_by_class_name("box_tag").text.split(" ")
+
+    def get_time(self):
+        return self.driver.find_element_by_class_name("info_basic").find_element_by_tag_name("dd").text
+
+    def get_person(self):
+        return self.driver.find_element_by_class_name("dropdown").text
+
+    def get_image(self):
+        return None
 
     def search_in_list(self, lists, tags):
+        """
+         to get list from find_elements_by something ~
+        :param lists:
+        :param tags:
+        :return:
+        """
         return list(map(self.driver.find_elements_by_tag_name(tags), lists))
