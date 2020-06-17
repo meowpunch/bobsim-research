@@ -139,9 +139,9 @@ class RecipeCrawler:
         pass
 
 
-class MangeCrawler(RecipeCrawler):
+class MangaeCrawler(RecipeCrawler):
     def __init__(self, base_url="https://www.10000recipe.com/recipe", candidate_num=range(6828809, 6828811), field=None,
-                 bucket_name="production-bobsim", key="crawled_recipe/mange"):
+                 bucket_name="production-bobsim", key="crawled_recipe/mangae"):
         """
             https://www.10000recipe.com/recipe/
             recipe_num: about 6828805 ~ 6935000
