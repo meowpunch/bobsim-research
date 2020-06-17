@@ -4,6 +4,7 @@ from urllib.error import HTTPError
 from selenium import webdriver
 from selenium.common.exceptions import UnexpectedAlertPresentException, NoSuchElementException
 
+from util.function import take
 from util.logging import init_logger
 from util.s3_manager.manage import S3Manager
 
@@ -166,27 +167,39 @@ class MangaeCrawler(RecipeCrawler):
         )
 
     def get_title(self):
+        print("title")
         return self.driver.find_element_by_tag_name("h3").text
 
     def get_time(self):
+        print("time")
         text = self.driver.find_element_by_class_name("view2_summary_info2").text.split(" ")[0]
         if "분" in text:
             return int(text.replace("분", ""))
         elif "시간" in text:
-            return int(text.replace("시간", ""))*60
+            return int(text.replace("시간", "")) * 60
         else:
             raise ValueError
 
     def get_person(self):
+        print("person")
         return self.driver.find_element_by_class_name("view2_summary_info1").text
 
     def get_items(self):
-        text = self.driver.find_element_by_class_name("ready_ingre3").text.split("\n")
-        filter(lambda w: w[0] == '[', text)
-        return self.driver.find_element_by_class_name("ready_ingre3").text.split("\n")
+        print("items")
+        items = self.driver.find_elements_by_xpath('//*[@id="divConfirmedMaterialArea"]/ul[1]/a[1]/li')
+
+        def get_amount(item):
+            try:
+                return item.text.split('\n')[0], item.find_element_by_tag_name('span').text
+            except NoSuchElementException:
+                print("뭐냐진짜")
+                return item.text, "뭐냐"
+        return dict(map(get_amount, items))
 
     def get_tags(self):
-        return self.driver.find_element_by_class_name("view_tag").text.split("#")
+        print("tags")
+        tags = self.driver.find_element_by_class_name("view_tag")
+        return list(map(lambda tag: tag.text.replace("#", ""), tags))[:3]
 
     def get_image(self):
         return None
