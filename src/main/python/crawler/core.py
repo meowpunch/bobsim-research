@@ -132,6 +132,9 @@ class RecipeCrawler:
     def get_person(self):
         pass
 
+    def get_items(self):
+        pass
+
     def get_tags(self):
         pass
 
@@ -221,26 +224,29 @@ class HaemukCrawler(RecipeCrawler):
             return text
 
     def get_items(self):
-        return dict(zip(self.driver.find_element_by_class_name("lst_ingrd").text.split("\n")[::2],
-                        self.driver.find_element_by_class_name("lst_ingrd").text.split("\n")[1::2]))
+        text = self.driver.find_element_by_class_name("lst_ingrd").text.split("\n")
+        return dict(zip(text[::2], text[1::2]))
 
     def get_tags(self):
-        return self.driver.find_element_by_class_name("box_tag").text.split(" ")
+        text = self.driver.find_element_by_class_name("box_tag").text
+        if " " not in text:
+            return text
+        else:
+            return text.split(" ")[:3]
 
     def get_time(self):
-        return self.driver.find_element_by_class_name("info_basic").find_element_by_tag_name("dd").text
+        text = self.driver.find_element_by_xpath(
+            '//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[1]/dl/dd[1]').text
+        return int(text.replace("분", ""))
 
     def get_person(self):
-        return self.driver.find_element_by_class_name("dropdown").text
+        text = self.driver.find_element_by_xpath('//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[3]/ul').text.split('\n')
+        length= abs(len(text)/2)
+        if length % 2 == 0:
+            return dict(zip(text[::2], text[1::2]))
+        else:
+
+        # return self.driver.find_element_by_class_name("dropdown").text
 
     def get_image(self):
-        return None
-
-    def search_in_list(self, lists, tags):
-        """
-         to get list from find_elements_by something ~
-        :param lists:
-        :param tags:
-        :return:
-        """
-        return list(map(self.driver.find_elements_by_tag_name(tags), lists))
+        return self.driver.find_element_by_xpath('//*[@id="slider"]/div/ul/li[1]/img').get_attribute("src")
