@@ -117,6 +117,28 @@ class RecipeCrawler:
             raise NotImplementedError
 
     def select_element(self, key):
+        return {
+            "title": self.get_title,
+            "time": self.get_time,
+            "person": self.get_person,
+            "items": self.get_items,
+            "tags": self.get_tags,
+            "img_url": self.get_image
+        }[key]()
+
+    def get_title(self):
+        pass
+
+    def get_time(self):
+        pass
+
+    def get_person(self):
+        pass
+
+    def get_tags(self):
+        pass
+
+    def get_image(self):
         pass
 
 
@@ -143,25 +165,25 @@ class MangeCrawler(RecipeCrawler):
             key=key
         )
 
-    @staticmethod
-    def get_scrap(driver):
-        try:
-            WebDriverWait(driver=driver, timeout=1).until(
-                EC.presence_of_element_located((By.XPATH, '//*[@id="contents_area"]/div[2]/div[3]/a[1]/span/b'))
-            )
-        except TimeoutException:
-            raise NoSuchElementException
-        return driver.find_element_by_xpath('//*[@id="contents_area"]/div[2]/div[3]/a[1]/span/b').text
+    def get_title(self):
+        return self.driver.find_element_by_tag_name("h3").text
 
-    def select_element(self, key):
-        return {
-            "title": lambda d: d.find_element_by_tag_name("h3").text,
-            "time": lambda d: d.find_element_by_class_name("view2_summary_info2").text,
-            "person": lambda d: d.find_element_by_class_name("view2_summary_info1").text,
-            "items": lambda d: d.find_element_by_class_name("ready_ingre3").text.split("\n"),
-            "tag": lambda d: d.find_element_by_class_name("view_tag").text.split("#"),
-            "img_url": lambda d: None
-        }[key](self.driver)
+    def get_time(self):
+        return self.driver.find_element_by_class_name("view2_summary_info2").text
+
+    def get_person(self):
+        return self.driver.find_element_by_class_name("view2_summary_info1").text
+
+    def get_items(self):
+        text = self.driver.find_element_by_class_name("ready_ingre3").text.split("\n")
+        filter(lambda w: w[0] == '[', text)
+        return self.driver.find_element_by_class_name("ready_ingre3").text.split("\n")
+
+    def get_tags(self):
+        return self.driver.find_element_by_class_name("view_tag").text.split("#")
+
+    def get_image(self):
+        return None
 
 
 class HaemukCrawler(RecipeCrawler):
