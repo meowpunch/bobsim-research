@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request
 
-from crawler.core import MangeCrawler, HaemukCrawler
+from crawler.core import MangaeCrawler, HaemukCrawler
 from util.logging import init_logger
 from util.s3_manager.manage import S3Manager
 
@@ -16,9 +16,9 @@ def main():
     @app.route('/', methods=['GET'])
     def index():
         return "<h3>crawling service</h3>\
-                <strong>mange</strong><br>\
-                [GET] : /crawl_recipe/mange?str_num=6828809&end_num=6828811<br>\
-                [GET] : /recipe/mange<br><br>\
+                <strong>mangae</strong><br>\
+                [GET] : /crawl_recipe/mangae?str_num=6828809&end_num=6828811<br>\
+                [GET] : /recipe/mangae<br><br>\
                 <strong>haemuk</strong><br>\
                 [GET] : /crawl_recipe/haemuk?str_num=5004&end_num=5005<br>\
                 [GET] : /recipe/haemuk<br><br>"
@@ -38,8 +38,8 @@ def main():
         logger.info("let's crawl {str} ~ {end} {source} recipes".format(str=str_num, end=end_num, source=source))
         field = ['title', 'items', "time", "person", "tags", "img_url"]
 
-        if source == "mange":
-            result = MangeCrawler(
+        if source == "mangae":
+            result = MangaeCrawler(
                 base_url="https://www.10000recipe.com/recipe",
                 candidate_num=range(int(str_num), int(end_num)),
                 field=field,
@@ -58,7 +58,7 @@ def main():
             raise NotImplementedError
 
         return jsonify(result)
-        # exit_code = MangeCrawler().process()
+        # exit_code = MangaeCrawler().process()
         # return str(exit_code)
 
     @app.route('/recipe/<source>', methods=['GET'])
