@@ -17,10 +17,10 @@ def main():
     def index():
         return "<h3>crawling service</h3>\
                 <strong>mange</strong><br>\
-                [GET] : /crawl_recipe/mange?str_num={}&end_num={}<br>\
+                [GET] : /crawl_recipe/mange?str_num=6828809&end_num=6828811<br>\
                 [GET] : /recipe/mange<br><br>\
                 <strong>haemuk</strong><br>\
-                [GET] : /crawl_recipe/haemuk?str_num={}&end_num={}<br>\
+                [GET] : /crawl_recipe/haemuk?str_num=5004&end_num=5005<br>\
                 [GET] : /recipe/haemuk<br><br>"
 
     @app.route('/crawl_recipe/<source>', methods=['GET'])
@@ -33,7 +33,7 @@ def main():
             str_num, end_num = args["str_num"], args["end_num"]
         except KeyError:
             logger.warning("There is no parameter, 'str_num' or 'end_num'")
-            str_num, end_num = 6828808, 6828811
+            str_num, end_num = 6828809, 6828811
 
         logger.info("let's crawl {str} ~ {end} {source} recipes".format(str=str_num, end=end_num, source=source))
         field = ['title', 'items', "time", "person", "tags", "img_url"]
