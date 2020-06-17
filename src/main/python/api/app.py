@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request
 
-from crawler.core import MangeCrawler, HaemukCrawler
+from crawler.core import MangaeCrawler, HaemukCrawler
 from util.logging import init_logger
 from util.s3_manager.manage import S3Manager
 
@@ -16,11 +16,11 @@ def main():
     @app.route('/', methods=['GET'])
     def index():
         return "<h3>crawling service</h3>\
-                <strong>mange</strong><br>\
-                [GET] : /crawl_recipe/mange <br>\
-                [GET] : /recipe/mange<br><br>\
+                <strong>mangae</strong><br>\
+                [GET] : /crawl_recipe/mangae?str_num=6828809&end_num=6828811<br>\
+                [GET] : /recipe/mangae<br><br>\
                 <strong>haemuk</strong><br>\
-                [GET] : /crawl_recipe/haemuk<br>\
+                [GET] : /crawl_recipe/haemuk?str_num=5004&end_num=5005<br>\
                 [GET] : /recipe/haemuk<br><br>"
 
     @app.route('/crawl_recipe/<source>', methods=['GET'])
@@ -30,21 +30,19 @@ def main():
         """
         args = request.args
         try:
-            str_num = args["str_num"]
-            end_num = args["end_num"]
+            str_num, end_num = args["str_num"], args["end_num"]
         except KeyError:
             logger.warning("There is no parameter, 'str_num' or 'end_num'")
-            str_num = 6828808
-            end_num = 6828811
+            str_num, end_num = 6828809, 6828811
 
         logger.info("let's crawl {str} ~ {end} {source} recipes".format(str=str_num, end=end_num, source=source))
+        field = ['title', 'items', "time", "person", "tags", "img_url"]
 
-        if source == "mange":
-            result = MangeCrawler(
+        if source == "mangae":
+            result = MangaeCrawler(
                 base_url="https://www.10000recipe.com/recipe",
                 candidate_num=range(int(str_num), int(end_num)),
-                field=['title', 'description', 'views', 'scrap', 'time', 'person', 'difficulty',
-                       'items', 'steps', 'caution', 'writer', 'comments', 'tag'],
+                field=field,
                 bucket_name="production-bobsim",
                 key="crawled_recipe/{s}".format(s=source)
             ).process()
@@ -52,8 +50,7 @@ def main():
             result = HaemukCrawler(
                 base_url="https://www.haemukja.com/recipes",
                 candidate_num=range(int(str_num), int(end_num)),
-                field=['title', 'calories', 'items', "tags", "steps", "writer", "time", "scrap",
-                       "about_writer", "xpath", "comment", "person"],
+                field=field,
                 bucket_name="production-bobsim",
                 key="crawled_recipe/{s}".format(s=source)
             ).process()
@@ -61,7 +58,7 @@ def main():
             raise NotImplementedError
 
         return jsonify(result)
-        # exit_code = MangeCrawler().process()
+        # exit_code = MangaeCrawler().process()
         # return str(exit_code)
 
     @app.route('/recipe/<source>', methods=['GET'])

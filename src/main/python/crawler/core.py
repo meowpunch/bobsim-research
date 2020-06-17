@@ -2,15 +2,10 @@ from collections import OrderedDict
 from urllib.error import HTTPError
 
 from selenium import webdriver
-from selenium.common.exceptions import UnexpectedAlertPresentException, NoSuchElementException, TimeoutException
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.wait import WebDriverWait
+from selenium.common.exceptions import UnexpectedAlertPresentException, NoSuchElementException
 
 from util.logging import init_logger
 from util.s3_manager.manage import S3Manager
-
-from selenium.webdriver import ActionChains
 
 
 class RecipeCrawler:
@@ -119,12 +114,34 @@ class RecipeCrawler:
             raise NotImplementedError
 
     def select_element(self, key):
+        return {
+            "title": self.get_title,
+            "time": self.get_time,
+            "person": self.get_person,
+            "items": self.get_items,
+            "tags": self.get_tags,
+            "img_url": self.get_image
+        }[key]()
+
+    def get_title(self):
+        pass
+
+    def get_time(self):
+        pass
+
+    def get_person(self):
+        pass
+
+    def get_tags(self):
+        pass
+
+    def get_image(self):
         pass
 
 
-class MangeCrawler(RecipeCrawler):
+class MangaeCrawler(RecipeCrawler):
     def __init__(self, base_url="https://www.10000recipe.com/recipe", candidate_num=range(6828809, 6828811), field=None,
-                 bucket_name="production-bobsim", key="crawled_recipe/mange"):
+                 bucket_name="production-bobsim", key="crawled_recipe/mangae"):
         """
             https://www.10000recipe.com/recipe/
             recipe_num: about 6828805 ~ 6935000
@@ -145,33 +162,31 @@ class MangeCrawler(RecipeCrawler):
             key=key
         )
 
-    @staticmethod
-    def get_scrap(driver):
-        try:
-            WebDriverWait(driver=driver, timeout=1).until(
-                EC.presence_of_element_located((By.XPATH, '//*[@id="contents_area"]/div[2]/div[3]/a[1]/span/b'))
-            )
-        except TimeoutException:
-            raise NoSuchElementException
-        return driver.find_element_by_xpath('//*[@id="contents_area"]/div[2]/div[3]/a[1]/span/b').text
+    def get_title(self):
+        return self.driver.find_element_by_tag_name("h3").text
 
-    def select_element(self, key):
-        return {
-            "title": lambda d: d.find_element_by_tag_name("h3").text,
-            "description": lambda d: d.find_element_by_class_name("view2_summary_in").text,
-            "views": lambda d: d.find_element_by_class_name("hit").text,
-            "scrap": lambda d: self.get_scrap(d),
-            "time": lambda d: d.find_element_by_class_name("view2_summary_info2").text,
-            "person": lambda d: d.find_element_by_class_name("view2_summary_info1").text,
-            "difficulty": lambda d: d.find_element_by_class_name("view2_summary_info3").text,
-            "items": lambda d: d.find_element_by_class_name("ready_ingre3").text.split("\n"),
-            "steps": lambda d: None,
-            "caution": lambda d: d.find_element_by_class_name("view_step_tip").text,
-            "writer": lambda d: d.find_element_by_class_name("profile_cont").text.split("\n"),
-            # TODO: count star of reviews
-            "comments": lambda d: d.find_element_by_class_name("view_reply").text.split("\n"),
-            "tag": lambda d: d.find_element_by_class_name("view_tag").text.split("#"),
-        }[key](self.driver)
+    def get_time(self):
+        text = self.driver.find_element_by_class_name("view2_summary_info2").text.split(" ")[0]
+        if "분" in text:
+            return int(text.replace("분", ""))
+        elif "시간" in text:
+            return int(text.replace("시간", ""))*60
+        else:
+            raise ValueError
+
+    def get_person(self):
+        return self.driver.find_element_by_class_name("view2_summary_info1").text
+
+    def get_items(self):
+        text = self.driver.find_element_by_class_name("ready_ingre3").text.split("\n")
+        filter(lambda w: w[0] == '[', text)
+        return self.driver.find_element_by_class_name("ready_ingre3").text.split("\n")
+
+    def get_tags(self):
+        return self.driver.find_element_by_class_name("view_tag").text.split("#")
+
+    def get_image(self):
+        return None
 
 
 class HaemukCrawler(RecipeCrawler):
@@ -196,25 +211,36 @@ class HaemukCrawler(RecipeCrawler):
             key=key
         )
 
-    def select_element(self, key):
-        return {
-            "title": lambda d: d.find_element_by_class_name("top").find_element_by_tag_name("h1").text,
-            "calories": lambda d: d.find_element_by_class_name("info_basic").text.split("\n")[5],
-            "items": lambda d: dict(zip(d.find_element_by_class_name("lst_ingrd").text.split("\n")[::2],
-                                        d.find_element_by_class_name("lst_ingrd").text.split("\n")[1::2])),
-            "tags": lambda d: d.find_element_by_class_name("box_tag").text.split(" "),
-            "steps": lambda d: d.find_element_by_class_name("lst_step").text.split("\n"),
-            "writer": lambda d: d.find_element_by_class_name("top").text.split("\n")[0],
-            "time": lambda d: d.find_element_by_class_name("info_basic").find_element_by_tag_name("dd").text,
-            "scrap": lambda d: d.find_element_by_class_name("info_basic").text.split("\n")[3],
-            "about_writer": lambda d:
-            d.find_element_by_class_name("top").find_element_by_class_name("user").text.split("\n")[1],
-            "comment": lambda d: d.find_element_by_class_name("sec_comment").find_element_by_class_name(
-                "lst_comment").text.split("\n")[1::2],
-            "person": lambda d: d.find_element_by_class_name("dropdown").text,
-            "xpath": lambda d: d.find_element_by_xpath(
-                '//*[@id="container"]/div[2]/div/div[1]/section[2]/section[1]/ol/li[2]/p').text
-        }[key](self.driver)
+    def get_title(self):
+        text = self.driver.find_element_by_xpath(
+            '//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[1]/h1'
+        ).text
+        if "\n" in text:
+            return text.split('\n')[0]
+        else:
+            return text
+
+    def get_items(self):
+        return dict(zip(self.driver.find_element_by_class_name("lst_ingrd").text.split("\n")[::2],
+                        self.driver.find_element_by_class_name("lst_ingrd").text.split("\n")[1::2]))
+
+    def get_tags(self):
+        return self.driver.find_element_by_class_name("box_tag").text.split(" ")
+
+    def get_time(self):
+        return self.driver.find_element_by_class_name("info_basic").find_element_by_tag_name("dd").text
+
+    def get_person(self):
+        return self.driver.find_element_by_class_name("dropdown").text
+
+    def get_image(self):
+        return None
 
     def search_in_list(self, lists, tags):
+        """
+         to get list from find_elements_by something ~
+        :param lists:
+        :param tags:
+        :return:
+        """
         return list(map(self.driver.find_elements_by_tag_name(tags), lists))
