@@ -167,39 +167,34 @@ class MangaeCrawler(RecipeCrawler):
         )
 
     def get_title(self):
-        print("title")
-        return self.driver.find_element_by_tag_name("h3").text
+        title = self.driver.find_element_by_xpath('//*[@id="contents_area"]/div[2]/h3')
+        return title.text
 
     def get_time(self):
-        print("time")
-        text = self.driver.find_element_by_class_name("view2_summary_info2").text.split(" ")[0]
-        if "분" in text:
-            return int(text.replace("분", ""))
-        elif "시간" in text:
-            return int(text.replace("시간", "")) * 60
+        time = self.driver.find_element_by_xpath('//*[@id="contents_area"]/div[2]/div[2]/span[2]').text.split(" ")[0]
+        if "분" in time:
+            return int(time.replace("분", ""))
+        elif "시간" in time:
+            return int(time.replace("시간", "")) * 60
         else:
             raise ValueError
 
     def get_person(self):
-        print("person")
         return self.driver.find_element_by_class_name("view2_summary_info1").text
 
     def get_items(self):
-        print("items")
-        items = self.driver.find_elements_by_xpath('//*[@id="divConfirmedMaterialArea"]/ul[1]/a[1]/li')
+        items = self.driver.find_elements_by_xpath('//*[@id="divConfirmedMaterialArea"]/ul/a')
 
         def get_amount(item):
             try:
                 return item.text.split('\n')[0], item.find_element_by_tag_name('span').text
             except NoSuchElementException:
-                print("뭐냐진짜")
-                return item.text, "뭐냐"
+                return item.text, None
         return dict(map(get_amount, items))
 
     def get_tags(self):
-        print("tags")
-        tags = self.driver.find_element_by_class_name("view_tag")
-        return list(map(lambda tag: tag.text.replace("#", ""), tags))[:3]
+        tags = self.driver.find_elements_by_xpath('//*[@id="contents_area"]/div[32]/div/a')
+        return list(take(3, map(lambda tag: tag.text.replace("#", ""), tags)))
 
     def get_image(self):
         return None
@@ -258,7 +253,7 @@ class HaemukCrawler(RecipeCrawler):
         if length % 2 == 0:
             return dict(zip(text[::2], text[1::2]))
         else:
-
+            pass
         # return self.driver.find_element_by_class_name("dropdown").text
 
     def get_image(self):
