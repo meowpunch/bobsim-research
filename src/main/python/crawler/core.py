@@ -194,7 +194,7 @@ class MangaeCrawler(RecipeCrawler):
 
     def get_tags(self):
         tags = self.driver.find_elements_by_xpath('//*[@id="contents_area"]/div[32]/div/a')
-        return list(take(3, map(lambda tag: tag.text.replace("#", ""), tags)))
+        return list(take(length=3, iterator=map(lambda tag: tag.text.replace("#", ""), tags)))
 
     def get_image(self):
         return None
@@ -236,11 +236,13 @@ class HaemukCrawler(RecipeCrawler):
         return dict(zip(text[::2], text[1::2]))
 
     def get_tags(self):
-        text = self.driver.find_element_by_class_name("box_tag").text
-        if " " not in text:
-            return text
-        else:
-            return text.split(" ")[:3]
+        tags = self.driver.find_elements_by_class_name("box_tag")
+        return list(take(length=3, iterator=map(lambda tag: tag.text, tags)))
+        # text = self.driver.find_element_by_class_name("box_tag").text
+        # if " " not in text:
+        #     return text
+        # else:
+        #     return text.split(" ")[:3]
 
     def get_time(self):
         text = self.driver.find_element_by_xpath(
