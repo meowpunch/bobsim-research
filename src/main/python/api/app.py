@@ -33,7 +33,7 @@ def main():
             str_num, end_num = args["str_num"], args["end_num"]
         except KeyError:
             logger.warning("There is no parameter, 'str_num' or 'end_num'")
-            str_num, end_num = 6828809, 6828811
+            str_num, end_num = 6934386, 6934390
 
         logger.info("let's crawl {str} ~ {end} {source} recipes".format(str=str_num, end=end_num, source=source))
         field = ['title', 'items', "time", "person", "tags", "img_url"]
@@ -65,7 +65,7 @@ def main():
     def get_recipes(source):
         recipes = S3Manager("production-bobsim").fetch_dict_from_json(key="crawled_recipe/{s}".format(s=source))
         return jsonify(recipes)
-Z
+
     app.run(host='0.0.0.0', port=9000, debug=True)
 
 
