@@ -227,11 +227,11 @@ class MangaeCrawler(RecipeCrawler):
     def get_items(self) -> dict:
         items = self.driver.find_elements_by_xpath('//*[@id="divConfirmedMaterialArea"]/ul//li')
 
-        def get_amount(item):
+        def get_amount(item) -> tuple:
             try:
                 return item.text.split('\n')[0], item.find_element_by_tag_name('span').text
             except NoSuchElementException:
-                return item.text, None
+                raise ValueError
 
         return dict(map(get_amount, items))
 
@@ -262,7 +262,7 @@ class HaemukCrawler(RecipeCrawler):
             key=key
         )
 
-    def get_title(self):
+    def get_title(self) -> str:
         # h1 = self.driver.find_element_by_xpath('//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[1]/h1')
         return self.driver.find_element_by_xpath('//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[1]/h1').text
 
@@ -274,26 +274,32 @@ class HaemukCrawler(RecipeCrawler):
         #     self.logger.warning("There is no element('strong')")
         #     return h1.text
 
-    def get_items(self):
-        text = self.driver.find_element_by_class_name("lst_ingrd").text.split("\n")
-        return dict(zip(text[::2], text[1::2]))
+    def get_items(self) -> dict:
+        items = self.driver.find_elements_by_xpath('//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[3]/ul/li')
 
-    def get_tags(self):
-        tags = self.driver.find_elements_by_class_name("box_tag")
+        def get_amount(item) -> tuple:
+            try:
+                name, amount = item.find_element_by_tag_name("span").text, item.find_element_by_tag_name("em").text
+                if amount == "":
+                    raise ValueError
+                return name, amount
+            except NoSuchElementException:
+                raise ValueError
+
+        return dict(map(get_amount, items))
+
+    def get_tags(self) -> list:
+        tags = self.driver.find_elements_by_class_name('//*[@id="modal-content"]/div/div[1]/section[2]/div[3]/a')
         return list(take(length=3, iterator=map(lambda tag: tag.text, tags)))
-        # text = self.driver.find_element_by_class_name("box_tag").text
-        # if " " not in text:
-        #     return text
-        # else:
-        #     return text.split(" ")[:3]
 
-    def get_time(self):
+    def get_time(self) -> int:
         text = self.driver.find_element_by_xpath(
             '//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[1]/dl/dd[1]').text
         return int(text.replace("분", ""))
 
-    def get_person(self):
-        return self.driver.find_element_by_class_name("dropdown").text
+    def get_person(self) -> int:
+        person = self.driver.find_element_by_class_name("dropdown").text
+        return int(reduce(lambda x, y: x + y, filter(str.isdigit, person)))
 
-    def get_image(self):
+    def get_img_url(self) -> str:
         return self.driver.find_element_by_xpath('//*[@id="slider"]/div/ul/li[1]/img').get_attribute("src")
