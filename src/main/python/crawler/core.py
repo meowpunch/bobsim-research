@@ -1,6 +1,7 @@
 import io
 import urllib.request
 from collections import OrderedDict
+from functools import reduce
 from urllib.error import HTTPError
 
 import boto3
@@ -220,10 +221,11 @@ class MangaeCrawler(RecipeCrawler):
             raise ValueError
 
     def get_person(self) -> int:
-        return int(self.driver.find_element_by_class_name("view2_summary_info1").text)
+        person = self.driver.find_element_by_class_name("view2_summary_info1").text
+        return int(reduce(lambda x, y: x + y, filter(str.isdigit, person)))
 
     def get_items(self) -> dict:
-        items = self.driver.find_elements_by_xpath('//*[@id="divConfirmedMaterialArea"]/ul/a')
+        items = self.driver.find_elements_by_xpath('//*[@id="divConfirmedMaterialArea"]/ul//li')
 
         def get_amount(item):
             try:
