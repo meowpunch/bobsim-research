@@ -1,5 +1,6 @@
 
 def take(length, iterator):
+    # For functional programming
     res = []
     for e in iterator:
         res.append(e)

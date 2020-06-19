@@ -36,7 +36,7 @@ def main():
             str_num, end_num = 6934386, 6934390
 
         logger.info("let's crawl {str} ~ {end} {source} recipes".format(str=str_num, end=end_num, source=source))
-        field = ['title', 'items', "time", "person", "tags", "img_url"]
+        field = ['title', 'items', "time", "person", "tags"]
 
         if source == "mangae":
             result = MangaeCrawler(

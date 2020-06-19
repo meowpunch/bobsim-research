@@ -1,3 +1,5 @@
+import io
+import urllib.request
 from collections import OrderedDict
 from urllib.error import HTTPError
 
@@ -37,7 +39,7 @@ class RecipeCrawler:
         """
         result = map(lambda n: (n, self.crawl_recipe(recipe_num=n)), self.candidate_num)
         recipes = dict(filter(lambda r: False not in r, result))
-        self.save(
+        self.save_recipes_to_s3(
             recipes=recipes,
             file_name="{str}-{end}".format(str=self.candidate_num[0], end=self.candidate_num[-1])
         )
@@ -57,6 +59,8 @@ class RecipeCrawler:
             self.driver.implicitly_wait(3)
 
             recipe = self.get_recipe()
+            # recipe["img_url"] =
+
             # TODO: logging error (UnicodeEncodeError)
             self.logger.info(recipe)
             return recipe
@@ -86,10 +90,10 @@ class RecipeCrawler:
         self.driver.get(target_url)
         self.logger.debug("success to connect with '{url}'".format(url=target_url))
 
-    def save(self, recipes: dict, file_name):
+    def save_recipes_to_s3(self, recipes: dict, file_name):
         self.s3_manager.save_dict_to_json(
             data=recipes,
-            key="{prefix}/{key}.json".format(prefix=self.key, key=file_name)
+            key="{prefix}/{name}.json".format(prefix=self.key, name=file_name)
         )
 
     def get_recipe(self):
@@ -121,7 +125,6 @@ class RecipeCrawler:
             "person": self.get_person,
             "items": self.get_items,
             "tags": self.get_tags,
-            "img_url": self.get_image
         }[key]()
 
     def get_title(self):
@@ -155,8 +158,7 @@ class MangaeCrawler(RecipeCrawler):
                 15.06.2020: 138,873
         """
         if field is None:
-            field = ['title', 'description', 'views', 'time', 'person', 'difficulty',
-                     'items', 'steps', 'caution', 'writer', 'comments', 'tag']
+            field = ['title', 'time', 'person', 'items', 'tags']
 
         super().__init__(
             base_url=base_url,
@@ -196,7 +198,11 @@ class MangaeCrawler(RecipeCrawler):
         tags = self.driver.find_elements_by_xpath('//*[@id="contents_area"]/div[32]/div/a')
         return list(take(length=3, iterator=map(lambda tag: tag.text.replace("#", ""), tags)))
 
-    def get_image(self):
+    def save_image_to_s3(self, key, ):
+        url = self.driver.find_elements_by_xpath('//*[@id="main_thumbs"]').get_attribute('src')
+        with urllib.request.urlopen(url) as url:
+            img = io.BytesIO(url.read())
+        # self.s3_manager.save_img(data=img, key="{prefix}/{}".format(prefix=self.))
         return None
 
 
