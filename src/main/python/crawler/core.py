@@ -55,7 +55,7 @@ class RecipeCrawler:
     def crawl_recipe(self, recipe_num):
         """
             1. connection
-            2. get recipe:dict
+            2. get recipe -> dict
         :return: recipe(Success) or False(Fail)
         """
         try:
@@ -63,8 +63,10 @@ class RecipeCrawler:
             self.driver.implicitly_wait(3)
 
             recipe = self.get_recipe()
-            self.save_image_to_s3(recipe_id=recipe_num)
-            recipe["img_url"] = self.get_s3_image_url(recipe_id=recipe_num)
+            if self.save_image_to_s3(recipe_id=recipe_num):
+                recipe["img_url"] = self.get_s3_image_url(recipe_id=recipe_num)
+            else:
+                raise ConnectionError
 
             # TODO: logging error (UnicodeEncodeError)
             self.logger.info(recipe)
@@ -95,8 +97,8 @@ class RecipeCrawler:
         self.driver.get(target_url)
         self.logger.debug("success to connect with '{url}'".format(url=target_url))
 
-    def save_recipes_to_s3(self, recipes: dict, file_name):
-        self.s3_manager.save_dict_to_json(
+    def save_recipes_to_s3(self, recipes: dict, file_name) -> bool:
+        return self.s3_manager.save_dict_to_json(
             data=recipes,
             key="{prefix}/{name}.json".format(prefix=self.prefix, name=file_name)
         )
@@ -263,16 +265,7 @@ class HaemukCrawler(RecipeCrawler):
         )
 
     def get_title(self) -> str:
-        # h1 = self.driver.find_element_by_xpath('//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[1]/h1')
         return self.driver.find_element_by_xpath('//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[1]/h1').text
-
-        # try:
-        #     strong = h1.find_element_by_tag_name("strong")
-        #     return h1.text.split("\n")[0]
-        #
-        # except NoSuchElementException:
-        #     self.logger.warning("There is no element('strong')")
-        #     return h1.text
 
     def get_items(self) -> dict:
         items = self.driver.find_elements_by_xpath('//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[3]/ul/li')

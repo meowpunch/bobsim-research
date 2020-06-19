@@ -81,7 +81,7 @@ class S3Manager:
 
         if len(self.fetch_objs_list(prefix=key)) is not 1:
             # if there is no saved file in s3, raise exception
-            raise IOError("SaveError")
+            return False
         else:
             self.logger.info("success to save '{key}' in s3 '{bucket_name}'".format(
                 key=key, bucket_name=self.bucket_name
@@ -90,7 +90,7 @@ class S3Manager:
 
     def save_dict_to_json(self, data: dict, key: str):
         serialized_data = json.dumps(data, ensure_ascii=False)
-        self.save_object(key=key, body=serialized_data)
+        return self.save_object(key=key, body=serialized_data)
 
     def save_df_to_csv(self, df: pd.DataFrame, key: str):
         csv_buffer = StringIO()
