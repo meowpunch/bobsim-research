@@ -67,11 +67,11 @@ class S3Manager:
     def fetch_df_from_csv(self, key):
         return self.fetch_objects(key=key, conversion_type="df_from_csv")
 
-    def save_object(self, body, key):
+    def save_object(self, body, key, kwargs=None):
         """
             save to s3
         """
-        self.s3.Object(bucket_name=self.bucket_name, key=key).put(Body=body)
+        self.s3.Object(bucket_name=self.bucket_name, key=key).put(**kwargs, Body=body)
 
         if len(self.fetch_objs_list(prefix=key)) is not 1:
             # if there is no saved file in s3, raise exception
@@ -89,6 +89,9 @@ class S3Manager:
         csv_buffer = StringIO()
         df.to_csv(csv_buffer, index=False)
         self.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=key)
+
+    def save_img(self, data, key, kwargs):
+        self.save_object(body=data, key=key, kwargs=kwargs)
 
     def save_dump(self, x, key: str):
         with tempfile.TemporaryFile() as fp:
