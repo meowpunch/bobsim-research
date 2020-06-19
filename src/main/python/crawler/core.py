@@ -63,7 +63,7 @@ class RecipeCrawler:
 
             recipe = self.get_recipe()
             self.save_image_to_s3(recipe_id=recipe_num)
-            recipe["img_url"] = self.get_img_url(recipe_id=recipe_num)
+            recipe["img_url"] = self.get_s3_image_url(recipe_id=recipe_num)
 
             # TODO: logging error (UnicodeEncodeError)
             self.logger.info(recipe)
@@ -131,6 +131,26 @@ class RecipeCrawler:
             "tags": self.get_tags,
         }[key]()
 
+    def save_image_to_s3(self, recipe_id) -> bool:
+        url = self.get_img_url()
+        with urllib.request.urlopen(url) as url:
+            img = io.BytesIO(url.read())
+        return self.s3_manager.save_img(
+            data=img, key="{prefix}/images/{recipe_id}.jpg".format(prefix=self.prefix, recipe_id=recipe_id),
+            kwargs={"ACL": 'public-read', 'ContentType': 'image/jpg'}
+        )
+
+    def get_s3_image_url(self, recipe_id) -> str:
+        # get s3 url of main img
+        return "https:/{bucket}.s3.{region}.amazonaws.com/{key}".format(
+            bucket=self.bucket_name,
+            region=boto3.client('s3').get_bucket_location(Bucket=self.bucket_name)['LocationConstraint'],
+            key="{prefix}/images/{recipe_id}.jpg".format(prefix=self.prefix, recipe_id=recipe_id)
+        )
+
+    def get_img_url(self) -> str:
+        pass
+
     def get_title(self) -> str:
         pass
 
@@ -160,16 +180,6 @@ class RecipeCrawler:
         """
         pass
 
-    def save_image_to_s3(self, recipe_id):
-        pass
-
-    def get_img_url(self, recipe_id) -> str:
-        return "https:/{bucket}.s3.{region}.amazonaws.com/{key}".format(
-            bucket=self.bucket_name,
-            region=boto3.client('s3').get_bucket_location(Bucket=self.bucket_name)['LocationConstraint'],
-            key="{prefix}/images/{recipe_id}.jpg".format(prefix=self.prefix, recipe_id=recipe_id)
-        )
-
 
 class MangaeCrawler(RecipeCrawler):
     def __init__(self, base_url="https://www.10000recipe.com/recipe", candidate_num=range(6828809, 6828811), field=None,
@@ -193,11 +203,14 @@ class MangaeCrawler(RecipeCrawler):
             key=key
         )
 
-    def get_title(self):
+    def get_img_url(self) -> str:
+        return self.driver.find_element_by_xpath('//*[@id="main_thumbs"]').get_attribute('src')
+
+    def get_title(self) -> str:
         title = self.driver.find_element_by_xpath('//*[@id="contents_area"]/div[2]/h3')
         return title.text
 
-    def get_time(self):
+    def get_time(self) -> int:
         time = self.driver.find_element_by_xpath('//*[@id="contents_area"]/div[2]/div[2]/span[2]').text.split(" ")[0]
         if "분" in time:
             return int(time.replace("분", ""))
@@ -206,10 +219,10 @@ class MangaeCrawler(RecipeCrawler):
         else:
             raise ValueError
 
-    def get_person(self):
-        return self.driver.find_element_by_class_name("view2_summary_info1").text
+    def get_person(self) -> int:
+        return int(self.driver.find_element_by_class_name("view2_summary_info1").text)
 
-    def get_items(self):
+    def get_items(self) -> dict:
         items = self.driver.find_elements_by_xpath('//*[@id="divConfirmedMaterialArea"]/ul/a')
 
         def get_amount(item):
@@ -220,19 +233,9 @@ class MangaeCrawler(RecipeCrawler):
 
         return dict(map(get_amount, items))
 
-    def get_tags(self):
+    def get_tags(self) -> list:
         tags = self.driver.find_elements_by_xpath('//*[@id="contents_area"]/div[32]/div/a')
         return list(take(length=3, iterator=map(lambda tag: tag.text.replace("#", ""), tags)))
-
-    def save_image_to_s3(self, recipe_id):
-        url = self.driver.find_element_by_xpath('//*[@id="main_thumbs"]').get_attribute('src')
-        with urllib.request.urlopen(url) as url:
-            img = io.BytesIO(url.read())
-        self.s3_manager.save_img(
-            data=img, key="{prefix}/images/{recipe_id}.jpg".format(prefix=self.prefix, recipe_id=recipe_id),
-            kwargs={"ACL": 'public-read', 'ContentType': 'image/jpg'}
-        )
-        return None
 
 
 class HaemukCrawler(RecipeCrawler):
