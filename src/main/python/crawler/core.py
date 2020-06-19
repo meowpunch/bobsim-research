@@ -3,6 +3,7 @@ import urllib.request
 from collections import OrderedDict
 from urllib.error import HTTPError
 
+import boto3
 from selenium import webdriver
 from selenium.common.exceptions import UnexpectedAlertPresentException, NoSuchElementException
 
@@ -14,8 +15,10 @@ from util.s3_manager.manage import S3Manager
 class RecipeCrawler:
     def __init__(self, base_url, candidate_num, field, bucket_name, key):
         self.logger = init_logger()
-        self.s3_manager = S3Manager(bucket_name=bucket_name)
-        self.key = key
+
+        self.bucket_name = bucket_name
+        self.s3_manager = S3Manager(bucket_name=self.bucket_name)
+        self.prefix = key
 
         self.chrome_path = "C:/chromedriver"
         options = webdriver.ChromeOptions()
@@ -59,7 +62,12 @@ class RecipeCrawler:
             self.driver.implicitly_wait(3)
 
             recipe = self.get_recipe()
-            # recipe["img_url"] =
+            self.save_image_to_s3(recipe_id=recipe_num)
+            recipe["img_url"] = "https:/{bucket}.s3.{region}.amazonaws.com/{key}".format(
+                bucket=self.bucket_name,
+                region=boto3.client('s3').get_bucket_location(Bucket=self.bucket_name)['LocationConstraint'],
+                key="{prefix}/images/{recipe_id}.jpg".format(prefix=self.prefix, recipe_id=recipe_num)
+            )
 
             # TODO: logging error (UnicodeEncodeError)
             self.logger.info(recipe)
@@ -82,10 +90,10 @@ class RecipeCrawler:
             return False
 
         except NotImplementedError as e:
-            self.logger.exception(e, exc_info=True)
+            # self.logger.exception(e, exc_info=True)
             return False
 
-    def connection(self, recipe_num=6847470):
+    def connection(self, recipe_num=6847470) -> None:
         target_url = "{base_url}/{num}".format(base_url=self.base_url, num=str(recipe_num))
         self.driver.get(target_url)
         self.logger.debug("success to connect with '{url}'".format(url=target_url))
@@ -93,16 +101,16 @@ class RecipeCrawler:
     def save_recipes_to_s3(self, recipes: dict, file_name):
         self.s3_manager.save_dict_to_json(
             data=recipes,
-            key="{prefix}/{name}.json".format(prefix=self.key, name=file_name)
+            key="{prefix}/{name}.json".format(prefix=self.prefix, name=file_name)
         )
 
-    def get_recipe(self):
+    def get_recipe(self) -> OrderedDict:
         """
         :return: recipe: dict
         """
         return OrderedDict(map(self.make_tuple, self.field))
 
-    def make_tuple(self, key):
+    def make_tuple(self, key) -> tuple:
         """
         :param key: key
         :return: (key, value)
@@ -142,7 +150,7 @@ class RecipeCrawler:
     def get_tags(self):
         pass
 
-    def get_image(self):
+    def save_image_to_s3(self, recipe_id):
         pass
 
 
@@ -192,17 +200,21 @@ class MangaeCrawler(RecipeCrawler):
                 return item.text.split('\n')[0], item.find_element_by_tag_name('span').text
             except NoSuchElementException:
                 return item.text, None
+
         return dict(map(get_amount, items))
 
     def get_tags(self):
         tags = self.driver.find_elements_by_xpath('//*[@id="contents_area"]/div[32]/div/a')
         return list(take(length=3, iterator=map(lambda tag: tag.text.replace("#", ""), tags)))
 
-    def save_image_to_s3(self, key, ):
-        url = self.driver.find_elements_by_xpath('//*[@id="main_thumbs"]').get_attribute('src')
+    def save_image_to_s3(self, recipe_id):
+        url = self.driver.find_element_by_xpath('//*[@id="main_thumbs"]').get_attribute('src')
         with urllib.request.urlopen(url) as url:
             img = io.BytesIO(url.read())
-        # self.s3_manager.save_img(data=img, key="{prefix}/{}".format(prefix=self.))
+        self.s3_manager.save_img(
+            data=img, key="{prefix}/images/{recipe_id}.jpg".format(prefix=self.prefix, recipe_id=recipe_id),
+            kwargs={"ACL": 'public-read', 'ContentType': 'image/jpg'}
+        )
         return None
 
 
@@ -256,8 +268,9 @@ class HaemukCrawler(RecipeCrawler):
         return int(text.replace("분", ""))
 
     def get_person(self):
-        text = self.driver.find_element_by_xpath('//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[3]/ul').text.split('\n')
-        length= abs(len(text)/2)
+        text = self.driver.find_element_by_xpath(
+            '//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[3]/ul').text.split('\n')
+        length = abs(len(text) / 2)
         if length % 2 == 0:
             return dict(zip(text[::2], text[1::2]))
         else:

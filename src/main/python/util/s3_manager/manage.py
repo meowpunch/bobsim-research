@@ -71,7 +71,11 @@ class S3Manager:
         """
             save to s3
         """
-        self.s3.Object(bucket_name=self.bucket_name, key=key).put(**kwargs, Body=body)
+
+        if kwargs is None:
+            self.s3.Object(bucket_name=self.bucket_name, key=key).put(Body=body)
+        else:
+            self.s3.Object(bucket_name=self.bucket_name, key=key).put(**kwargs, Body=body)
 
         if len(self.fetch_objs_list(prefix=key)) is not 1:
             # if there is no saved file in s3, raise exception
