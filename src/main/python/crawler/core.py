@@ -223,13 +223,19 @@ class HaemukCrawler(RecipeCrawler):
         )
 
     def get_title(self):
-        text = self.driver.find_element_by_xpath(
-            '//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[1]/h1'
-        ).text
-        if "\n" in text:
-            return text.split('\n')[0]
-        else:
-            return text
+        # h1 = self.driver.find_element_by_xpath('//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[1]/h1')
+        return self.driver.find_element_by_xpath('//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[1]/h1').text
+
+        # try:
+        #     strong = h1.find_element_by_tag_name("strong")
+        #     return h1.text.split("\n")[0]
+        #
+        # except NoSuchElementException:
+        #     self.logger.warning("There is no element('strong')")
+        #     return h1.text
+
+
+
 
     def get_items(self):
         text = self.driver.find_element_by_class_name("lst_ingrd").text.split("\n")
@@ -250,13 +256,7 @@ class HaemukCrawler(RecipeCrawler):
         return int(text.replace("분", ""))
 
     def get_person(self):
-        text = self.driver.find_element_by_xpath('//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[3]/ul').text.split('\n')
-        length= abs(len(text)/2)
-        if length % 2 == 0:
-            return dict(zip(text[::2], text[1::2]))
-        else:
-            pass
-        # return self.driver.find_element_by_class_name("dropdown").text
+        return self.driver.find_element_by_class_name("dropdown").text
 
     def get_image(self):
         return self.driver.find_element_by_xpath('//*[@id="slider"]/div/ul/li[1]/img').get_attribute("src")
