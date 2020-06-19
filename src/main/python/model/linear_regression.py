@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 
-from util.s3_manager.manage import S3Manager
+from utils.s3_manager.manage import S3Manager
 
 
 class LinearRegressionModel:

@@ -5,9 +5,9 @@ import numpy as np
 from analysis.food_material_price.research import split_xy, customized_rmse, search_process
 from analysis.train_test_volume import train_test_timeseries
 from model.elastic_net import ElasticNetModel
-from util.build_dataset import build_master
-from util.logging import init_logger
-from util.s3_manager.manage import S3Manager
+from utils.build_dataset import build_master
+from utils.logging import init_logger
+from utils.s3_manager.manage import S3Manager
 
 border = '-' * 50
 

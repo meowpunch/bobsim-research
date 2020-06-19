@@ -2,7 +2,7 @@ import sys
 
 from data_pipeline.open_data_raw_material_price.core import OpenDataRawMaterialPrice
 from feature_extraction_pipeline.open_data_raw_material_price.core import RawMaterialPriceExtractor
-from util.logging import init_logger
+from utils.logging import init_logger
 
 
 class RawMaterialPriceExtractionPipeline:

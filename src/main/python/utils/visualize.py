@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-from util.logging import init_logger
+from utils.logging import init_logger
 
 
 def plot(data: list):

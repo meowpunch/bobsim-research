@@ -1,7 +1,7 @@
 import pandas as pd
 
-from util.build_dataset import build_origin_price
-from util.s3_manager.manage import S3Manager
+from utils.build_dataset import build_origin_price
+from utils.s3_manager.manage import S3Manager
 
 
 def get_std_list(column: pd.Series, number: int):

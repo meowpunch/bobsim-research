@@ -2,7 +2,7 @@ import sys
 
 from data_pipeline.open_data_terrestrial_weather.core import OpenDataTerrestrialWeather
 from feature_extraction_pipeline.open_data_terrestrial_weather.core import TerrestrialWeatherExtractor
-from util.logging import init_logger
+from utils.logging import init_logger
 
 
 class TerrestrialWeatherExtractionPipeline:

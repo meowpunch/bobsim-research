@@ -8,9 +8,9 @@ from sklearn.base import BaseEstimator
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, FunctionTransformer, StandardScaler
 
-from util.logging import init_logger
-from util.reduce import combine_list
-from util.s3_manager.manage import S3Manager
+from utils.logging import init_logger
+from utils.reduce import combine_list
+from utils.s3_manager.manage import S3Manager
 
 
 # TODO: not working, make available

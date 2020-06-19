@@ -2,7 +2,7 @@ from sklearn.model_selection import train_test_split
 
 from data_pipeline.food_material_price.pipeline import PriceDataPipeline
 from feature_extraction_pipeline.food_materials_price.extractor import FeatureExtractor
-from util.logging import init_logger
+from utils.logging import init_logger
 
 
 class FeatureExtractionPipeline:

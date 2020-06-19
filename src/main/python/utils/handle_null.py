@@ -3,8 +3,8 @@ from functools import reduce
 
 import pandas as pd
 
-from util.logging import init_logger
-from util.s3_manager.manage import S3Manager
+from utils.logging import init_logger
+from utils.s3_manager.manage import S3Manager
 
 
 class NullHandler:

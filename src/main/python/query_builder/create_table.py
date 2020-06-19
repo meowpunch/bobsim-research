@@ -1,7 +1,7 @@
 
 
-from util.db import load_query,exec_void_query,exec_return_query
-from util.s3_manager import list_bucket_contents
+from utils.db import load_query,exec_void_query,exec_return_query
+from utils.s3_manager import list_bucket_contents
 
 
 

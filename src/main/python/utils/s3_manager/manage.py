@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from joblib import dump, load
 
-from util.logging import init_logger
+from utils.logging import init_logger
 
 
 class S3Manager:

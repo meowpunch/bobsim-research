@@ -8,9 +8,9 @@ import boto3
 from selenium import webdriver
 from selenium.common.exceptions import UnexpectedAlertPresentException, NoSuchElementException
 
-from util.function import take
-from util.logging import init_logger
-from util.s3_manager.manage import S3Manager
+from utils.function import take
+from utils.logging import init_logger
+from utils.s3_manager.manage import S3Manager
 
 
 class RecipeCrawler:
@@ -171,9 +171,7 @@ class RecipeCrawler:
 
     def get_items(self) -> dict:
         """
-            {
-                name: amount
-            }
+            { name: amount ... }
         """
         pass
 
@@ -275,6 +273,8 @@ class HaemukCrawler(RecipeCrawler):
                 name, amount = item.find_element_by_tag_name("span").text, item.find_element_by_tag_name("em").text
                 if amount == "":
                     raise ValueError
+
+                converted =
                 return name, amount
             except NoSuchElementException:
                 raise ValueError

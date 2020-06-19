@@ -1,8 +1,8 @@
 from flask import Flask, jsonify, request
 
 from crawler.core import MangaeCrawler, HaemukCrawler
-from util.logging import init_logger
-from util.s3_manager.manage import S3Manager
+from utils.logging import init_logger
+from utils.s3_manager.manage import S3Manager
 
 
 def main():

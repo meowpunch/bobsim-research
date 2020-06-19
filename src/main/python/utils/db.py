@@ -6,7 +6,7 @@ import pymysql
 import pymysql.err
 import yaml
 
-from util.executable import get_destination
+from utils.executable import get_destination
 
 
 def get_connection(schema_name: str = "bobsim_schema"):
