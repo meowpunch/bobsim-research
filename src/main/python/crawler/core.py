@@ -58,16 +58,12 @@ class RecipeCrawler:
         :return: recipe(Success) or False(Fail)
         """
         try:
-            self.connection(recipe_num=recipe_num)
+            self.connection(recipe_id=recipe_num)
             self.driver.implicitly_wait(3)
 
             recipe = self.get_recipe()
             self.save_image_to_s3(recipe_id=recipe_num)
-            recipe["img_url"] = "https:/{bucket}.s3.{region}.amazonaws.com/{key}".format(
-                bucket=self.bucket_name,
-                region=boto3.client('s3').get_bucket_location(Bucket=self.bucket_name)['LocationConstraint'],
-                key="{prefix}/images/{recipe_id}.jpg".format(prefix=self.prefix, recipe_id=recipe_num)
-            )
+            recipe["img_url"] = self.get_img_url(recipe_id=recipe_num)
 
             # TODO: logging error (UnicodeEncodeError)
             self.logger.info(recipe)
@@ -93,8 +89,8 @@ class RecipeCrawler:
             # self.logger.exception(e, exc_info=True)
             return False
 
-    def connection(self, recipe_num=6847470) -> None:
-        target_url = "{base_url}/{num}".format(base_url=self.base_url, num=str(recipe_num))
+    def connection(self, recipe_id=6847470) -> None:
+        target_url = "{base_url}/{num}".format(base_url=self.base_url, num=str(recipe_id))
         self.driver.get(target_url)
         self.logger.debug("success to connect with '{url}'".format(url=target_url))
 
@@ -135,23 +131,44 @@ class RecipeCrawler:
             "tags": self.get_tags,
         }[key]()
 
-    def get_title(self):
+    def get_title(self) -> str:
         pass
 
-    def get_time(self):
+    def get_time(self) -> int:
+        """
+            unit: minute
+        """
         pass
 
-    def get_person(self):
+    def get_person(self) -> int:
+        """
+            unit: person
+        """
         pass
 
-    def get_items(self):
+    def get_items(self) -> dict:
+        """
+            {
+                name: amount
+            }
+        """
         pass
 
-    def get_tags(self):
+    def get_tags(self) -> list:
+        """
+            max 3 tags
+        """
         pass
 
     def save_image_to_s3(self, recipe_id):
         pass
+
+    def get_img_url(self, recipe_id) -> str:
+        return "https:/{bucket}.s3.{region}.amazonaws.com/{key}".format(
+            bucket=self.bucket_name,
+            region=boto3.client('s3').get_bucket_location(Bucket=self.bucket_name)['LocationConstraint'],
+            key="{prefix}/images/{recipe_id}.jpg".format(prefix=self.prefix, recipe_id=recipe_id)
+        )
 
 
 class MangaeCrawler(RecipeCrawler):
