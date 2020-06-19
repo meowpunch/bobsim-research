@@ -181,6 +181,14 @@ class RecipeCrawler:
         """
         pass
 
+    @staticmethod
+    def get_digits_from_str(string: str) -> str:
+        """
+            TODO: mv to utils
+            "a1b2c3" -> "123"
+        """
+        return reduce(lambda x, y: x + y, filter(str.isdigit, string))
+
 
 class MangaeCrawler(RecipeCrawler):
     def __init__(self, base_url="https://www.10000recipe.com/recipe", candidate_num=range(6828809, 6828811), field=None,
@@ -214,15 +222,15 @@ class MangaeCrawler(RecipeCrawler):
     def get_time(self) -> int:
         time = self.driver.find_element_by_xpath('//*[@id="contents_area"]/div[2]/div[2]/span[2]').text.split(" ")[0]
         if "분" in time:
-            return int(time.replace("분", ""))
+            return int(int(self.get_digits_from_str(string=time)))
         elif "시간" in time:
-            return int(time.replace("시간", "")) * 60
+            return int(int(self.get_digits_from_str(string=time))) * 60
         else:
             raise ValueError
 
     def get_person(self) -> int:
         person = self.driver.find_element_by_class_name("view2_summary_info1").text
-        return int(reduce(lambda x, y: x + y, filter(str.isdigit, person)))
+        return int(self.get_digits_from_str(string=person))
 
     def get_items(self) -> dict:
         items = self.driver.find_elements_by_xpath('//*[@id="divConfirmedMaterialArea"]/ul//li')
@@ -273,8 +281,6 @@ class HaemukCrawler(RecipeCrawler):
                 name, amount = item.find_element_by_tag_name("span").text, item.find_element_by_tag_name("em").text
                 if amount == "":
                     raise ValueError
-
-                converted =
                 return name, amount
             except NoSuchElementException:
                 raise ValueError
@@ -286,9 +292,9 @@ class HaemukCrawler(RecipeCrawler):
         return list(take(length=3, iterator=map(lambda tag: tag.text, tags)))
 
     def get_time(self) -> int:
-        text = self.driver.find_element_by_xpath(
+        time = self.driver.find_element_by_xpath(
             '//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[1]/dl/dd[1]').text
-        return int(text.replace("분", ""))
+        return int(int(self.get_digits_from_str(string=time)))
 
     def get_person(self) -> int:
         person = self.driver.find_element_by_class_name("dropdown").text
