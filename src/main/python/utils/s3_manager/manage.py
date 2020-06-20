@@ -41,12 +41,12 @@ class S3Manager:
         """
         # filter
         objs_list = self.fetch_objs_list(prefix=key)
-        filtered = list(filter(lambda x: x.size > 0, objs_list))
+        filtered = list(filter(lambda o: o.size > 0 and conversion_type in o.key, objs_list))
 
         def convert(c_type):
             return{
-                "df_from_csv": lambda obj: pd.read_csv(StringIO(obj.get()['Body'].read().decode('euc-kr')), header=0),
-                "dict_from_json": lambda obj: json.loads(obj.get()['Body'].read().decode('utf-8'))
+                "csv": lambda obj: pd.read_csv(StringIO(obj.get()['Body'].read().decode('euc-kr')), header=0),
+                "json": lambda obj: json.loads(obj.get()['Body'].read().decode('utf-8'))
             }[c_type]
 
         f_num = len(filtered)
@@ -59,13 +59,14 @@ class S3Manager:
             return data_list
         else:
             # TODO: error handling
-            raise Exception("nothing to be loaded in '{dir}'".format(dir=key))
+            self.logger.debug("nothing to be loaded in '{dir}'".format(dir=key))
+            return None
 
     def fetch_dict_from_json(self, key):
-        return self.fetch_objects(key=key, conversion_type="dict_from_json")
+        return self.fetch_objects(key=key, conversion_type="json")
 
     def fetch_df_from_csv(self, key):
-        return self.fetch_objects(key=key, conversion_type="df_from_csv")
+        return self.fetch_objects(key=key, conversion_type="csv")
 
     def save_object(self, body, key, kwargs=None):
         """

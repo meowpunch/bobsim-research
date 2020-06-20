@@ -8,8 +8,8 @@ def main():
     manager = S3Manager(
         bucket_name="production-bobsim",
     )
-    df_list = manager.fetch_df_from_csv(key="")
-    print(df_list)
+    objs = manager.fetch_objects(key="crawled_recipe", conversion_type="json")
+    print(objs)
 
 
 if __name__ == '__main__':
