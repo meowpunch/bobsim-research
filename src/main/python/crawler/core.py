@@ -264,7 +264,9 @@ class HaemukCrawler(RecipeCrawler):
         )
 
     def get_title(self) -> str:
-        return self.driver.find_element_by_xpath('//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[1]/h1').text
+        title = self.driver.find_element_by_xpath(
+            '//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[1]/h1').text
+        return title.split('\n')[0]
 
     def get_items(self) -> dict:
         items = self.driver.find_elements_by_xpath('//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[3]/ul/li')
