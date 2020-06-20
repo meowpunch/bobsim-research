@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from joblib import dump, load
 
-from util.logging import init_logger
+from utils.logging import init_logger
 
 
 class S3Manager:
@@ -67,35 +67,46 @@ class S3Manager:
     def fetch_df_from_csv(self, key):
         return self.fetch_objects(key=key, conversion_type="df_from_csv")
 
-    def save_object(self, body, key):
+    def save_object(self, body, key, kwargs=None):
         """
-            save to s3
+        :param body: data
+        :param key: directory in s3
+        :param kwargs: other arguments ex. 'ACL', 'ContentType'
+        :return: success code
         """
-        self.s3.Object(bucket_name=self.bucket_name, key=key).put(Body=body)
+        if kwargs is None:
+            self.s3.Object(bucket_name=self.bucket_name, key=key).put(Body=body)
+        else:
+            self.s3.Object(bucket_name=self.bucket_name, key=key).put(**kwargs, Body=body)
 
         if len(self.fetch_objs_list(prefix=key)) is not 1:
             # if there is no saved file in s3, raise exception
-            raise IOError("SaveError")
+            return False
         else:
             self.logger.info("success to save '{key}' in s3 '{bucket_name}'".format(
                 key=key, bucket_name=self.bucket_name
             ))
+            return True
 
     def save_dict_to_json(self, data: dict, key: str):
         serialized_data = json.dumps(data, ensure_ascii=False)
-        self.save_object(key=key, body=serialized_data)
+        return self.save_object(key=key, body=serialized_data)
 
     def save_df_to_csv(self, df: pd.DataFrame, key: str):
         csv_buffer = StringIO()
         df.to_csv(csv_buffer, index=False)
-        self.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=key)
+        return self.save_object(body=csv_buffer.getvalue().encode('euc-kr'), key=key)
+
+    def save_img(self, data, key, kwargs):
+        return self.save_object(body=data, key=key, kwargs=kwargs)
 
     def save_dump(self, x, key: str):
         with tempfile.TemporaryFile() as fp:
             dump(x, fp)
             fp.seek(0)
-            self.save_object(body=fp.read(), key=key)
+            code = self.save_object(body=fp.read(), key=key)
             fp.close()
+        return code
 
     def load_dump(self, key: str):
         with tempfile.TemporaryFile() as fp:
@@ -111,6 +122,7 @@ class S3Manager:
         plt.savefig(img_data, format='png')
         img_data.seek(0)
 
-        self.save_object(body=img_data, key=key)
+        code = self.save_object(body=img_data, key=key)
         plt.figure()
+        return code
 

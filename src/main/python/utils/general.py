@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 
-from util.executable import get_destination
+from utils.executable import get_destination
 
 
 def load_file(filename):

@@ -1,12 +1,12 @@
 import logging
 import sys
-import pymysql.err
+
 import pandas as pd
 import pymysql
+import pymysql.err
 import yaml
-import csv
 
-from util.executable import get_destination
+from utils.executable import get_destination
 
 
 def get_connection(schema_name: str = "bobsim_schema"):

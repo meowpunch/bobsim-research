@@ -7,9 +7,9 @@ from scipy.stats import skew
 
 from data_pipeline.dtype import dtype, reduction_dtype
 from data_pipeline.translate import translation
-from util.handle_null import NullHandler
-from util.logging import init_logger
-from util.s3_manager.manage import S3Manager
+from utils.handle_null import NullHandler
+from utils.logging import init_logger
+from utils.s3_manager.manage import S3Manager
 
 
 class OpenDataTerrestrialWeather:

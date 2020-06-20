@@ -2,7 +2,7 @@ import sys
 
 from data_pipeline.open_data_marine_weather.core import OpenDataMarineWeather
 from feature_extraction_pipeline.open_data_marine_weather.core import MarineWeatherExtractor
-from util.logging import init_logger
+from utils.logging import init_logger
 
 
 class MarineWeatherExtractionPipeline:

@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import truncnorm
 
-from util.visualize import plot
+from utils.visualize import plot
 
 
 def mask_by_quantity(data, q_data):

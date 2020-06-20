@@ -3,7 +3,7 @@ import json
 
 import yaml
 
-from util.executable import get_destination
+from utils.executable import get_destination
 
 
 def get_url_s3():

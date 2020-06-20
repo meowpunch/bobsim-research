@@ -2,7 +2,7 @@ import yaml
 import logging
 import logging.config
 
-from util.executable import get_destination
+from utils.executable import get_destination
 
 
 def init_logger(name='__main__'):

@@ -1,19 +1,26 @@
+import io
+import urllib.request
 from collections import OrderedDict
+from functools import reduce
 from urllib.error import HTTPError
 
+import boto3
 from selenium import webdriver
 from selenium.common.exceptions import UnexpectedAlertPresentException, NoSuchElementException
 
-from util.function import take
-from util.logging import init_logger
-from util.s3_manager.manage import S3Manager
+from utils.function import take, add
+from utils.logging import init_logger
+from utils.s3_manager.manage import S3Manager
+from utils.string import get_digits_from_str, get_float_from_str
 
 
 class RecipeCrawler:
     def __init__(self, base_url, candidate_num, field, bucket_name, key):
         self.logger = init_logger()
-        self.s3_manager = S3Manager(bucket_name=bucket_name)
-        self.key = key
+
+        self.bucket_name = bucket_name
+        self.s3_manager = S3Manager(bucket_name=self.bucket_name)
+        self.prefix = key
 
         self.chrome_path = "C:/chromedriver"
         options = webdriver.ChromeOptions()
@@ -37,7 +44,7 @@ class RecipeCrawler:
         """
         result = map(lambda n: (n, self.crawl_recipe(recipe_num=n)), self.candidate_num)
         recipes = dict(filter(lambda r: False not in r, result))
-        self.save(
+        self.save_recipes_to_s3(
             recipes=recipes,
             file_name="{str}-{end}".format(str=self.candidate_num[0], end=self.candidate_num[-1])
         )
@@ -49,14 +56,19 @@ class RecipeCrawler:
     def crawl_recipe(self, recipe_num):
         """
             1. connection
-            2. get recipe:dict
+            2. get recipe -> dict
         :return: recipe(Success) or False(Fail)
         """
         try:
-            self.connection(recipe_num=recipe_num)
+            self.connection(recipe_id=recipe_num)
             self.driver.implicitly_wait(3)
 
             recipe = self.get_recipe()
+            if self.save_image_to_s3(recipe_id=recipe_num):
+                recipe["img_url"] = self.get_s3_image_url(recipe_id=recipe_num)
+            else:
+                raise ConnectionError
+
             # TODO: logging error (UnicodeEncodeError)
             self.logger.info(recipe)
             return recipe
@@ -77,28 +89,32 @@ class RecipeCrawler:
             self.logger.exception(e, exc_info=False)
             return False
 
+        except NoSuchElementException:
+            self.logger.exception("No image about {id}".format(id=recipe_num), exc_info=False)
+            return False
+
         except NotImplementedError as e:
             self.logger.exception(e, exc_info=True)
             return False
 
-    def connection(self, recipe_num=6847470):
-        target_url = "{base_url}/{num}".format(base_url=self.base_url, num=str(recipe_num))
+    def connection(self, recipe_id=6847470) -> None:
+        target_url = "{base_url}/{num}".format(base_url=self.base_url, num=str(recipe_id))
         self.driver.get(target_url)
         self.logger.debug("success to connect with '{url}'".format(url=target_url))
 
-    def save(self, recipes: dict, file_name):
-        self.s3_manager.save_dict_to_json(
+    def save_recipes_to_s3(self, recipes: dict, file_name) -> bool:
+        return self.s3_manager.save_dict_to_json(
             data=recipes,
-            key="{prefix}/{key}.json".format(prefix=self.key, key=file_name)
+            key="{prefix}/{name}.json".format(prefix=self.prefix, name=file_name)
         )
 
-    def get_recipe(self):
+    def get_recipe(self) -> OrderedDict:
         """
         :return: recipe: dict
         """
         return OrderedDict(map(self.make_tuple, self.field))
 
-    def make_tuple(self, key):
+    def make_tuple(self, key) -> tuple:
         """
         :param key: key
         :return: (key, value)
@@ -121,25 +137,53 @@ class RecipeCrawler:
             "person": self.get_person,
             "items": self.get_items,
             "tags": self.get_tags,
-            "img_url": self.get_image
         }[key]()
 
-    def get_title(self):
+    def save_image_to_s3(self, recipe_id) -> bool:
+        url = self.get_img_url()
+        with urllib.request.urlopen(url) as url:
+            img = io.BytesIO(url.read())
+        return self.s3_manager.save_img(
+            data=img, key="{prefix}/images/{recipe_id}.jpg".format(prefix=self.prefix, recipe_id=recipe_id),
+            kwargs={"ACL": 'public-read', 'ContentType': 'image/jpg'}
+        )
+
+    def get_s3_image_url(self, recipe_id) -> str:
+        # get s3 url of main img
+        return "https:/{bucket}.s3.{region}.amazonaws.com/{key}".format(
+            bucket=self.bucket_name,
+            region=boto3.client('s3').get_bucket_location(Bucket=self.bucket_name)['LocationConstraint'],
+            key="{prefix}/images/{recipe_id}.jpg".format(prefix=self.prefix, recipe_id=recipe_id)
+        )
+
+    def get_img_url(self) -> str:
         pass
 
-    def get_time(self):
+    def get_title(self) -> str:
         pass
 
-    def get_person(self):
+    def get_time(self) -> int:
+        """
+            unit: minute
+        """
         pass
 
-    def get_items(self):
+    def get_person(self) -> int:
+        """
+            unit: person
+        """
         pass
 
-    def get_tags(self):
+    def get_items(self) -> dict:
+        """
+            { name: amount ... }
+        """
         pass
 
-    def get_image(self):
+    def get_tags(self) -> list:
+        """
+            max 3 tags
+        """
         pass
 
 
@@ -155,8 +199,7 @@ class MangaeCrawler(RecipeCrawler):
                 15.06.2020: 138,873
         """
         if field is None:
-            field = ['title', 'description', 'views', 'time', 'person', 'difficulty',
-                     'items', 'steps', 'caution', 'writer', 'comments', 'tag']
+            field = ['title', 'time', 'person', 'items', 'tags']
 
         super().__init__(
             base_url=base_url,
@@ -166,38 +209,40 @@ class MangaeCrawler(RecipeCrawler):
             key=key
         )
 
-    def get_title(self):
+    def get_img_url(self) -> str:
+        return self.driver.find_element_by_xpath('//*[@id="main_thumbs"]').get_attribute('src')
+
+    def get_title(self) -> str:
         title = self.driver.find_element_by_xpath('//*[@id="contents_area"]/div[2]/h3')
         return title.text
 
-    def get_time(self):
+    def get_time(self) -> int:
         time = self.driver.find_element_by_xpath('//*[@id="contents_area"]/div[2]/div[2]/span[2]').text.split(" ")[0]
         if "분" in time:
-            return int(time.replace("분", ""))
+            return int(get_digits_from_str(string=time))
         elif "시간" in time:
-            return int(time.replace("시간", "")) * 60
+            return int(get_digits_from_str(string=time)) * 60
         else:
             raise ValueError
 
-    def get_person(self):
-        return self.driver.find_element_by_class_name("view2_summary_info1").text
+    def get_person(self) -> int:
+        person = self.driver.find_element_by_class_name("view2_summary_info1").text
+        return int(get_digits_from_str(string=person))
 
-    def get_items(self):
-        items = self.driver.find_elements_by_xpath('//*[@id="divConfirmedMaterialArea"]/ul/a')
+    def get_items(self) -> dict:
+        items = self.driver.find_elements_by_xpath('//*[@id="divConfirmedMaterialArea"]/ul//li')
 
-        def get_amount(item):
+        def get_amount(item) -> tuple:
             try:
-                return item.text.split('\n')[0], item.find_element_by_tag_name('span').text
+                return item.text.split('\n')[0], get_float_from_str(item.find_element_by_tag_name('span').text)
             except NoSuchElementException:
-                return item.text, None
+                raise ValueError
+
         return dict(map(get_amount, items))
 
-    def get_tags(self):
+    def get_tags(self) -> list:
         tags = self.driver.find_elements_by_xpath('//*[@id="contents_area"]/div[32]/div/a')
         return list(take(length=3, iterator=map(lambda tag: tag.text.replace("#", ""), tags)))
-
-    def get_image(self):
-        return None
 
 
 class HaemukCrawler(RecipeCrawler):
@@ -212,7 +257,7 @@ class HaemukCrawler(RecipeCrawler):
                 15.06.2020: 5,386
         """
         if field is None:
-            field = []
+            field = ['title', 'time', 'person', 'items', 'tags']
 
         super().__init__(
             base_url=base_url,
@@ -222,41 +267,35 @@ class HaemukCrawler(RecipeCrawler):
             key=key
         )
 
-    def get_title(self):
-        # h1 = self.driver.find_element_by_xpath('//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[1]/h1')
-        return self.driver.find_element_by_xpath('//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[1]/h1').text
+    def get_title(self) -> str:
+        title = self.driver.find_element_by_xpath(
+            '//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[1]/h1').text
+        return title.split('\n')[0]
 
-        # try:
-        #     strong = h1.find_element_by_tag_name("strong")
-        #     return h1.text.split("\n")[0]
-        #
-        # except NoSuchElementException:
-        #     self.logger.warning("There is no element('strong')")
-        #     return h1.text
+    def get_items(self) -> dict:
+        items = self.driver.find_elements_by_xpath('//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[3]/ul/li')
 
+        def get_amount(item) -> tuple:
+            try:
+                name, amount = item.find_element_by_tag_name("span").text, item.find_element_by_tag_name("em").text
+                return name, get_float_from_str(amount)
+            except NoSuchElementException:
+                raise ValueError
 
+        return dict(filter(lambda x: x[1] != "", map(get_amount, items)))
 
-
-    def get_items(self):
-        text = self.driver.find_element_by_class_name("lst_ingrd").text.split("\n")
-        return dict(zip(text[::2], text[1::2]))
-
-    def get_tags(self):
-        tags = self.driver.find_elements_by_class_name("box_tag")
+    def get_tags(self) -> list:
+        tags = self.driver.find_elements_by_class_name('//*[@id="modal-content"]/div/div[1]/section[2]/div[3]/a')
         return list(take(length=3, iterator=map(lambda tag: tag.text, tags)))
-        # text = self.driver.find_element_by_class_name("box_tag").text
-        # if " " not in text:
-        #     return text
-        # else:
-        #     return text.split(" ")[:3]
 
-    def get_time(self):
-        text = self.driver.find_element_by_xpath(
+    def get_time(self) -> int:
+        time = self.driver.find_element_by_xpath(
             '//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[1]/dl/dd[1]').text
-        return int(text.replace("분", ""))
+        return int(get_digits_from_str(string=time))
 
-    def get_person(self):
-        return self.driver.find_element_by_class_name("dropdown").text
+    def get_person(self) -> int:
+        person = self.driver.find_element_by_class_name("dropdown").text
+        return int(reduce(add, filter(str.isdigit, person)))
 
-    def get_image(self):
+    def get_img_url(self) -> str:
         return self.driver.find_element_by_xpath('//*[@id="slider"]/div/ul/li[1]/img').get_attribute("src")
