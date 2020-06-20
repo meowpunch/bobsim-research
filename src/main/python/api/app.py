@@ -16,12 +16,12 @@ def main():
     @app.route('/', methods=['GET'])
     def index():
         return "<h3>crawling service</h3>\
-                <strong>mangae</strong><br>\
-                [GET] : /crawl_recipe/mangae?str_num=6828809&end_num=6828811<br>\
-                [GET] : /recipe/mangae<br><br>\
-                <strong>haemuk</strong><br>\
-                [GET] : /crawl_recipe/haemuk?str_num=5004&end_num=5005<br>\
-                [GET] : /recipe/haemuk<br><br>"
+                <strong>Mangae</strong><br>\
+                [GET] : /crawl_recipe/M?str_num=6932924&end_num=6932926<br>\
+                [GET] : /recipe/M<br><br>\
+                <strong>Haemuk</strong><br>\
+                [GET] : /crawl_recipe/H?str_num=5004&end_num=5005<br>\
+                [GET] : /recipe/H<br><br>"
 
     @app.route('/crawl_recipe/<source>', methods=['GET'])
     def crawl_recipe(source):
@@ -38,7 +38,7 @@ def main():
         logger.info("let's crawl {str} ~ {end} {source} recipes".format(str=str_num, end=end_num, source=source))
         field = ['title', 'items', "time", "person", "tags"]
 
-        if source == "mangae":
+        if source == "M":
             result = MangaeCrawler(
                 base_url="https://www.10000recipe.com/recipe",
                 candidate_num=range(int(str_num), int(end_num)),
@@ -46,7 +46,7 @@ def main():
                 bucket_name="production-bobsim",
                 key="crawled_recipe/{s}".format(s=source)
             ).process()
-        elif source == "haemuk":
+        elif source == "H":
             result = HaemukCrawler(
                 base_url="https://www.haemukja.com/recipes",
                 candidate_num=range(int(str_num), int(end_num)),
@@ -58,12 +58,12 @@ def main():
             raise NotImplementedError
 
         return jsonify(result)
-        # exit_code = MangaeCrawler().process()
-        # return str(exit_code)
 
     @app.route('/recipe/<source>', methods=['GET'])
     def get_recipes(source):
         recipes = S3Manager("production-bobsim").fetch_dict_from_json(key="crawled_recipe/{s}".format(s=source))
+        if recipes is None:
+            return 'there is no recipe'
         return jsonify(recipes)
 
     app.run(host='0.0.0.0', port=9000, debug=True)
