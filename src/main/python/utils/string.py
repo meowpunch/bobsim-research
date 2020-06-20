@@ -1,6 +1,7 @@
+import re
 from functools import reduce
 
-from utils.function import add
+from utils.function import add, take
 
 
 def get_digits_from_str(string: str) -> str:
@@ -11,26 +12,23 @@ def get_digits_from_str(string: str) -> str:
     return reduce(add, filter(str.isdigit, string))
 
 
-def get_float_from_str(string: str) -> float:
+def get_float_from_str(string: str) -> float or None:
     """
         "1/3 T" -> 0.33..
         "10.5 g" -> 10.5
     """
-    def isValid(s: str, d: str):
-        sliced = s.split(d)
-        if len(sliced) is not 2:
-            raise ValueError
-        return sliced
-
-    if "/" in string:
-        sliced = string.split("/")
-        if len(sliced) is not 2:
-            raise ValueError
-
-        dividend, divisor = sliced[0], sliced[1]
-        return dividend / divisor
-
-    if "." in string:
-        sliced =
-        if len(digits) is not
-    return 1.5
+    regex_dict = {
+        '/': r'\d/\d',
+        '.': r'\d.\d',
+        '': r'\d+'
+    }
+    key = take(1, filter(lambda k: k in string, regex_dict.keys()))[0]
+    try:
+        text = re.search(regex_dict[key], string).group()
+        if key is '/':
+            digits = text.split('/')
+            return int(digits[0]) / int(digits[1])
+        return float(text)
+    except AttributeError:
+        # TODO: handle 'NoneType Object has no attribute group'
+        return None

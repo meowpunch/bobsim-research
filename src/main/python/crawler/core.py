@@ -8,9 +8,10 @@ import boto3
 from selenium import webdriver
 from selenium.common.exceptions import UnexpectedAlertPresentException, NoSuchElementException
 
-from utils.function import take
+from utils.function import take, add
 from utils.logging import init_logger
 from utils.s3_manager.manage import S3Manager
+from utils.string import get_digits_from_str, get_float_from_str
 
 
 class RecipeCrawler:
@@ -89,7 +90,7 @@ class RecipeCrawler:
             return False
 
         except NotImplementedError as e:
-            # self.logger.exception(e, exc_info=True)
+            self.logger.exception(e, exc_info=True)
             return False
 
     def connection(self, recipe_id=6847470) -> None:
@@ -214,22 +215,22 @@ class MangaeCrawler(RecipeCrawler):
     def get_time(self) -> int:
         time = self.driver.find_element_by_xpath('//*[@id="contents_area"]/div[2]/div[2]/span[2]').text.split(" ")[0]
         if "분" in time:
-            return int(int(self.get_digits_from_str(string=time)))
+            return int(get_digits_from_str(string=time))
         elif "시간" in time:
-            return int(int(self.get_digits_from_str(string=time))) * 60
+            return int(get_digits_from_str(string=time)) * 60
         else:
             raise ValueError
 
     def get_person(self) -> int:
         person = self.driver.find_element_by_class_name("view2_summary_info1").text
-        return int(self.get_digits_from_str(string=person))
+        return int(get_digits_from_str(string=person))
 
     def get_items(self) -> dict:
         items = self.driver.find_elements_by_xpath('//*[@id="divConfirmedMaterialArea"]/ul//li')
 
         def get_amount(item) -> tuple:
             try:
-                return item.text.split('\n')[0], item.find_element_by_tag_name('span').text
+                return item.text.split('\n')[0], get_float_from_str(item.find_element_by_tag_name('span').text)
             except NoSuchElementException:
                 raise ValueError
 
@@ -271,13 +272,11 @@ class HaemukCrawler(RecipeCrawler):
         def get_amount(item) -> tuple:
             try:
                 name, amount = item.find_element_by_tag_name("span").text, item.find_element_by_tag_name("em").text
-                if amount == "":
-                    raise ValueError
-                return name, amount
+                return name, get_float_from_str(amount)
             except NoSuchElementException:
                 raise ValueError
 
-        return dict(map(get_amount, items))
+        return dict(filter(lambda x: x[1] != "", map(get_amount, items)))
 
     def get_tags(self) -> list:
         tags = self.driver.find_elements_by_class_name('//*[@id="modal-content"]/div/div[1]/section[2]/div[3]/a')
@@ -286,11 +285,11 @@ class HaemukCrawler(RecipeCrawler):
     def get_time(self) -> int:
         time = self.driver.find_element_by_xpath(
             '//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[1]/dl/dd[1]').text
-        return int(int(self.get_digits_from_str(string=time)))
+        return int(get_digits_from_str(string=time))
 
     def get_person(self) -> int:
         person = self.driver.find_element_by_class_name("dropdown").text
-        return int(reduce(lambda x, y: x + y, filter(str.isdigit, person)))
+        return int(reduce(add, filter(str.isdigit, person)))
 
     def get_img_url(self) -> str:
         return self.driver.find_element_by_xpath('//*[@id="slider"]/div/ul/li[1]/img').get_attribute("src")
