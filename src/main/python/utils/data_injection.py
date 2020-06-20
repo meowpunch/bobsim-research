@@ -10,8 +10,8 @@ from functools import reduce
 
 #-*- coding:utf-8 -*-
 
-from util.s3 import save_to_s3
-from util.s3_manager.manage import S3Manager
+from utils.s3 import save_to_s3
+from utils.s3_manager.manage import S3Manager
 
 
 class data_injection():

@@ -1,8 +1,8 @@
 from flask import Flask, jsonify, request
 
 from crawler.core import MangaeCrawler, HaemukCrawler
-from util.logging import init_logger
-from util.s3_manager.manage import S3Manager
+from utils.logging import init_logger
+from utils.s3_manager.manage import S3Manager
 
 
 def main():
@@ -33,10 +33,10 @@ def main():
             str_num, end_num = args["str_num"], args["end_num"]
         except KeyError:
             logger.warning("There is no parameter, 'str_num' or 'end_num'")
-            str_num, end_num = 6828809, 6828811
+            str_num, end_num = 6934386, 6934390
 
         logger.info("let's crawl {str} ~ {end} {source} recipes".format(str=str_num, end=end_num, source=source))
-        field = ['title', 'items', "time", "person", "tags", "img_url"]
+        field = ['title', 'items', "time", "person", "tags"]
 
         if source == "mangae":
             result = MangaeCrawler(

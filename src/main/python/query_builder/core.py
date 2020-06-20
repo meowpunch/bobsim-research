@@ -1,6 +1,6 @@
-from util.alter import *
-from util.db import exec_return_query, exec_void_query, load_query
-from util.s3 import list_bucket_contents
+from utils.alter import *
+from utils.db import exec_return_query, exec_void_query, load_query
+from utils.s3 import list_bucket_contents
 
 from abc import *
 

@@ -1,7 +1,7 @@
 import sys
 
 from data_pipeline.processor import Processor
-from util.logging import init_logger
+from utils.logging import init_logger
 
 
 class DataPipeline:

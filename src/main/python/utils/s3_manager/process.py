@@ -1,4 +1,4 @@
-from util.s3_manager.manage import S3Manager
+from utils.s3_manager.manage import S3Manager
 
 
 def main():

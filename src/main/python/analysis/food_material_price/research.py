@@ -6,8 +6,8 @@ import pandas as pd
 from sklearn.linear_model import ElasticNet
 
 from model.elastic_net import ElasticNetModel, ElasticNetSearcher
-from util.s3_manager.manage import S3Manager
-from util.visualize import series_plot
+from utils.s3_manager.manage import S3Manager
+from utils.visualize import series_plot
 
 """
     Grid search (hyperparameter tuning)

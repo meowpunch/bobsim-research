@@ -3,8 +3,8 @@ import pandas as pd
 from query_builder.core import QueryBuilder, CreateBuilder, DeleteBuilder, SelectBuilder, UpdateBuilder, InsertBuilder, \
     DropBuilder
 
-from util.alter import alter_type_list_to_str
-from util.db import exec_return_query, show_columns, show_data, load_query, exec_void_query
+from utils.alter import alter_type_list_to_str
+from utils.db import exec_return_query, show_columns, show_data, load_query, exec_void_query
 import json
 
 
