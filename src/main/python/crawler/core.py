@@ -89,6 +89,10 @@ class RecipeCrawler:
             self.logger.exception(e, exc_info=False)
             return False
 
+        except NoSuchElementException:
+            self.logger.exception("No image about {id}".format(id=recipe_num), exc_info=False)
+            return False
+
         except NotImplementedError as e:
             self.logger.exception(e, exc_info=True)
             return False

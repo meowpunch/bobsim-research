@@ -16,6 +16,8 @@ def get_float_from_str(string: str) -> float or None:
     """
         "1/3 T" -> 0.33..
         "10.5 g" -> 10.5
+
+        Not implemented: 반컵 -> 0.5, 한컵 -> 1
     """
     regex_dict = {
         '/': r'\d/\d',
