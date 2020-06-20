@@ -181,14 +181,6 @@ class RecipeCrawler:
         """
         pass
 
-    @staticmethod
-    def get_digits_from_str(string: str) -> str:
-        """
-            TODO: mv to utils
-            "a1b2c3" -> "123"
-        """
-        return reduce(lambda x, y: x + y, filter(str.isdigit, string))
-
 
 class MangaeCrawler(RecipeCrawler):
     def __init__(self, base_url="https://www.10000recipe.com/recipe", candidate_num=range(6828809, 6828811), field=None,

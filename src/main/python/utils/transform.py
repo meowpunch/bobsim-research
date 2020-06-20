@@ -1,5 +1,6 @@
 import sys
 import tempfile
+from functools import reduce
 
 import numpy as np
 import pandas as pd
@@ -8,8 +9,8 @@ from sklearn.base import BaseEstimator
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, FunctionTransformer, StandardScaler
 
+from utils.function import add
 from utils.logging import init_logger
-from utils.reduce import combine_list
 from utils.s3_manager.manage import S3Manager
 
 
@@ -108,7 +109,7 @@ class CustomTransformer(ColumnTransformer):
 
         # transformed columns
         columns_list = list(map(get_columns, self.strategy.keys()))
-        return combine_list(columns_list)
+        return reduce(add, columns_list)
 
     # override
     def fit(self, X=None, y=None):
