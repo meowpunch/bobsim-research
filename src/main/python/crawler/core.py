@@ -27,7 +27,7 @@ class RecipeCrawler:
         options.add_argument('headless')
 
         self.driver = webdriver.Chrome(executable_path=self.chrome_path, chrome_options=options)
-        self.driver.implicitly_wait(3)
+        # self.driver.implicitly_wait(3)
 
         self.base_url = base_url
         self.candidate_num = candidate_num
@@ -61,7 +61,7 @@ class RecipeCrawler:
         """
         try:
             self.connection(recipe_id=recipe_num)
-            self.driver.implicitly_wait(3)
+            # self.driver.implicitly_wait(3)
 
             recipe = self.get_recipe()
             if self.save_image_to_s3(recipe_id=recipe_num):
@@ -241,7 +241,7 @@ class MangaeCrawler(RecipeCrawler):
         return dict(map(get_amount, items))
 
     def get_tags(self) -> list:
-        tags = self.driver.find_elements_by_xpath('//*[@id="contents_area"]/div[32]/div/a')
+        tags = self.driver.find_element_by_class_name('view_tag').find_elements_by_tag_name(name='a')
         return list(take(length=3, iterator=map(lambda tag: tag.text.replace("#", ""), tags)))
 
 
@@ -285,7 +285,7 @@ class HaemukCrawler(RecipeCrawler):
         return dict(filter(lambda x: x[1] != "", map(get_amount, items)))
 
     def get_tags(self) -> list:
-        tags = self.driver.find_elements_by_class_name('//*[@id="modal-content"]/div/div[1]/section[2]/div[3]/a')
+        tags = self.driver.find_element_by_class_name('box_tag').find_elements_by_tag_name(name='a')
         return list(take(length=3, iterator=map(lambda tag: tag.text, tags)))
 
     def get_time(self) -> int:
