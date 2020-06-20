@@ -5,36 +5,20 @@ from functools import reduce
 from urllib.error import HTTPError
 
 import boto3
-from selenium import webdriver
 from selenium.common.exceptions import UnexpectedAlertPresentException, NoSuchElementException
 
+from crawler.ancestor import SeleniumCrawler
 from utils.function import take, add
-from utils.logging import init_logger
-from utils.s3_manager.manage import S3Manager
 from utils.string import get_digits_from_str, get_float_from_str
 
 
-class RecipeCrawler:
+class RecipeCrawler(SeleniumCrawler):
     def __init__(self, base_url, candidate_num, field, bucket_name, key):
-        self.logger = init_logger()
-
-        self.bucket_name = bucket_name
-        self.s3_manager = S3Manager(bucket_name=self.bucket_name)
-        self.prefix = key
-
-        self.chrome_path = "C:/chromedriver"
-        options = webdriver.ChromeOptions()
-        options.add_argument('headless')
-
-        self.driver = webdriver.Chrome(executable_path=self.chrome_path, chrome_options=options)
-        # self.driver.implicitly_wait(3)
-
-        self.base_url = base_url
+        super().__init__(base_url, bucket_name, key)
         self.candidate_num = candidate_num
-
         self.field = field
 
-    def process(self):
+    def process(self) -> dict:
         """
             1. crawl recipes
             2. filter result
@@ -42,7 +26,7 @@ class RecipeCrawler:
             4. quit driver
         :return: recipes: dict
         """
-        result = map(lambda n: (n, self.crawl_recipe(recipe_num=n)), self.candidate_num)
+        result = map(lambda n: (n, self.crawl(recipe_num=n)), self.candidate_num)
         recipes = dict(filter(lambda r: False not in r, result))
         self.save_recipes_to_s3(
             recipes=recipes,
@@ -53,7 +37,7 @@ class RecipeCrawler:
         self.driver.quit()
         return recipes
 
-    def crawl_recipe(self, recipe_num):
+    def crawl(self, recipe_num) -> dict or bool:
         """
             1. connection
             2. get recipe -> dict
@@ -61,11 +45,10 @@ class RecipeCrawler:
         """
         try:
             self.connection(recipe_id=recipe_num)
-            # self.driver.implicitly_wait(3)
 
             recipe = self.get_recipe()
             if self.save_image_to_s3(recipe_id=recipe_num):
-                recipe["img_url"] = self.get_s3_image_url(recipe_id=recipe_num)
+                recipe["image_url"] = self.get_s3_image_url(recipe_id=recipe_num)
             else:
                 raise ConnectionError
 
@@ -140,7 +123,7 @@ class RecipeCrawler:
         }[key]()
 
     def save_image_to_s3(self, recipe_id) -> bool:
-        url = self.get_img_url()
+        url = self.get_image_url()
         with urllib.request.urlopen(url) as url:
             img = io.BytesIO(url.read())
         return self.s3_manager.save_img(
@@ -156,7 +139,7 @@ class RecipeCrawler:
             key="{prefix}/images/{recipe_id}.jpg".format(prefix=self.prefix, recipe_id=recipe_id)
         )
 
-    def get_img_url(self) -> str:
+    def get_image_url(self) -> str:
         pass
 
     def get_title(self) -> str:
@@ -209,9 +192,6 @@ class MangaeCrawler(RecipeCrawler):
             key=key
         )
 
-    def get_img_url(self) -> str:
-        return self.driver.find_element_by_xpath('//*[@id="main_thumbs"]').get_attribute('src')
-
     def get_title(self) -> str:
         title = self.driver.find_element_by_xpath('//*[@id="contents_area"]/div[2]/h3')
         return title.text
@@ -243,6 +223,9 @@ class MangaeCrawler(RecipeCrawler):
     def get_tags(self) -> list:
         tags = self.driver.find_element_by_class_name('view_tag').find_elements_by_tag_name(name='a')
         return list(take(length=3, iterator=map(lambda tag: tag.text.replace("#", ""), tags)))
+
+    def get_image_url(self) -> str:
+        return self.driver.find_element_by_xpath('//*[@id="main_thumbs"]').get_attribute('src')
 
 
 class HaemukCrawler(RecipeCrawler):
@@ -297,5 +280,5 @@ class HaemukCrawler(RecipeCrawler):
         person = self.driver.find_element_by_class_name("dropdown").text
         return int(reduce(add, filter(str.isdigit, person)))
 
-    def get_img_url(self) -> str:
+    def get_image_url(self) -> str:
         return self.driver.find_element_by_xpath('//*[@id="slider"]/div/ul/li[1]/img').get_attribute("src")
