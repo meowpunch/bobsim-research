@@ -63,12 +63,16 @@ class HaemukItemCrawler(ItemCrawler):
 
         def make_tuple(parent):
             parent.click()
-            # self.driver.implicitly_wait(3)
             children = self.driver.find_element_by_class_name('small_sort').text.split("\n")
 
             return parent.text, children
 
-        return dict(map(make_tuple, parents))
+        tuples = []
+        for parent in parents:
+            parent.click()
+            tuples.append(make_tuple(parent))
+
+        return dict(tuples)
 
 
 class EmartItemCrawler(ItemCrawler):
@@ -82,6 +86,8 @@ class EmartItemCrawler(ItemCrawler):
     def __init__(self, base_url, bucket_name, key, head):
         super().__init__(base_url, bucket_name, key, head)
 
-    def get_item_categories(self, parent):
+    def get_item_categories(self):
         grand_parents = self.driver.find_element_by_class_name('em_lnb_lst').find_elements_by_tag_name('a')
+
+
         pass
