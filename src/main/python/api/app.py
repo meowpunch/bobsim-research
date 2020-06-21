@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request
 
-from crawler.core import MangaeRecipeCrawler, HaemukRecipeCrawler
+from crawler.recipe import MangaeRecipeCrawler, HaemukRecipeCrawler
 from crawler.item import HaemukItemCrawler
 from utils.logging import init_logger
 from utils.s3_manager.manage import S3Manager
