@@ -170,7 +170,7 @@ class RecipeCrawler(SeleniumCrawler):
         pass
 
 
-class MangaeCrawler(RecipeCrawler):
+class MangaeRecipeCrawler(RecipeCrawler):
     def __init__(self, base_url="https://www.10000recipe.com/recipe", candidate_num=range(6828809, 6828811), field=None,
                  bucket_name="production-bobsim", key="crawled_recipe/mangae"):
         """
@@ -228,7 +228,7 @@ class MangaeCrawler(RecipeCrawler):
         return self.driver.find_element_by_xpath('//*[@id="main_thumbs"]').get_attribute('src')
 
 
-class HaemukCrawler(RecipeCrawler):
+class HaemukRecipeCrawler(RecipeCrawler):
     def __init__(self, base_url="https://www.haemukja.com/recipes", candidate_num=range(5000, 5001), field=None,
                  bucket_name="production_bobsim", key="crawled_recipe/haemuk"):
         """
@@ -253,7 +253,7 @@ class HaemukCrawler(RecipeCrawler):
     def get_title(self) -> str:
         title = self.driver.find_element_by_xpath(
             '//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[1]/h1').text
-        return title.split('\n')[0]
+        return title.split('\n')[1]
 
     def get_items(self) -> dict:
         items = self.driver.find_elements_by_xpath('//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[3]/ul/li')
