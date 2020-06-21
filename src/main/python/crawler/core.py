@@ -116,7 +116,7 @@ class RecipeCrawler(SeleniumCrawler):
     def select_element(self, key):
         return {
             "title": self.get_title,
-            "time": self.get_time,
+            "duration": self.get_duration,
             "person": self.get_person,
             "items": self.get_items,
             "tags": self.get_tags,
@@ -145,7 +145,7 @@ class RecipeCrawler(SeleniumCrawler):
     def get_title(self) -> str:
         pass
 
-    def get_time(self) -> int:
+    def get_duration(self) -> int:
         """
             unit: minute
         """
@@ -170,7 +170,7 @@ class RecipeCrawler(SeleniumCrawler):
         pass
 
 
-class MangaeCrawler(RecipeCrawler):
+class MangaeRecipeCrawler(RecipeCrawler):
     def __init__(self, base_url="https://www.10000recipe.com/recipe", candidate_num=range(6828809, 6828811), field=None,
                  bucket_name="production-bobsim", key="crawled_recipe/mangae"):
         """
@@ -182,7 +182,7 @@ class MangaeCrawler(RecipeCrawler):
                 15.06.2020: 138,873
         """
         if field is None:
-            field = ['title', 'time', 'person', 'items', 'tags']
+            field = ['title', 'duration', 'person', 'items', 'tags']
 
         super().__init__(
             base_url=base_url,
@@ -196,12 +196,12 @@ class MangaeCrawler(RecipeCrawler):
         title = self.driver.find_element_by_xpath('//*[@id="contents_area"]/div[2]/h3')
         return title.text
 
-    def get_time(self) -> int:
-        time = self.driver.find_element_by_xpath('//*[@id="contents_area"]/div[2]/div[2]/span[2]').text.split(" ")[0]
-        if "분" in time:
-            return int(get_digits_from_str(string=time))
-        elif "시간" in time:
-            return int(get_digits_from_str(string=time)) * 60
+    def get_duration(self) -> int:
+        duration = self.driver.find_element_by_xpath('//*[@id="contents_area"]/div[2]/div[2]/span[2]').text.split(" ")[0]
+        if "분" in duration:
+            return int(get_digits_from_str(string=duration))
+        elif "시간" in duration:
+            return int(get_digits_from_str(string=duration)) * 60
         else:
             raise ValueError
 
@@ -228,7 +228,7 @@ class MangaeCrawler(RecipeCrawler):
         return self.driver.find_element_by_xpath('//*[@id="main_thumbs"]').get_attribute('src')
 
 
-class HaemukCrawler(RecipeCrawler):
+class HaemukRecipeCrawler(RecipeCrawler):
     def __init__(self, base_url="https://www.haemukja.com/recipes", candidate_num=range(5000, 5001), field=None,
                  bucket_name="production_bobsim", key="crawled_recipe/haemuk"):
         """
@@ -240,7 +240,7 @@ class HaemukCrawler(RecipeCrawler):
                 15.06.2020: 5,386
         """
         if field is None:
-            field = ['title', 'time', 'person', 'items', 'tags']
+            field = ['title', 'duration', 'person', 'items', 'tags']
 
         super().__init__(
             base_url=base_url,
@@ -253,7 +253,7 @@ class HaemukCrawler(RecipeCrawler):
     def get_title(self) -> str:
         title = self.driver.find_element_by_xpath(
             '//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[1]/h1').text
-        return title.split('\n')[0]
+        return title.split('\n')[1]
 
     def get_items(self) -> dict:
         items = self.driver.find_elements_by_xpath('//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[3]/ul/li')
@@ -271,10 +271,10 @@ class HaemukCrawler(RecipeCrawler):
         tags = self.driver.find_element_by_class_name('box_tag').find_elements_by_tag_name(name='a')
         return list(take(length=3, iterator=map(lambda tag: tag.text, tags)))
 
-    def get_time(self) -> int:
-        time = self.driver.find_element_by_xpath(
+    def get_duration(self) -> int:
+        duration = self.driver.find_element_by_xpath(
             '//*[@id="container"]/div[2]/div/div[1]/section[1]/div/div[1]/dl/dd[1]').text
-        return int(get_digits_from_str(string=time))
+        return int(get_digits_from_str(string=duration))
 
     def get_person(self) -> int:
         person = self.driver.find_element_by_class_name("dropdown").text

@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 
-from crawler.core import MangaeCrawler, HaemukCrawler
+from crawler.core import MangaeRecipeCrawler, HaemukRecipeCrawler
+from crawler.item import HaemukItemCrawler
 from utils.logging import init_logger
 from utils.s3_manager.manage import S3Manager
 
@@ -36,10 +37,10 @@ def main():
             str_num, end_num = 6934386, 6934390
 
         logger.info("let's crawl {str} ~ {end} {source} recipes".format(str=str_num, end=end_num, source=source))
-        field = ['title', 'items', "time", "tags"]
+        field = ['title', 'items', "duration", "tags"]
 
         if source == "M":
-            result = MangaeCrawler(
+            result = MangaeRecipeCrawler(
                 base_url="https://www.10000recipe.com/recipe",
                 candidate_num=range(int(str_num), int(end_num)),
                 field=field,
@@ -47,7 +48,7 @@ def main():
                 key="crawled_recipe/{s}".format(s=source)
             ).process()
         elif source == "H":
-            result = HaemukCrawler(
+            result = HaemukRecipeCrawler(
                 base_url="https://www.haemukja.com/recipes",
                 candidate_num=range(int(str_num), int(end_num)),
                 field=field,
@@ -65,6 +66,23 @@ def main():
         if recipes is None:
             return 'there is no recipe'
         return jsonify(recipes)
+
+    @app.route('/crawl_item/<source>', methods=['GET'])
+    def crawl_item(source):
+        """
+        :return: jsonified recipe
+        """
+        if source == "H":
+            result = HaemukItemCrawler(
+                base_url="https://www.haemukja.com/refrigerator",
+                bucket_name="production-bobsim",
+                key="crawled_item/{s}".format(s=source),
+                head=True
+            ).process()
+        else:
+            raise NotImplementedError
+
+        return jsonify(result)
 
     app.run(host='0.0.0.0', port=9000, debug=True)
 
