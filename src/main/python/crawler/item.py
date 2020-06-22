@@ -105,5 +105,11 @@ class EmartItemCrawler(ItemCrawler):
                          children
         :return:
         """
-        grand_parents = self.driver.find_element_by_class_name('em_lnb_lst').find_elements_by_tag_name('a')
+        mother = self.driver.find_element_by_class_name('em_lnb_lst')
+
+        mother.find_element_by_class_name('emlnb_top_lnk')
+        mother.find_element_by_class_name('emlnb_sub_lv2')
+        raise NotImplementedError
+
+    def dig_structure(self):
         pass
