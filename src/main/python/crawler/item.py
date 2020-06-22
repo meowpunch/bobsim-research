@@ -21,10 +21,18 @@ class ItemCrawler(SeleniumCrawler):
 
     def process(self) -> dict:
         """
-            1. travel
+            1. crawl items
+            2. save to s3
+            3. quit driver
         :return: items
         """
-        return self.crawl()
+        items = self.crawl()
+        self.s3_manager.save_dict_to_json(
+            data=items,
+            key="{prefix}/{name}.json".format(prefix=self.prefix, name="item_categories")
+        )
+        self.driver.quit()
+        return items
 
     def crawl(self) -> dict:
         """
@@ -98,6 +106,4 @@ class EmartItemCrawler(ItemCrawler):
         :return:
         """
         grand_parents = self.driver.find_element_by_class_name('em_lnb_lst').find_elements_by_tag_name('a')
-
-
         pass

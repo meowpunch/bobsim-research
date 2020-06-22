@@ -36,5 +36,3 @@ class SeleniumCrawler:
 
     def process(self):
         pass
-
-
