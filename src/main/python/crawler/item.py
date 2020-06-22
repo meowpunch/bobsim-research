@@ -1,3 +1,7 @@
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions
+from selenium.webdriver.support.wait import WebDriverWait
+
 from crawler.ancestor import SeleniumCrawler
 
 
@@ -56,23 +60,23 @@ class HaemukItemCrawler(ItemCrawler):
     def get_item_categories(self) -> dict:
         """
             parent:
-                child...
+                children
         :return: item categories
         """
         parents = self.driver.find_element_by_class_name('big_sort').find_elements_by_tag_name('a')
 
         def make_tuple(parent):
             parent.click()
+            WebDriverWait(self.driver, 3).until(
+                expected_conditions.presence_of_element_located(
+                    (By.XPATH, '//*[@id="container"]/div[2]/section/div/form/fieldset[1]/ul[2]/li')
+                )
+            )
             children = self.driver.find_element_by_class_name('small_sort').text.split("\n")
 
             return parent.text, children
 
-        tuples = []
-        for parent in parents:
-            parent.click()
-            tuples.append(make_tuple(parent))
-
-        return dict(tuples)
+        return dict(map(make_tuple, parents))
 
 
 class EmartItemCrawler(ItemCrawler):
@@ -87,6 +91,12 @@ class EmartItemCrawler(ItemCrawler):
         super().__init__(base_url, bucket_name, key, head)
 
     def get_item_categories(self):
+        """
+            grand parent:
+                    parent:
+                         children
+        :return:
+        """
         grand_parents = self.driver.find_element_by_class_name('em_lnb_lst').find_elements_by_tag_name('a')
 
 
