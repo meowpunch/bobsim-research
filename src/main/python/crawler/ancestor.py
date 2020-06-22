@@ -21,6 +21,7 @@ class SeleniumCrawler:
 
         self.base_url = base_url
 
+    # TODO: click elements sequentially
     def click_element_by_xpath(self, xpath: str):
         ele = self.driver.find_element_by_xpath(xpath=xpath)
         ele.click()
@@ -29,11 +30,9 @@ class SeleniumCrawler:
         ele = self.driver.find_element_by_class_name(name=name)
         ele.click()
 
-    def click_by_tag_name(self, name: str):
+    def click_element_by_tag_name(self, name: str):
         ele = self.driver.find_element_by_tag_name(name=name)
         ele.click()
 
     def process(self):
         pass
-
-

@@ -22,15 +22,16 @@ class RecipeCrawler(SeleniumCrawler):
         """
             1. crawl recipes
             2. filter result
-            3. save
+            3. save to s3
             4. quit driver
         :return: recipes: dict
         """
         result = map(lambda n: (n, self.crawl(recipe_num=n)), self.candidate_num)
         recipes = dict(filter(lambda r: False not in r, result))
-        self.save_recipes_to_s3(
-            recipes=recipes,
-            file_name="{str}-{end}".format(str=self.candidate_num[0], end=self.candidate_num[-1])
+        self.s3_manager.save_dict_to_s3(
+            data=recipes,
+            key="{prefix}/{str}-{end}.json".format(
+                prefix=self.prefix, str=self.candidate_num[0], end=self.candidate_num[-1])
         )
 
         self.logger.info("success to save {n} recipes".format(n=len(recipes)))
@@ -84,12 +85,6 @@ class RecipeCrawler(SeleniumCrawler):
         target_url = "{base_url}/{num}".format(base_url=self.base_url, num=str(recipe_id))
         self.driver.get(target_url)
         self.logger.debug("success to connect with '{url}'".format(url=target_url))
-
-    def save_recipes_to_s3(self, recipes: dict, file_name) -> bool:
-        return self.s3_manager.save_dict_to_json(
-            data=recipes,
-            key="{prefix}/{name}.json".format(prefix=self.prefix, name=file_name)
-        )
 
     def get_recipe(self) -> OrderedDict:
         """
@@ -197,7 +192,8 @@ class MangaeRecipeCrawler(RecipeCrawler):
         return title.text
 
     def get_duration(self) -> int:
-        duration = self.driver.find_element_by_xpath('//*[@id="contents_area"]/div[2]/div[2]/span[2]').text.split(" ")[0]
+        duration = self.driver.find_element_by_xpath('//*[@id="contents_area"]/div[2]/div[2]/span[2]').text.split(" ")[
+            0]
         if "분" in duration:
             return int(get_digits_from_str(string=duration))
         elif "시간" in duration:
