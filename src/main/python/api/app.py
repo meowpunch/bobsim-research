@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
 
-from crawler.recipe import MangaeRecipeCrawler, HaemukRecipeCrawler
 from crawler.item import HaemukItemCrawler
+from crawler.recipe import MangaeRecipeCrawler, HaemukRecipeCrawler
 from utils.logging import init_logger
 from utils.s3_manager.manage import S3Manager
 
@@ -72,13 +72,6 @@ def main():
 
         return jsonify(result)
 
-    @app.route('/recipe/<source>', methods=['GET'])
-    def get_recipes(source):
-        recipes = S3Manager("production-bobsim").fetch_dict_from_json(key="crawled_recipe/{s}".format(s=source))
-        if recipes is None:
-            return 'there is no recipe'
-        return jsonify(recipes)
-
     @app.route('/crawl_item/<source>', methods=['GET'])
     def crawl_item(source):
         """
@@ -87,7 +80,7 @@ def main():
         logger.info("let's crawl item categories {source} recipes".format(source=source))
 
         bucket_name = "production-bobsim"
-        key = "crawled_recipe/{s}".format(s=source)
+        key = "crawled_item/{s}".format(s=source)
         head = True
 
         if source == "H":
@@ -108,6 +101,14 @@ def main():
             raise NotImplementedError
 
         return jsonify(result)
+
+    @app.route('/<prefix>/<source>', methods=['GET'])
+    def get_recipes(prefix, source):
+        data = S3Manager("production-bobsim").fetch_dict_from_json(
+            key="crawled_{p}/{s}".format(p=prefix, s=source))
+        if data is None:
+            return 'there is no data'
+        return jsonify(data)
 
     app.run(host='0.0.0.0', port=9000, debug=True)
 
